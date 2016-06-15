@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+# FIXME: use nice try/except to catch any import errors and provide a nice warning about modules that are missing
+from click import echo, group, argument, option
+
+
+@group()
+def tf():
+    """
+    Single-command dotfile installation.
+    """
+    pass
+
+
+@tf.command()
+@argument('repo_path')
+def add(repo_path):
+    '''
+    Install a new repo on your system
+    '''
+    raise Exception("Add REPO_PATH to the list of repositories")  # noq
+    raise Exception("TODO: install the new repo")  # noqa
+
+
+@tf.command()
+@argument('repo_path', required=False)
+def update():
+    raise Exception("TODO: git pull and run the terraform script")  # noqa
+
+
+@tf.command()
+@option('--daily', is_flag=True, help="Update interactively daily")
+@option('--weekly', is_flag=True, help="Update interactively weekly")
+@option('--monthly', is_flag=True, help="Update interactively monthly")
+def updatecheck():
+    '''
+    Interactively update all your repos on a regular basis.
+    E.g., add this to your ~/.bashrc:
+
+        terraform updatecheck --weekly
+    '''
+    raise Exception("TODO: check timestamp in ~/.terraform/last-check")  # noqa
+    raise Exception("TODO: update all repos if necessary")  # noqa
+    raise Exception("TODO: put new timestamp in ~/.terraform/last-check")  # noqa
+
+if __name__ == '__main__':
+    tf()
