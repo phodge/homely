@@ -167,9 +167,7 @@ def updatecheck():
     raise Exception("TODO: update all repos if necessary")  # noqa
     raise Exception("TODO: put new timestamp in ~/.terraform/last-check")  # noqa
 
-if __name__ == '__main__':
-
-
+def main():
     try:
         if len(_import_errors):
             raise Fatal("Missing required modules: %s" % ",".join(_import_errors))
