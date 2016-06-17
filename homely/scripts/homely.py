@@ -6,11 +6,12 @@ import sys
 from click import echo, group, argument, option
 
 from homely.utils import RepoError, RepoConfig, RepoInfo
+from homely.engine import run_update, clone_online_repo
 
 
 # FILES:
 # ~/.homely/repos.json
-REPO_CONFIG_PATH = os.path.join(os.environ.get('HOME'), '.homely', 'repos.json')
+CMD = os.path.basename(sys.argv[0])
 
 
 class Fatal(Exception):
@@ -45,45 +46,40 @@ def add(repo_path):
     info = RepoInfo(repo_path)
     cfg = RepoConfig()
     cfg.add_repo(info)
-    update_repo(info, pull_first=pull_required)
+    run_update(info, pull_first=pull_required)
 
 
 @homely.command()
-@argument('identifier')
-def remove(identifier):
+@argument('repo')
+def remove(repo):
     '''
     Remove repo identified by IDENTIFIER. IDENTIFIER can be a path to a repo or a commit hash.
     '''
     raise Exception("TODO: remove the repo")  # noqa
 
 
-def clone_online_repo(repo_path):
-    raise Exception("TODO: git clone the repo")  # noqa
-    raise Exception("TODO: return the path to the local copy of the repo")  # noqa
-    # FIXME: check to see if the repo already exists locally
-    # FIXME: suggest a good default location for the local clone of the repo
-    return local_path
-
-
-def update_repo(info, pull_first):
-    heading("Updating %s" % info.localpath)
-    if pull_first:
-        # FIXME: warn if there are oustanding changes in the repo
-        # FIXME: allow the user to configure whether they want to use 'git pull' or some other
-        # command to update the repo
-        echo("%s: Retrieving updates using git pull" % info.localpath)
-        cmd = ['git', '-C', path, 'pull']
-        subprocess.check_call(cmd)
-    else:
-        # FIXME: notify the user if there are oustanding changes in the repo
-        pass
-    assert isinstance(info, RepoInfo)
-
-
 @homely.command()
-@argument('repo_path', required=False)
-def update(repo_path):
-    raise Exception("TODO: git pull and run the homely script")  # noqa
+@argument('identifiers', nargs=-1, metavar="REPO")
+def update(identifiers):
+    '''
+    Git pull the specified REPOs and then re-run them.
+
+    Each REPO must be a commithash or localpath from
+    ~/.homely/repos.json.
+    '''
+    cfg = RepoConfig()
+    if len(identifiers):
+        updatelist = []
+        for identifier in identifiers:
+            info = cfg.find_repo(identifier)
+            if info is None:
+                hint = "Try running %s add /path/to/this/repo first" % CMD
+                raise Fatal("Unrecognised repo %s (%s)" % (identifier, hint))
+            updatelist.append(info)
+    else:
+        updatelist = list(cfg.find_all())
+    for commithash, localpath in updatelist:
+        raise Exception("TODO: git pull and run the homely script")  # noqa
 
 
 @homely.command()

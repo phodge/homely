@@ -4,6 +4,11 @@ import subprocess
 import simplejson
 
 
+REPO_CONFIG_PATH = os.path.join(os.environ.get('HOME'),
+                                '.homely',
+                                'repos.json')
+
+
 class RepoError(Exception):
     pass
 
@@ -38,6 +43,15 @@ class RepoConfig(object):
         with open(REPO_CONFIG_PATH, 'w') as f:
             f.write(simplejson.dumps(self.repos, indent=' ' * 4))
 
+    def find_repo(self, hash_or_path):
+        for repo in self.repos:
+            if hash_or_path in (repo["commithash"], repo["localpath"]):
+                return repo["commithash"], repo["localpath"]
+
+    def find_all(self):
+        for repo in self.repos:
+            yield repo["commithash"], repo["localpath"]
+
 
 class RepoInfo(object):
     localpath = None
@@ -54,3 +68,8 @@ class RepoInfo(object):
         cmd = ['git', '-C', path]
         cmd.extend(['log', '--pretty=%H', '-1'])
         self.commithash = subprocess.check_output(cmd).rstrip().decode('utf-8')
+
+    @classmethod
+    def load_from_identifier(class_, identifier):
+        cfg = RepoConfig()
+
