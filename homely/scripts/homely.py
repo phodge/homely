@@ -5,7 +5,7 @@ import sys
 
 from click import echo, group, argument, option
 
-from homely.utils import RepoError, RepoConfig, RepoInfo
+from homely.utils import RepoError, JsonError, RepoListConfig, RepoInfo
 from homely.engine import run_update, clone_online_repo
 
 
@@ -16,12 +16,6 @@ CMD = os.path.basename(sys.argv[0])
 
 class Fatal(Exception):
     pass
-
-
-def heading(message):
-    echo(message)
-    echo("=" * len(message))
-    echo("")
 
 
 @group()
@@ -42,11 +36,10 @@ def add(repo_path):
     if repo_path.startswith('ssh://') or repo_path.startswith('https://'):
         repo_path = clone_online_repo(repo_path)
         pull_required = False
-    # add the local repo to 
-    info = RepoInfo(repo_path)
-    cfg = RepoConfig()
-    cfg.add_repo(info)
-    run_update(info, pull_first=pull_required)
+    # add the local repo to our config
+    with saveconfig(RepoListConfig()) as cfg:
+        cfg.add_repo(RepoInfo(repo_path))
+    run_update(info, pullfirst=pull_required)
 
 
 @homely.command()
@@ -60,14 +53,15 @@ def remove(repo):
 
 @homely.command()
 @argument('identifiers', nargs=-1, metavar="REPO")
-def update(identifiers):
+@option('--nopull', is_flag=True)
+def update(identifiers, nopull):
     '''
     Git pull the specified REPOs and then re-run them.
 
     Each REPO must be a commithash or localpath from
     ~/.homely/repos.json.
     '''
-    cfg = RepoConfig()
+    cfg = RepoListConfig()
     if len(identifiers):
         updatelist = []
         for identifier in identifiers:
@@ -78,8 +72,8 @@ def update(identifiers):
             updatelist.append(info)
     else:
         updatelist = list(cfg.find_all())
-    for commithash, localpath in updatelist:
-        raise Exception("TODO: git pull and run the homely script")  # noqa
+    for info in updatelist:
+        run_update(info, pullfirst=not nopull)
 
 
 @homely.command()
@@ -97,10 +91,19 @@ def updatecheck():
     raise Exception("TODO: update all repos if necessary")  # noqa
     raise Exception("TODO: put new timestamp in ~/.homely/last-check")  # noqa
 
+
+@homely.command()
+def repotest():
+    '''
+    Test REPO's HOMELY.py for errors.
+    '''
+    raise Exception("TODO: implement this")  # noqa
+
+
 def main():
     try:
         # FIXME: always ensure git is installed first
         homely()
-    except (Fatal, RepoError) as err:
+    except (Fatal, RepoError, JsonError) as err:
         echo("ERROR: %s" % err, err=True)
         sys.exit(1)
