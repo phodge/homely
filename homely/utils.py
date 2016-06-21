@@ -128,7 +128,7 @@ class RepoScriptConfig(JsonConfig):
 @contextlib.contextmanager
 def saveconfig(cfg):
     assert isinstance(cfg, JsonConfig)
-    yield
+    yield cfg
     cfg.writejson()
 
 
