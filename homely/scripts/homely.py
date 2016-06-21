@@ -5,7 +5,9 @@ import sys
 
 from click import echo, group, argument, option
 
-from homely.utils import RepoError, JsonError, RepoListConfig, RepoInfo
+from homely.utils import (
+    RepoError, JsonError, RepoListConfig, RepoInfo, saveconfig
+)
 from homely.engine import run_update, clone_online_repo
 
 
