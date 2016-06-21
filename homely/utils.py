@@ -145,9 +145,8 @@ class RepoInfo(object):
         self.localpath = path
         if commithash is None:
             # ask git for the commit hash
-            cmd = ['git', '-C', path]
-            cmd.extend(['log', '--pretty=%H', '-1'])
-            self.commithash = subprocess.check_output(cmd).rstrip().decode('utf-8')
+            cmd = ['git', 'rev-list', '--max-parents=0', 'HEAD']
+            self.commithash = subprocess.check_output(cmd, cwd=path).rstrip().decode('utf-8')
         else:
             self.commithash = commithash
 
