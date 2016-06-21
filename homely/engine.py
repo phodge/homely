@@ -4,6 +4,8 @@ from click import echo
 
 from homely.utils import RepoError, RepoInfo, RepoScriptConfig
 
+import subprocess
+
 
 def heading(message):
     echo(message)
@@ -19,8 +21,8 @@ def run_update(info, pullfirst):
         # FIXME: allow the user to configure whether they want to use 'git pull' or some other
         # command to update the repo
         echo("%s: Retrieving updates using git pull" % info.localpath)
-        cmd = ['git', '-C', path, 'pull']
-        subprocess.check_call(cmd)
+        cmd = ['git', 'pull']
+        subprocess.check_call(cmd, cwd=info.localpath)
     else:
         # FIXME: notify the user if there are oustanding changes in the repo
         pass
