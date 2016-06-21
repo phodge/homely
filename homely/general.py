@@ -78,15 +78,15 @@ class LineInFile(UpdateHelper):
             if orig is not None:
                 # read through the original file and look for a line to replace
                 for line in orig.readlines():
-                    if modified:
-                        tmp.write(line)
-                    elif matchline(line):
+                    if not modified and matchline(line):
                         modified = True
                         tmp.write(self._contents)
                         # FIXME: respect the existing lines' line endings!
                         tmp.write("\n")
                         if "old_line" not in changes:
                             changes["old_line"] = line.rstrip()
+                    else:
+                        tmp.write(line)
             # if we didn't write out the new line by replacing parts of the original, then we'll
             # just have to pop the new line on the end
             if not modified:
