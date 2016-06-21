@@ -39,8 +39,9 @@ def add(repo_path):
         repo_path = clone_online_repo(repo_path)
         pull_required = False
     # add the local repo to our config
+    info = RepoInfo(repo_path)
     with saveconfig(RepoListConfig()) as cfg:
-        cfg.add_repo(RepoInfo(repo_path))
+        cfg.add_repo(info)
     run_update(info, pullfirst=pull_required)
 
 
