@@ -1,7 +1,13 @@
 import os
 
+from homely._errors import HelperError
 from homely.engine import add
 from homely.utils import filereplacer
+
+
+def mkdir(path):
+    path = os.path.expanduser(path)
+    add(MakeDir(path=path))
 
 
 def lineinfile(filename, contents, prefix=None, regex=None):
@@ -52,6 +58,54 @@ class UpdateHelper(object):
         prototype = "undochanges(self, prevchanges)"
         raise NotImplementedError("%s needs to implement %s" %
                                   (self.__class__.__name__, prototype))
+
+
+class MakeDir(UpdateHelper):
+    _path = None
+
+    def __init__(self, path):
+        self._path = path
+
+    @property
+    def identifiers(self):
+        return dict(path=self._path)
+
+    def isdone(self):
+        return os.path.isdir(self._path)
+
+    def descchanges(self):
+        return "Creating directory %s" % self._path
+
+    def makechanges(self, prevchanges):
+        if os.path.islink(self._path):
+            raise HelperError("%s is already a symlink" % self._path)
+
+        changes = {
+            "dirs_created": prevchanges.get("dirs_created", []),
+        }
+
+        check = []
+        path = self._path
+        prev = None
+        while path != prev:
+            prev = path
+            check.insert(0, path)
+            path = os.path.dirname(path)
+        for path in check:
+            if os.path.isdir(path):
+                continue
+            if os.path.exists(self._path):
+                raise HelperError("%s already exists" % self._path)
+            changes["dirs_created"].append(path)
+            os.makedirs(path)
+
+        return changes
+
+    def undochanges(self, prevchanges):
+        # TODO: rmdir the dirs that were created last time
+        import pprint
+        print('prevchanges = ' + pprint.pformat(prevchanges))  # noqa TODO
+        raise Exception("TODO: finish this")  # noqa
 
 
 class LineInFile(UpdateHelper):
