@@ -1,7 +1,6 @@
 import contextlib
 import os
 import subprocess
-import tempfile
 
 import simplejson
 
@@ -108,17 +107,35 @@ class RepoScriptConfig(JsonConfig):
 
     def getthings(self):
         import homely.general
+        import homely.install
+        modules = [homely.general, homely.install]
         for thing in self.jsondata['prevthings']:
             class_ = thing["class"]
-            kwargs = thing["kwargs"]
-            yield getattr(homely.general, class_)(**kwargs)
+            identifiers = thing["identifiers"]
+            for module in modules:
+                if hasattr(module, class_):
+                    yield getattr(module, class_).fromidentifiers(identifiers)
+                    break
+            else:
+                raise Exception("No modules own %s" % class_)
 
     def clearthings(self):
         self.jsondata["prevthings"] = []
 
+    @staticmethod
+    def _asdict(thing):
+        return {"class": thing.__class__.__name__,
+                "identifiers": thing.identifiers}
+
     def addthing(self, thing, changes):
-        self.jsondata["prevthings"].append(thing.asdict())
+        self.jsondata["prevthings"].append(self._asdict(thing))
         self.jsondata["prevchanges"][thing.uniqueid] = changes
+
+    def removething(self, thing):
+        thingdict = self._asdict(thing)
+        prevthings = [t for t in self.jsondata["prevthings"] if t != thingdict]
+        assert (len(self.jsondata["prevthings"]) - len(prevthings)) == 1
+        del self.jsondata["prevchanges"][thing.uniqueid]
 
     def getprevchanges(self, uniqueid):
         return self.jsondata["prevchanges"].get(uniqueid, {})

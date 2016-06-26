@@ -15,18 +15,25 @@ def lineinfile(filename, contents, prefix=None, regex=None):
 
 
 class UpdateHelper(object):
-    _kwargs = None
-    uniqueid = None
+    @property
+    def identifiers(self):
+        raise NotImplementedError(
+            "%s needs to implement @property identifiers()" %
+            self.__class__.__name__)
 
-    def __init__(self, **kwargs):
-        self._kwargs = kwargs
+    @classmethod
+    def fromidentifiers(class_, identifiers):
+        prototype = "@classmethod fromidentifiers(class_, identifiers)"
+        raise NotImplementedError("%s needs to implement %s" %
+                                  (class_.__name__, prototype))
+
+    @property
+    def uniqueid(self):
+        identifiers = self.identifiers
         items = [self.__class__.__name__]
-        for key in sorted(self._kwargs):
-            items.extend([key, self._kwargs[key]])
-        self.uniqueid = repr(items)
-
-    def asdict(self):
-        return {"class": self.__class__.__name__, "kwargs": self._kwargs}
+        for key in sorted(identifiers):
+            items.extend([key, identifiers[key]])
+        return repr(items)
 
     def iscleanable(self):
         raise NotImplementedError("%s needs to implement iscleanable()" %
@@ -49,20 +56,25 @@ class UpdateHelper(object):
 
 class LineInFile(UpdateHelper):
     _filename = None
-    _contents  = None
+    _contents = None
     _findprefix = None
     _findregex = None
 
-    def __init__(self, **kwargs):
-        super(LineInFile, self).__init__(**kwargs)
-        self._filename = kwargs["filename"]
-        self._contents  = kwargs["contents"]
+    def __init__(self, filename, contents):
+        super(LineInFile, self).__init__()
+        self._filename = filename
+        self._contents = contents
 
     def findprefix(self, prefix):
         self._findprefix = prefix
 
     def findregex(self, regex):
         self._findregex = regex
+
+    @property
+    def identifiers(self):
+        return dict(filename=self._filename,
+                    contents=self._contents)
 
     def isdone(self):
         try:
