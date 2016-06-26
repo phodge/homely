@@ -61,6 +61,9 @@ class Engine(object):
         self._newthings = []
         self._newids = {}
 
+    def getrepoinfo(self):
+        return self._info
+
     def add(self, thing):
         self._newthings.append(thing)
         self._newids[thing.uniqueid] = None
@@ -73,7 +76,7 @@ class Engine(object):
                 # if the thing isn't here any more, we want to remove it
                 changes = cfg.getprevchanges(oldthing.uniqueid)
                 cfg.removething(oldthing)
-                if oldthing.isdone():
+                if oldthing.iscleanable():
                     echo("REVERSING: %s" % oldthing.descchanges())
                     oldthing.undochanges(changes)
                 cfg.writejson()
@@ -94,12 +97,26 @@ class Engine(object):
             # if the thing isn't here any more, we want to remove it
             prevchanges = cfg.getprevchanges(oldthing.uniqueid)
             cfg.removething(oldthing)
-            if oldthing.isdone():
+            if oldthing.iscleanable():
                 oldthing.undochanges(prevchanges)
             cfg.writejson()
 
 
 _ENGINE = None
 
+
+def init(info):
+    global _ENGINE
+    _ENGINE = Engine(info)
+
+
 def add(thing):
     _ENGINE.add(thing)
+
+
+def currentrepoinfo():
+    return _ENGINE.getrepoinfo()
+
+
+def execute():
+    _ENGINE.execute()

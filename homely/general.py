@@ -28,6 +28,24 @@ class UpdateHelper(object):
     def asdict(self):
         return {"class": self.__class__.__name__, "kwargs": self._kwargs}
 
+    def iscleanable(self):
+        raise NotImplementedError("%s needs to implement iscleanable()" %
+                                  (self.__class__.__name__))
+
+    def isdone(self):
+        raise NotImplementedError("%s needs to implement isdone()" %
+                                  (self.__class__.__name__))
+
+    def makechanges(self, prevchanges):
+        prototype = "makechanges(self, prevchanges)"
+        raise NotImplementedError("%s needs to implement %s" %
+                                  (self.__class__.__name__, prototype))
+
+    def undochanges(self, prevchanges):
+        prototype = "undochanges(self, prevchanges)"
+        raise NotImplementedError("%s needs to implement %s" %
+                                  (self.__class__.__name__, prototype))
+
 
 class LineInFile(UpdateHelper):
     _filename = None
