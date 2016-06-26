@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import os
-import subprocess
 import sys
 
 from click import echo, group, argument, option
@@ -8,7 +7,8 @@ from click import echo, group, argument, option
 from homely.utils import (
     RepoError, JsonError, RepoListConfig, RepoInfo, saveconfig
 )
-from homely.engine import run_update, clone_online_repo
+from homely._ui import run_update
+from homely.engine import clone_online_repo
 
 
 # FILES:
@@ -30,7 +30,8 @@ def homely():
 
 @homely.command()
 @argument('repo_path')
-def add(repo_path):
+@option('-v', '--verbose', is_flag=True)
+def add(repo_path, verbose):
     '''
     Install a new repo on your system
     '''
@@ -42,14 +43,18 @@ def add(repo_path):
     info = RepoInfo(repo_path)
     with saveconfig(RepoListConfig()) as cfg:
         cfg.add_repo(info)
-    run_update(info, pullfirst=pull_required)
+    run_update(info,
+               pullfirst=pull_required,
+               allowinteractive=True,
+               verbose=verbose)
 
 
 @homely.command()
 @argument('repo')
 def remove(repo):
     '''
-    Remove repo identified by IDENTIFIER. IDENTIFIER can be a path to a repo or a commit hash.
+    Remove repo identified by IDENTIFIER. IDENTIFIER can be a path to a repo or
+    a commit hash.
     '''
     raise Exception("TODO: remove the repo")  # noqa
 
@@ -57,7 +62,9 @@ def remove(repo):
 @homely.command()
 @argument('identifiers', nargs=-1, metavar="REPO")
 @option('--nopull', is_flag=True)
-def update(identifiers, nopull):
+@option('--nointeractive', is_flag=True)
+@option('-v', '--verbose', is_flag=True)
+def update(identifiers, nopull, nointeractive, verbose):
     '''
     Git pull the specified REPOs and then re-run them.
 
@@ -76,7 +83,10 @@ def update(identifiers, nopull):
     else:
         updatelist = list(cfg.find_all())
     for info in updatelist:
-        run_update(info, pullfirst=not nopull)
+        run_update(info,
+                   pullfirst=not nopull,
+                   allowinteractive=not nointeractive,
+                   verbose=verbose)
 
 
 @homely.command()

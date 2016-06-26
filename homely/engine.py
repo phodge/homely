@@ -1,43 +1,6 @@
-import os
-
 from click import echo
 
-from homely.utils import RepoError, RepoInfo, RepoScriptConfig
-
-import subprocess
-
-
-def heading(message):
-    echo(message)
-    echo("=" * len(message))
-    echo("")
-
-
-def run_update(info, pullfirst):
-    assert isinstance(info, RepoInfo)
-    heading("Updating from %s [%s]" % (info.localpath, info.shorthash))
-    if pullfirst:
-        # FIXME: warn if there are oustanding changes in the repo
-        # FIXME: allow the user to configure whether they want to use 'git pull' or some other
-        # command to update the repo
-        echo("%s: Retrieving updates using git pull" % info.localpath)
-        cmd = ['git', 'pull']
-        subprocess.check_call(cmd, cwd=info.localpath)
-    else:
-        # FIXME: notify the user if there are oustanding changes in the repo
-        pass
-
-    # make sure the HOMELY.py script exists
-    pyscript = os.path.join(info.localpath, 'HOMELY.py')
-    if not os.path.exists(pyscript):
-        raise RepoError("%s does not exist" % pyscript)
-
-    global _ENGINE
-    _ENGINE = Engine(info)
-    from importlib.machinery import SourceFileLoader
-    source = SourceFileLoader('__imported_by_homely', pyscript)
-    module = source.load_module()
-    _ENGINE.execute()
+from homely.utils import RepoInfo, RepoScriptConfig
 
 
 def clone_online_repo(repo_path):
