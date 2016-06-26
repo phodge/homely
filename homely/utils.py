@@ -5,12 +5,10 @@ import tempfile
 
 import simplejson
 
+from homely._errors import JsonError, RepoError
+
 CONFIG_DIR = os.path.join(os.environ.get('HOME'), '.homely')
 REPO_CONFIG_PATH = os.path.join(CONFIG_DIR, 'repos.json')
-
-
-class JsonError(Exception):
-    pass
 
 
 class JsonConfig(object):
@@ -31,16 +29,18 @@ class JsonConfig(object):
             raise JsonError("%s does not contain valid JSON" % self.jsonpath)
 
     def checkjson(self):
-        """Child classes should override this method to check if self.jsondata is sane."""
+        """
+        Child classes should override this method to check if self.jsondata is
+        sane.
+        """
         raise Exception("This method needs to be overridden")
 
     def defaultjson(self):
         """
-        Child classes should override this method to return the default json object for when the
-        config file doesn't exist yet.
+        Child classes should override this method to return the default json
+        object for when the config file doesn't exist yet.
         """
         raise Exception("This method needs to be overridden")
-
 
     def writejson(self):
         # make dirs needed for config file
@@ -48,10 +48,6 @@ class JsonConfig(object):
         # write the config file now
         with open(self.jsonpath, 'w') as f:
             f.write(simplejson.dumps(self.jsondata, indent=' ' * 4))
-
-
-class RepoError(Exception):
-    pass
 
 
 class RepoListConfig(JsonConfig):
@@ -78,7 +74,8 @@ class RepoListConfig(JsonConfig):
                 modified = True
                 break
         if not modified:
-            self.jsondata.append({"commithash": info.commithash, "localpath": info.localpath})
+            self.jsondata.append({"commithash": info.commithash,
+                                  "localpath": info.localpath})
 
     def find_repo(self, hash_or_path):
         for repo in self.jsondata:
@@ -94,7 +91,9 @@ class RepoScriptConfig(JsonConfig):
     jsondata = None
 
     def __init__(self, info):
-        self.jsonpath = os.path.join(CONFIG_DIR, 'repos', info.commithash + '.json')
+        self.jsonpath = os.path.join(CONFIG_DIR,
+                                     'repos',
+                                     info.commithash + '.json')
         super(RepoScriptConfig, self).__init__()
 
     def defaultjson(self):
@@ -146,7 +145,9 @@ class RepoInfo(object):
         if commithash is None:
             # ask git for the commit hash
             cmd = ['git', 'rev-list', '--max-parents=0', 'HEAD']
-            self.commithash = subprocess.check_output(cmd, cwd=path).rstrip().decode('utf-8')
+            self.commithash = (subprocess.check_output(cmd, cwd=path)
+                               .rstrip()
+                               .decode('utf-8'))
         else:
             self.commithash = commithash
 
@@ -165,12 +166,12 @@ def filereplacer(filepath):
     tmp:
         a file descriptor as if you had used open(tempfile.mkstemp(), 'w')
 
-    Note that upon successful exiting of the context manager, the file nominated by filepath will
-    be replaced by the temp file. This will be done using file renames, so it is as close to atomic
-    as we can get it.
+    Note that upon successful exiting of the context manager, the file
+    nominated by filepath will be replaced by the temp file. This will be done
+    using file renames, so it is as close to atomic as we can get it.
 
-    If the context block raises an exception, the original file is not changed, and the temp file
-    is deleted.
+    If the context block raises an exception, the original file is not changed,
+    and the temp file is deleted.
     """
     import shutil
     # create the tmp dir if it doesn't exist yet

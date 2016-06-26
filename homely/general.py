@@ -59,19 +59,20 @@ class LineInFile(UpdateHelper):
     def descchanges(self):
         return "Adding line to %s: %s" % (self._filename, self._contents)
 
-
     def makechanges(self, prevchanges):
         changes = {
             "old_line": None,
         }
 
         if self._findprefix:
-            matchline = lambda line: line.startswith(self._findprefix)
+            def matchline(line):
+                return line.startswith(self._findprefix)
         elif self._findregex:
             # FIXME: implement regex matching
             raise Exception("FIXME: implement regex")  # noqa
         else:
-            matchline = lambda line: line.rstrip() == self._contents
+            def matchline(line):
+                return line.rstrip() == self._contents
 
         with filereplacer(self._filename) as (tmp, orig):
             modified = False
@@ -87,8 +88,8 @@ class LineInFile(UpdateHelper):
                             changes["old_line"] = line.rstrip()
                     else:
                         tmp.write(line)
-            # if we didn't write out the new line by replacing parts of the original, then we'll
-            # just have to pop the new line on the end
+            # if we didn't write out the new line by replacing parts of the
+            # original, then we'll just have to pop the new line on the end
             if not modified:
                 tmp.write(self._contents)
                 # FIXME: respect the existing lines' line endings!
