@@ -4,7 +4,7 @@ import subprocess
 from importlib.machinery import SourceFileLoader
 
 from homely._errors import RepoError, HelperError
-from homely.utils import RepoInfo
+from homely.utils import RepoInfo, RepoScriptConfig
 import homely.engine
 
 
@@ -71,3 +71,66 @@ def isinteractive():
     provide input interactively. Otherwise, False is returned.
     '''
     return _ALLOWINTERACTIVE and sys.__stdin__.isatty() and sys.stderr.isatty()
+
+
+def yesnooption(name, prompt, default=None):
+    '''
+    Ask the user for a yes/no answer to question [prompt]. Store the result as
+    option [name].
+
+    If [default] is provided, it will be displayed as the recommended answer.
+    If the user doesn't provide an answer, then [default] will be used.
+
+    If the user has already answered this question, the previous value
+    (retrieved using the [name]) will be used as the default answer.
+    '''
+    if default is not None:
+        assert default in (True, False)
+
+    info = homely.engine.currentrepoinfo()
+    cfg = RepoScriptConfig(info)
+
+    previous_value = cfg.getquestionanswer(name)
+    if previous_value is not None:
+        if previous_value not in (True, False):
+            # FIXME: issue a warning about the old value of [name] not being
+            # compatible
+            previous_value = None
+
+    if not isinteractive():
+        # non-interactive - return the previous value
+        if previous_value is None:
+            # no value has been provided ... we can't proceed
+            raise HelperError("Run homely update manually"
+                              " to answer the question: '%s'" % prompt)
+        return previous_value
+
+    while True:
+        if previous_value is True:
+            options = "Y/n"
+        elif previous_value is False:
+            options = "y/N"
+        else:
+            options = "y/n"
+
+        rec = ""
+        if default is not None:
+            rec = "[recommended=%s] " % ("Y" if default else "N")
+
+        input_ = input("[%s] %s %s[%s]: " % (name, prompt, rec, options))
+        if input_ == "" and previous_value is not None:
+            choice = previous_value
+        elif input_.lower() in ("y", "yes"):
+            choice = True
+        elif input_.lower() in ("n", "no"):
+            choice = False
+        else:
+            # if the user's input is invalid, ask them again
+            if input_ == "":
+                sys.stderr.write("ERROR: An answer is required\n")
+            else:
+                sys.stderr.write("ERROR: Invalid answer: %r\n" % (input_, ))
+            continue
+        cfg.setquestionanswer(name, choice)
+        cfg.writejson()
+        return choice

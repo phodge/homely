@@ -100,6 +100,7 @@ class RepoScriptConfig(JsonConfig):
             # a list of things that were installed on the last run
             "prevthings": [],
             "prevchanges": {},
+            "questions": {},
         }
 
     def checkjson(self):
@@ -139,6 +140,12 @@ class RepoScriptConfig(JsonConfig):
 
     def getprevchanges(self, uniqueid):
         return self.jsondata["prevchanges"].get(uniqueid, {})
+
+    def getquestionanswer(self, name):
+        return self.jsondata["questions"].get(name, None)
+
+    def setquestionanswer(self, name, value):
+        self.jsondata["questions"][name] = value
 
 
 @contextlib.contextmanager
