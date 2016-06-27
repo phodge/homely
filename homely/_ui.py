@@ -5,7 +5,7 @@ from importlib.machinery import SourceFileLoader
 
 from homely._errors import RepoError, HelperError
 from homely._utils import RepoInfo, RepoScriptConfig
-import homely.engine
+import homely._engine
 
 
 _ALLOWINTERACTIVE = True
@@ -55,11 +55,11 @@ def run_update(info, pullfirst, allowinteractive, verbose=False):
     if not os.path.exists(pyscript):
         raise RepoError("%s does not exist" % pyscript)
 
-    homely.engine.init(info)
+    homely._engine.init(info)
     source = SourceFileLoader('__imported_by_homely', pyscript)
     try:
         source.load_module()
-        homely.engine.execute()
+        homely._engine.execute()
     except HelperError as err:
         sys.stderr.write("ERROR: %s\n" % str(err))
         sys.exit(1)
@@ -87,7 +87,7 @@ def yesnooption(name, prompt, default=None):
     if default is not None:
         assert default in (True, False)
 
-    info = homely.engine.currentrepoinfo()
+    info = homely._engine.currentrepoinfo()
     cfg = RepoScriptConfig(info)
 
     previous_value = cfg.getquestionanswer(name)

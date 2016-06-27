@@ -8,7 +8,7 @@ from homely._utils import (
     RepoError, JsonError, RepoListConfig, RepoInfo, saveconfig
 )
 from homely._ui import run_update
-from homely.engine import clone_online_repo
+from homely._engine import clone_online_repo
 
 
 # FILES:
