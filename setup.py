@@ -8,6 +8,6 @@ setup(
     install_requires=['simplejson', 'click'],
     entry_points='''
         [console_scripts]
-        homely=homely.scripts.homely:main
+        homely=homely._scripts.homely:main
     ''',
 )
