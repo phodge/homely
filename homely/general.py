@@ -2,7 +2,7 @@ import os
 
 from homely._errors import HelperError
 from homely.engine import add
-from homely.utils import filereplacer
+from homely._utils import filereplacer
 
 
 def mkdir(path):

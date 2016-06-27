@@ -4,7 +4,7 @@ import sys
 
 from click import echo, group, argument, option
 
-from homely.utils import (
+from homely._utils import (
     RepoError, JsonError, RepoListConfig, RepoInfo, saveconfig
 )
 from homely._ui import run_update

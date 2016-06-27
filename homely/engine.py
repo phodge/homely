@@ -1,6 +1,6 @@
 from click import echo
 
-from homely.utils import RepoInfo, RepoScriptConfig
+from homely._utils import RepoInfo, RepoScriptConfig
 
 
 def clone_online_repo(repo_path):

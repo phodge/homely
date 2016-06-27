@@ -4,7 +4,7 @@ import subprocess
 from importlib.machinery import SourceFileLoader
 
 from homely._errors import RepoError, HelperError
-from homely.utils import RepoInfo, RepoScriptConfig
+from homely._utils import RepoInfo, RepoScriptConfig
 import homely.engine
 
 
