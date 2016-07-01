@@ -72,6 +72,9 @@ class Engine(object):
                 cfg.writejson()
 
         cfg.clearthings()
+        for thing in self._newthings:
+            cfg.addthing(thing)
+        cfg.writejson()
 
         prevsection = None
 
@@ -79,14 +82,18 @@ class Engine(object):
             # if we're only doing some sections, make sure this thing is in the
             # required section
             section = thing.getsection()
-            if self._only and section not in self._only:
-                continue
-            if self._skip and section in self._skip:
-                continue
-
             if section != prevsection:
                 echo("Entering section %r" % section)
             prevsection = section
+
+            skip = False
+            if self._only and section not in self._only:
+                skip = True
+            if self._skip and section in self._skip:
+                skip = True
+            if skip:
+                echo("SKIPPING: %s" % thing.descchanges())
+                continue
 
             if thing.isdone():
                 echo("ALREADY DONE: %s" % thing.descchanges())
@@ -94,7 +101,7 @@ class Engine(object):
 
             echo("DOING: %s" % thing.descchanges())
             changes = thing.makechanges(cfg.getprevchanges(thing.uniqueid))
-            cfg.addthing(thing, changes)
+            cfg.setchanges(thing.uniqueid, changes)
             cfg.writejson()
 
     def rollback(self):

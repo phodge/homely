@@ -122,21 +122,25 @@ class RepoScriptConfig(JsonConfig):
 
     def clearthings(self):
         self.jsondata["prevthings"] = []
+        return self.jsondata["prevchanges"]
 
     @staticmethod
     def _asdict(thing):
         return {"class": thing.__class__.__name__,
                 "identifiers": thing.identifiers}
 
-    def addthing(self, thing, changes):
+    def addthing(self, thing):
         self.jsondata["prevthings"].append(self._asdict(thing))
-        self.jsondata["prevchanges"][thing.uniqueid] = changes
+        self.jsondata["prevchanges"].setdefault(thing.uniqueid, {})
 
     def removething(self, thing):
         thingdict = self._asdict(thing)
         prevthings = [t for t in self.jsondata["prevthings"] if t != thingdict]
         assert (len(self.jsondata["prevthings"]) - len(prevthings)) == 1
         del self.jsondata["prevchanges"][thing.uniqueid]
+
+    def setchanges(self, uniqueid, changes):
+        self.jsondata["prevchanges"][uniqueid] = changes
 
     def getprevchanges(self, uniqueid):
         return self.jsondata["prevchanges"].get(uniqueid, {})
