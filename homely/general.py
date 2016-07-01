@@ -1,13 +1,17 @@
 import os
 
 from homely._errors import HelperError
-from homely._engine import add
+from homely._engine import getengine
 from homely._utils import filereplacer
+
+
+def add(updatehelper):
+    getengine().add(updatehelper)
 
 
 def mkdir(path):
     path = os.path.expanduser(path)
-    add(MakeDir(path=path))
+    getengine().add(MakeDir(path=path))
 
 
 def lineinfile(filename, contents, prefix=None, regex=None):
@@ -17,7 +21,7 @@ def lineinfile(filename, contents, prefix=None, regex=None):
         obj.findprefix(prefix)
     elif regex is not None:
         obj.findregex(regex)
-    add(obj)
+    getengine().add(obj)
 
 
 class UpdateHelper(object):

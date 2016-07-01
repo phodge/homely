@@ -48,8 +48,10 @@ class Engine(object):
 
         for thing in self._newthings:
             if thing.isdone():
+                echo("ALREADY DONE: %s" % thing.descchanges())
                 continue
-            echo(thing.descchanges())
+
+            echo("DOING: %s" % thing.descchanges())
             changes = thing.makechanges(cfg.getprevchanges(thing.uniqueid))
             cfg.addthing(thing, changes)
             cfg.writejson()
@@ -68,18 +70,11 @@ class Engine(object):
 _ENGINE = None
 
 
-def init(info):
+def getengine():
+    return _ENGINE
+
+
+def initengine(info):
     global _ENGINE
     _ENGINE = Engine(info)
-
-
-def add(thing):
-    _ENGINE.add(thing)
-
-
-def currentrepoinfo():
-    return _ENGINE.getrepoinfo()
-
-
-def execute():
-    _ENGINE.execute()
+    return _ENGINE
