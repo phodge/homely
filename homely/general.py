@@ -5,6 +5,7 @@ import contextlib
 from homely._errors import HelperError
 from homely._engine import getengine
 from homely._utils import filereplacer
+from homely._ui import warning
 
 
 def add(updatehelper):
@@ -98,6 +99,9 @@ class MakeDir(UpdateHelper):
     def fromidentifiers(class_, identifiers):
         return class_(identifiers["path"])
 
+    def iscleanable(self):
+        return os.path.isdir(self._path)
+
     def isdone(self):
         return os.path.isdir(self._path)
 
@@ -130,10 +134,13 @@ class MakeDir(UpdateHelper):
         return changes
 
     def undochanges(self, prevchanges):
-        # TODO: rmdir the dirs that were created last time
-        import pprint
-        print('prevchanges = ' + pprint.pformat(prevchanges))  # noqa TODO
-        raise Exception("TODO: finish this")  # noqa
+        if self._path in prevchanges["dirs_created"]:
+            # ensure the folder is empty before deleting it
+            if len(os.listdir(self._path)):
+                warning("Refusing to clean up non-empty folder %s" %
+                        self._path)
+            else:
+                os.rmdir(self._path)
 
 
 class LineInFile(UpdateHelper):
@@ -157,6 +164,10 @@ class LineInFile(UpdateHelper):
     def identifiers(self):
         return dict(filename=self._filename,
                     contents=self._contents)
+
+    @classmethod
+    def fromidentifiers(class_, identifiers):
+        return class_(identifiers["filename"], identifiers["contents"])
 
     def isdone(self):
         try:
