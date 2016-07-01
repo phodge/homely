@@ -37,6 +37,18 @@ def lineinfile(filename, contents, prefix=None, regex=None):
     getengine().add(obj)
 
 
+def symlink(source, dest=None):
+    # if [source] doesn't start with '/', assume it is relative to the repo
+    if not source.startswith('/'):
+        info = getengine().getrepoinfo()
+        source = os.path.join(info.localpath, source)
+    # if [dest] is omited, assume the symlink goes into $HOME/ at the top level
+    if dest is None:
+        dest = os.path.join(os.environ.get('HOME'), os.path.basename(source))
+    helper = MakeSymlink(source, dest)
+    getengine().add(helper)
+
+
 class UpdateHelper(object):
     _section = None
 
@@ -141,6 +153,58 @@ class MakeDir(UpdateHelper):
                         self._path)
             else:
                 os.rmdir(self._path)
+
+
+class MakeSymlink(UpdateHelper):
+    def __init__(self, source, dest):
+        self._dest = dest
+        self._source = source
+
+    @property
+    def identifiers(self):
+        return dict(source=self._source, dest=self._dest)
+
+    @classmethod
+    def fromidentifiers(class_, identifiers):
+        return class_(identifiers['source'], identifiers["dest"])
+
+    def iscleanable(self):
+        return os.path.islink(self._dest)
+
+    def isdone(self):
+        return (os.path.islink(self._dest) and
+                os.readlink(self._dest) == self._source)
+
+    def descchanges(self):
+        return "Creating symlink %s -> %s" % (self._dest, self._source)
+
+    def makechanges(self, prevchanges):
+        if os.path.islink(self._dest):
+            current = os.readlink(self._dest)
+            if current == self._source:
+                return prevchanges
+            raise HelperError("%s is already a symlink to %s" %
+                              (self._dest, current))
+
+        if os.path.exists(self._dest):
+            raise HelperError("Can't create symlink %s: a file already exists"
+                              " at that path" % (self._dest, current))
+
+        changes = {
+            "links_created": prevchanges.get("links_created", []),
+        }
+        os.symlink(self._source, self._dest)
+        changes["links_created"].append([self._source, self._dest])
+        return changes
+
+    def undochanges(self, prevchanges):
+        if not os.path.islink(self._dest):
+            return
+        if os.readlink(self._dest) == self._source:
+            os.unlink(self._dest)
+        else:
+            warning("Refusing to clean up symlink %s which now points to"
+                    " %s" % (self._dest, os.readlink(self._dest)))
 
 
 class LineInFile(UpdateHelper):
