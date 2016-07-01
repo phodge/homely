@@ -74,6 +74,10 @@ class MakeDir(UpdateHelper):
     def identifiers(self):
         return dict(path=self._path)
 
+    @classmethod
+    def fromidentifiers(class_, identifiers):
+        return class_(identifiers["path"])
+
     def isdone(self):
         return os.path.isdir(self._path)
 
