@@ -1,5 +1,6 @@
 from click import echo
 
+from homely._errors import HelperError
 from homely._utils import RepoInfo, RepoScriptConfig
 
 
@@ -17,12 +18,17 @@ class Engine(object):
     _oldthings = None
     _newthings = None
     _newids = None
+    _section = []
+    _sections_seen = None
+    _only = None
+    _skip = None
 
     def __init__(self, info):
         assert isinstance(info, RepoInfo)
         self._info = info
         self._newthings = []
         self._newids = {}
+        self._sections_seen = set()
 
     def getrepoinfo(self):
         return self._info
@@ -30,6 +36,27 @@ class Engine(object):
     def add(self, thing):
         self._newthings.append(thing)
         self._newids[thing.uniqueid] = None
+        if len(self._section):
+            thing.setsection('/'.join(self._section))
+
+    def pushsection(self, name):
+        self._section.append(name)
+        self._sections_seen.add('/'.join(self._section))
+
+    def popsection(self, name):
+        assert self._section.pop() == name
+
+    def onlysections(self, sections):
+        self._only = sections
+        for s in sections:
+            if s not in self._sections_seen:
+                raise HelperError("Unknown section %r" % s)
+
+    def skipsections(self, sections):
+        self._skip = sections
+        for s in sections:
+            if s not in self._sections_seen:
+                raise HelperError("Unknown section %r" % s)
 
     def execute(self):
         # go through things that were seen in this config last time
@@ -46,7 +73,21 @@ class Engine(object):
 
         cfg.clearthings()
 
+        prevsection = None
+
         for thing in self._newthings:
+            # if we're only doing some sections, make sure this thing is in the
+            # required section
+            section = thing.getsection()
+            if self._only and section not in self._only:
+                continue
+            if self._skip and section in self._skip:
+                continue
+
+            if section != prevsection:
+                echo("Entering section %r" % section)
+            prevsection = section
+
             if thing.isdone():
                 echo("ALREADY DONE: %s" % thing.descchanges())
                 continue

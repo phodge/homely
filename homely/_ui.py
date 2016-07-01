@@ -32,7 +32,8 @@ def warning(message):
     sys.stderr.write("\n")
 
 
-def run_update(info, pullfirst, allowinteractive, verbose=False):
+def run_update(info, pullfirst, allowinteractive,
+               verbose=False, only=None, skip=None):
     global _ALLOWINTERACTIVE, _VERBOSE
     _VERBOSE = verbose
     _ALLOWINTERACTIVE = allowinteractive
@@ -59,6 +60,10 @@ def run_update(info, pullfirst, allowinteractive, verbose=False):
     source = SourceFileLoader('__imported_by_homely', pyscript)
     try:
         source.load_module()
+        if only is not None and len(only):
+            engine.onlysections(only)
+        if skip is not None and len(skip):
+            engine.skipsections(skip)
         engine.execute()
     except HelperError as err:
         sys.stderr.write("ERROR: %s\n" % str(err))

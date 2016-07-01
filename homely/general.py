@@ -1,4 +1,6 @@
 import os
+import re
+import contextlib
 
 from homely._errors import HelperError
 from homely._engine import getengine
@@ -7,6 +9,16 @@ from homely._utils import filereplacer
 
 def add(updatehelper):
     getengine().add(updatehelper)
+
+
+@contextlib.contextmanager
+def section(name):
+    if re.match('[^A-Za-z0-9_:\-\[\]<>]', name):
+        raise HelperError("%r is not a valid section name" % name)
+
+    getengine().pushsection(name)
+    yield
+    getengine().popsection(name)
 
 
 def mkdir(path):
@@ -25,6 +37,8 @@ def lineinfile(filename, contents, prefix=None, regex=None):
 
 
 class UpdateHelper(object):
+    _section = None
+
     @property
     def identifiers(self):
         raise NotImplementedError(
@@ -44,6 +58,12 @@ class UpdateHelper(object):
         for key in sorted(identifiers):
             items.extend([key, identifiers[key]])
         return repr(items)
+
+    def setsection(self, name):
+        self._section = name
+
+    def getsection(self):
+        return self._section
 
     def iscleanable(self):
         raise NotImplementedError("%s needs to implement iscleanable()" %
