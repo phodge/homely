@@ -10,6 +10,10 @@ CONFIG_DIR = os.path.join(os.environ.get('HOME'), '.homely')
 REPO_CONFIG_PATH = os.path.join(CONFIG_DIR, 'repos.json')
 
 
+def _resolve(path):
+    return os.path.realpath(os.path.expanduser(path))
+
+
 class JsonConfig(object):
     jsonpath = None
     jsondata = None
@@ -53,6 +57,19 @@ class RepoListConfig(JsonConfig):
     jsonpath = REPO_CONFIG_PATH
     jsondata = None
 
+    def __init__(self):
+        super(RepoListConfig, self).__init__()
+
+        # fix any paths that have changed
+        modified = False
+        for entry in self.jsondata:
+            resolved = _resolve(entry['localpath'])
+            if resolved != entry['localpath']:
+                entry['localpath'] = resolved
+                modified = True
+        if modified:
+            self.writejson()
+
     def defaultjson(self):
         return []
 
@@ -69,7 +86,7 @@ class RepoListConfig(JsonConfig):
         for repo in self.jsondata:
             if repo["commithash"] == commithash:
                 # change the local path in the config
-                repo["localpath"] = info.localpath
+                repo["localpath"] = _resolve(info.localpath)
                 modified = True
                 break
         if not modified:
@@ -78,7 +95,12 @@ class RepoListConfig(JsonConfig):
 
     def find_repo(self, hash_or_path):
         for repo in self.jsondata:
-            if hash_or_path in (repo["commithash"], repo["localpath"]):
+            match = False
+            if hash_or_path == repo["commithash"]:
+                match = True
+            elif _resolve(hash_or_path) == _resolve(repo["localpath"]):
+                match = True
+            if match:
                 return RepoInfo(repo["localpath"], repo["commithash"])
 
     def find_all(self):
@@ -164,6 +186,8 @@ class RepoInfo(object):
     commithash = None
 
     def __init__(self, path, commithash=None):
+        path = _resolve(path)
+
         # make sure the path is valid
         if not os.path.exists(path):
             raise RepoError("%s does not exist" % path)
