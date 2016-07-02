@@ -14,6 +14,33 @@ def _resolve(path):
     return os.path.realpath(os.path.expanduser(path))
 
 
+class GitHubURL(object):
+    @classmethod
+    def loadfromurl(class_, url):
+        import re
+        m = re.match('^(https://|git@)github\.com[/:]([^/]+)/([^/]+)', url)
+        if not m:
+            return
+        _, user, name = m.groups()
+        scheme = 'https' if url.startswith('https://') else 'ssh'
+        if name.endswith('.git'):
+            name = name[0:-4]
+        return class_(user, name, scheme)
+
+    def __init__(self, user, name, scheme):
+        self._user = user
+        self._name = name
+
+    def getname(self):
+        return self._name
+
+    def ashttps(self):
+        return 'https://github.com/%s/%s.git' % (self._user, self._name)
+
+    def asssh(self):
+        return 'git@github.com:%s/%s.git' % (self._user, self._name)
+
+
 class JsonConfig(object):
     jsonpath = None
     jsondata = None
@@ -87,11 +114,13 @@ class RepoListConfig(JsonConfig):
             if repo["commithash"] == commithash:
                 # change the local path in the config
                 repo["localpath"] = _resolve(info.localpath)
+                if info.githuburl is not None:
+                    repo["githuburl"] = info.githuburl.ashttps()
                 modified = True
                 break
         if not modified:
-            self.jsondata.append({"commithash": info.commithash,
-                                  "localpath": info.localpath})
+            self.jsondata.append(info.asdict())
+
 
     def find_repo(self, hash_or_path):
         for repo in self.jsondata:
@@ -101,11 +130,18 @@ class RepoListConfig(JsonConfig):
             elif _resolve(hash_or_path) == _resolve(repo["localpath"]):
                 match = True
             if match:
-                return RepoInfo(repo["localpath"], repo["commithash"])
+                return RepoInfo.fromdict(repo)
+
+    def find_by_ghurl(self, ghurl):
+        assert isinstance(ghurl, GitHubURL)
+        httpsurl = ghurl.ashttps()
+        for repo in self.jsondata:
+            if httpsurl == repo.get("githuburl"):
+                return RepoInfo.fromdict(repo)
 
     def find_all(self):
         for repo in self.jsondata:
-            yield RepoInfo(repo["localpath"], repo["commithash"])
+            yield RepoInfo.fromdict(repo)
 
 
 class RepoScriptConfig(JsonConfig):
@@ -184,8 +220,9 @@ def saveconfig(cfg):
 class RepoInfo(object):
     localpath = None
     commithash = None
+    githuburl = None
 
-    def __init__(self, path, commithash=None):
+    def __init__(self, path, commithash=None, githuburl=None):
         path = _resolve(path)
 
         # make sure the path is valid
@@ -196,12 +233,36 @@ class RepoInfo(object):
         self.localpath = path
         if commithash is None:
             # ask git for the commit hash
-            cmd = ['git', 'rev-list', '--max-parents=0', 'HEAD']
-            self.commithash = (subprocess.check_output(cmd, cwd=path)
-                               .rstrip()
-                               .decode('utf-8'))
+            self.commithash = self.getfirsthash(path)
         else:
             self.commithash = commithash
+        if githuburl is not None:
+            assert isinstance(githuburl, GitHubURL)
+        self.githuburl = githuburl
+
+    @classmethod
+    def fromdict(class_, data):
+        ret = class_(data["localpath"], data.get("commithash"))
+        githuburl = data.get("githuburl")
+        if githuburl is not None:
+            ret.githuburl = GitHubURL.loadfromurl(githuburl)
+            assert ret.githuburl is not None
+        return ret
+
+    def asdict(self):
+        ret = {"localpath": self.localpath}
+        if self.commithash is not None:
+            ret["commithash"] = self.commithash
+        if self.githuburl is not None:
+            ret["githuburl"] = self.githuburl.ashttps()
+        return ret
+
+    @staticmethod
+    def getfirsthash(localpath):
+        cmd = ['git', 'rev-list', '--max-parents=0', 'HEAD']
+        return (subprocess.check_output(cmd, cwd=localpath)
+                .rstrip()
+                .decode('utf-8'))
 
     @property
     def shorthash(self):
