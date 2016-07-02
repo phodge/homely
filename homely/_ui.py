@@ -78,6 +78,35 @@ def isinteractive():
     return _ALLOWINTERACTIVE and sys.__stdin__.isatty() and sys.stderr.isatty()
 
 
+
+
+def yesno(prompt, default, recommended=None):
+    if default is True:
+        options = "Y/n"
+    elif default is False:
+        options = "y/N"
+    else:
+        options = "y/n"
+
+    rec = ""
+    if recommended is not None:
+        rec = "[recommended=%s] " % ("Y" if recommended else "N")
+
+    while True:
+        input_ = input("%s %s[%s]: " % (prompt, rec, options))
+        if input_ == "" and default is not None:
+            return default
+        if input_.lower() in ("y", "yes"):
+            return True
+        if input_.lower() in ("n", "no"):
+            return False
+        # if the user's input is invalid, ask them again
+        if input_ == "":
+            sys.stderr.write("ERROR: An answer is required\n")
+        else:
+            sys.stderr.write("ERROR: Invalid answer: %r\n" % (input_, ))
+
+
 def yesnooption(name, prompt, default=None):
     '''
     Ask the user for a yes/no answer to question [prompt]. Store the result as
@@ -110,32 +139,7 @@ def yesnooption(name, prompt, default=None):
                               " to answer the question: '%s'" % prompt)
         return previous_value
 
-    while True:
-        if previous_value is True:
-            options = "Y/n"
-        elif previous_value is False:
-            options = "y/N"
-        else:
-            options = "y/n"
-
-        rec = ""
-        if default is not None:
-            rec = "[recommended=%s] " % ("Y" if default else "N")
-
-        input_ = input("[%s] %s %s[%s]: " % (name, prompt, rec, options))
-        if input_ == "" and previous_value is not None:
-            choice = previous_value
-        elif input_.lower() in ("y", "yes"):
-            choice = True
-        elif input_.lower() in ("n", "no"):
-            choice = False
-        else:
-            # if the user's input is invalid, ask them again
-            if input_ == "":
-                sys.stderr.write("ERROR: An answer is required\n")
-            else:
-                sys.stderr.write("ERROR: Invalid answer: %r\n" % (input_, ))
-            continue
-        cfg.setquestionanswer(name, choice)
-        cfg.writejson()
-        return choice
+    choice = yesno("[%s] %s" % (name, prompt), previous_value, default)
+    cfg.setquestionanswer(name, choice)
+    cfg.writejson()
+    return choice
