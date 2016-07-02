@@ -121,6 +121,12 @@ class RepoListConfig(JsonConfig):
         if not modified:
             self.jsondata.append(info.asdict())
 
+    def remove_repo(self, commithash):
+        newdata = []
+        for repo in self.jsondata:
+            if repo["commithash"] != commithash:
+                newdata.append(repo)
+        self.jsondata = newdata
 
     def find_repo(self, hash_or_path):
         for repo in self.jsondata:
@@ -152,6 +158,11 @@ class RepoScriptConfig(JsonConfig):
                                      'repos',
                                      info.commithash + '.json')
         super(RepoScriptConfig, self).__init__()
+
+    @staticmethod
+    def remove(info):
+        assert isinstance(info, RepoInfo)
+        os.unlink(os.path.join(CONFIG_DIR, 'repos', info.commithash + '.json'))
 
     def defaultjson(self):
         return {

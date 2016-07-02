@@ -2,12 +2,14 @@
 import os
 import sys
 
-from click import echo, group, argument, option, UsageError
+from click import echo, group, argument, option, UsageError, ClickException
 
 from homely._utils import (
-    RepoError, JsonError, RepoListConfig, saveconfig
+    RepoError, JsonError, RepoListConfig, RepoScriptConfig, saveconfig,
+    GitHubURL
 )
-from homely._ui import run_update, addfromurl, addfromlocal
+from homely._ui import run_update, addfromurl, addfromlocal, yesno
+from homely._engine import Engine
 
 
 # FILES:
@@ -78,13 +80,42 @@ def add(repo_path, dest_path, verbose, interactive, only, skip):
 
 
 @homely.command()
-@argument('repo')
-def remove(repo):
+@argument('identifier')
+def remove(identifier):
     '''
     Remove repo identified by IDENTIFIER. IDENTIFIER can be a path to a repo or
     a commit hash.
     '''
-    raise Exception("TODO: remove the repo")  # noqa
+    cfg = RepoListConfig()
+    info = cfg.find_repo(identifier)
+    if info is None:
+        ghurl = GitHubURL.loadfromurl(identifier)
+        if ghurl:
+            info = cfg.find_by_ghurl(ghurl)
+    if info is None:
+        raise ClickException("No repos matching %r" % identifier)
+
+    prompt = "Are you sure you want to remove repo %s?" % info.localpath
+    if not yesno(prompt, False):
+        # FIXME: I think click library has a specific exception for this
+        raise ClickException("Aborted")
+
+    # try and uninstall the repo
+    do_cleanup = False
+    engine = Engine(info)
+    try:
+        engine.rollback()
+        do_cleanup = True
+    except:
+        prompt = "Cleanup failed - would you like to forget this repo anyway?"
+        do_cleanup = yesno(prompt, False, False)
+        raise
+    finally:
+        if do_cleanup:
+            # update the config ...
+            with saveconfig(RepoListConfig()) as cfg:
+                cfg.remove_repo(info.commithash)
+            RepoScriptConfig.remove(info)
 
 
 @homely.command()
