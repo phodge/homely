@@ -12,7 +12,7 @@ _ALLOWINTERACTIVE = True
 _VERBOSE = False
 
 
-def verbose(message):
+def verbecho(message):
     if _VERBOSE:
         sys.stdout.write("INFO: ")
         sys.stdout.write(message)

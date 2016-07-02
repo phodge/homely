@@ -5,7 +5,7 @@ from click import echo
 
 from homely._errors import HelperError
 from homely.general import UpdateHelper
-from homely._ui import verbose
+from homely._ui import verbecho
 
 
 class InstallFromSource(UpdateHelper):
@@ -129,13 +129,13 @@ class InstallFromSource(UpdateHelper):
         newsymlinks = set([dest for _, dest in self._symlinks])
         for path in prevchanges.get("symlinks_made", []):
             if os.path.islink(path) and path not in newsymlinks:
-                verbose("Cleaning up symlink: %s" % path)
+                verbecho("Cleaning up symlink: %s" % path)
                 os.unlink(path)
 
         # create new symlinks
         changes["symlinks_made"] = []
         for source, dest in self._symlinks:
-            verbose("Ensure symlink exists: %s -> %s" % (source, dest))
+            verbecho("Ensure symlink exists: %s -> %s" % (source, dest))
             if os.path.islink(dest):
                 target = os.readlink(dest)
                 if os.path.realpath(target) != os.path.realpath(source):
@@ -152,5 +152,5 @@ class InstallFromSource(UpdateHelper):
     def undochanges(self, prevchanges):
         for dest in prevchanges["symlinks_made"]:
             if os.path.islink(dest):
-                verbose("Cleaning up symlink: %s" % dest)
+                verbecho("Cleaning up symlink: %s" % dest)
                 os.unlink(dest)
