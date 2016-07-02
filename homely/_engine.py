@@ -4,15 +4,6 @@ from homely._errors import HelperError
 from homely._utils import RepoInfo, RepoScriptConfig
 
 
-def clone_online_repo(repo_path):
-    assert len(repo_path)
-    raise Exception("TODO: git clone the repo")  # noqa
-    raise Exception("TODO: return the path to the local copy of the repo")  # noqa
-    # FIXME: check to see if the repo already exists locally
-    # FIXME: suggest a good default location for the local clone of the repo
-    return local_path
-
-
 class Engine(object):
     _info = None
     _oldthings = None

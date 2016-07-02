@@ -8,7 +8,6 @@ from homely._utils import (
     RepoError, JsonError, RepoListConfig, RepoInfo, saveconfig
 )
 from homely._ui import run_update
-from homely._engine import clone_online_repo
 
 
 # FILES:
@@ -58,7 +57,7 @@ def add(repo_path, verbose, interactive, only, skip):
     '''
     pull_required = True
     if repo_path.startswith('ssh://') or repo_path.startswith('https://'):
-        repo_path = clone_online_repo(repo_path)
+        raise Exception("TODO")
         pull_required = False
     # add the local repo to our config
     info = RepoInfo(repo_path)
