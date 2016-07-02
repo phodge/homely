@@ -5,9 +5,9 @@ import sys
 from click import echo, group, argument, option, UsageError
 
 from homely._utils import (
-    RepoError, JsonError, RepoListConfig, RepoInfo, saveconfig
+    RepoError, JsonError, RepoListConfig, saveconfig
 )
-from homely._ui import run_update
+from homely._ui import run_update, addfromurl, addfromlocal
 
 
 # FILES:
@@ -49,22 +49,28 @@ def _noint_only_skip(command):
 
 @homely.command()
 @argument('repo_path')
+@argument('dest_path', required=False)
 @_verbose
 @_noint_only_skip
-def add(repo_path, verbose, interactive, only, skip):
+def add(repo_path, dest_path, verbose, interactive, only, skip):
     '''
     Install a new repo on your system
     '''
-    pull_required = True
-    if repo_path.startswith('ssh://') or repo_path.startswith('https://'):
-        raise Exception("TODO")
-        pull_required = False
-    # add the local repo to our config
-    info = RepoInfo(repo_path)
+    isurl = (repo_path.startswith('ssh://')
+             or repo_path.startswith('https://')
+             or repo_path.startswith('git@'))
+    if isurl:
+        info = addfromurl(repo_path, dest_path, verbose, interactive)
+    elif dest_path:
+        raise UsageError("DEST_PATH is only for repos hosted online")
+    else:
+        info = addfromlocal(repo_path, verbose, interactive)
+    if info is None:
+        return
     with saveconfig(RepoListConfig()) as cfg:
         cfg.add_repo(info)
     run_update(info,
-               pullfirst=pull_required,
+               pullfirst=not isurl,
                allowinteractive=interactive,
                verbose=verbose,
                only=only,

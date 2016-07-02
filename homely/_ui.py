@@ -1,10 +1,14 @@
 import os
-import sys
 import subprocess
+import sys
+import tempfile
+
 from importlib.machinery import SourceFileLoader
 
+from click import echo, ClickException
+
 from homely._errors import RepoError, HelperError
-from homely._utils import RepoInfo, RepoScriptConfig
+from homely._utils import RepoInfo, RepoListConfig, RepoScriptConfig, GitHubURL
 from homely._engine import initengine, getengine
 
 
@@ -13,6 +17,7 @@ _VERBOSE = False
 
 
 def verbecho(message):
+    # FIXME: handling of verbecho() is a horrible mess
     if _VERBOSE:
         sys.stdout.write("INFO: ")
         sys.stdout.write(message)
@@ -78,6 +83,108 @@ def isinteractive():
     return _ALLOWINTERACTIVE and sys.__stdin__.isatty() and sys.stderr.isatty()
 
 
+def addfromurl(repo_path, dest_path, verbose, interactive):
+    rlist = RepoListConfig()
+
+    # is it a github url?
+    ghurl = GitHubURL.loadfromurl(repo_path)
+    clone_path = repo_path
+    if ghurl:
+        # abort if we have already added this repo before
+        match = rlist.find_by_ghurl(ghurl)
+        if match:
+            echo("Repo [%s] from %s has already been added" %
+                 (match.shorthash, match.githuburl.ashttps()))
+            return
+
+        clone_path = repo_path
+
+    # figure out where the temporary clone should be moved to
+    confirm_path = False
+    if dest_path is None:
+        if ghurl:
+            base = ghurl.getname()
+        else:
+            base = os.path.basename(repo_path.rstrip('/'))
+            if base.endswith('.git'):
+                base = base[0:-4]
+        dest_path = os.path.join(os.environ.get('HOME'), base)
+        confirm_path = interactive
+
+    tmpdir = None
+    try:
+        tmpdir = tempfile.TemporaryDirectory()
+
+        # clone the repo to a temporary location
+        verbecho("Cloning %s to %s")
+        subprocess.check_call(['git', 'clone', clone_path, tmpdir.name])
+
+        # find out the first commit id
+        commithash = RepoInfo.getfirsthash(tmpdir.name)
+
+        # if we recognise the first commit id, record the githuburl onto the
+        # repo info so we don't have to download it again
+        match = rlist.find_repo(commithash)
+        if match is not None:
+            echo("Repo [%s] from has already been added" % match.shorthash)
+            if ghurl:
+                match.githuburl = ghurl
+                rlist.add_repo(match)
+                rlist.writejson()
+            return
+
+        if os.path.exists(dest_path):
+            # if the dest path is the same repo, then we just need to do a git
+            # pull in that dir
+            try:
+                desthash = RepoInfo.getfirsthash(dest_path)
+                if desthash != commithash:
+                    raise Exception("Repo with hash %s already exists" %
+                                    desthash)
+                # run a git pull in that repo
+                echo("Using git pull in %s" % dest_path)
+                subprocess.check_call(['git', 'pull'], cwd=dest_path)
+            except:
+                echo("Can't clone into %s - path already exists" % dest_path,
+                     err=True)
+                raise
+        # ask the user if this path is ok?
+        elif confirm_path and not yesno('Clone into %s?' % dest_path,
+                                        True, None):
+            # FIXME: how would click library like me to exit(1) here?
+            sys.exit(1)
+        else:
+            os.rename(tmpdir.name, dest_path)
+    finally:
+        if tmpdir and os.path.exists(tmpdir.name):
+            tmpdir.cleanup()
+
+    # add the local repo to our config
+    return RepoInfo(dest_path, commithash, ghurl)
+
+
+def addfromlocal(repo_path, verbose, interactive):
+    repo_path = repo_path.rstrip('/')
+    rlist = RepoListConfig()
+
+    # the repo must exist
+    if not os.path.exists(repo_path):
+        raise ClickException("Repo %s does not exist" % repo_path)
+    if not os.path.exists(os.path.join(repo_path, '.git')):
+        raise ClickException("%s is not a git repo" % repo_path)
+
+    # find out the first commit id
+    commithash = RepoInfo.getfirsthash(repo_path)
+
+    # if we recognise the first commit id, then we are already done
+    match = rlist.find_repo(commithash)
+    if match is not None:
+        echo("Repo [%s] from %s has already been added" %
+             (match.shorthash, repo_path))
+        return
+
+    # need to add the local repo to our config
+    return RepoInfo(repo_path, commithash)
 
 
 def yesno(prompt, default, recommended=None):
