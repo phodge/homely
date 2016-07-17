@@ -318,3 +318,51 @@ def filereplacer(filepath):
     with contextlib.suppress(FileNotFoundError):
         os.unlink(filepath)
     os.rename(tmpname, filepath)
+
+
+def isnecessarypath(parent, child):
+    """
+    returns True if the file, directory or symlink <parent> is required to
+    exist in order for the path <child> to refer to a valid filesystem entry.
+
+    Examples:
+
+    If <parent> refers to a file, and <child> refers to the same file, then
+    <parent> must exist in order for <child> to be valid.
+
+    If <parent> refers to a directory, and <child> refers to the same directory
+    or anything under that directory, then <parent> must exist in order for
+    <child> to be valid.
+
+    If <parent> is a symlink to a directory, and <child> refers to something in
+    that directory *and contains the symlink <parent> in its path*, then
+    <parent> must continue to exist in order for <child> to be valid.
+    """
+    assert parent.startswith('/')
+    assert child.startswith('/')
+    # resolve all symlinks in the parent (except for the final part itself)
+    head, tail = os.path.split(parent)
+    # expand the head part out to its real path
+    head = os.path.realpath(head)
+    fullparent = os.path.realpath(parent)
+    assert len(tail), "Can't use isancestor() on path ending in /: %s" % parent
+    prefix = '/'
+    parts = child.split('/')
+    while len(parts):
+        prefix = os.path.realpath(os.path.join(prefix, parts.pop(0)))
+        common = os.path.commonprefix([prefix, head])
+
+        # if at any time we stumble upon the parent as we are reconstructing
+        # the path, then we are dependent on the parent
+        if prefix == fullparent and len(parts):
+            return True
+
+        # if they refer to the same thing up to this point, check to see if the
+        # next parts are also the same
+        if len(common) == len(head):
+            # if the next item of child's path is the tail of parent, then they
+            # must refer to the same thing
+            if len(parts) and tail == parts[0]:
+                return True
+
+    return False
