@@ -465,3 +465,29 @@ def test_cleanup_everything(tmpdir):
 
     assert not os.path.exists(d1)
     assert not os.path.islink(l1)
+
+
+def test_partial_run_cleanup(tmpdir):
+    cfgpath = gettmpfilepath(tmpdir, '.json')
+    d1 = os.path.join(tmpdir, 'dir1')
+    d2 = os.path.join(tmpdir, 'dir2')
+
+    # simulate adding our first repo which just creates d1
+    e = Engine(cfgpath)
+    e.run(MakeDir(d1))
+    e.cleanup(e.RAISE)
+    del e
+    assert os.path.isdir(d1) and not os.path.isdir(d2)
+
+    # simulate adding a 2nd repo that would just created 2 ... this shouldn't
+    # trigger a cleanup though
+    e = Engine(cfgpath)
+    e.run(MakeDir(d2))
+    del e
+    assert os.path.isdir(d1) and os.path.isdir(d2)
+
+    # pretend that the first repo is removed, and do a full update
+    e = Engine(cfgpath)
+    e.run(MakeDir(d2))
+    e.cleanup(e.RAISE)
+    assert not os.path.isdir(d1) and os.path.isdir(d2)
