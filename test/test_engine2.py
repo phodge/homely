@@ -6,16 +6,16 @@ from homely.general import (
     LineInFile, BlockInFile, MakeDir, MakeSymlink, WHERE_TOP, WHERE_END,
 )
 from homely._engine2 import Engine
-from homely._errors import CleanupConflict, CleanupObstruction
+from homely._errors import CleanupConflict
 
 
-def test_engine_folder_cleanup(tmpdir):
+def test_engine_folder_cleanup(tmpdir2):
     # first thing ... test mkdir cleanup
     # a temporary file where the engine can store its config
-    cfgpath = gettmpfilepath(tmpdir, '.json')
+    cfgpath = gettmpfilepath(tmpdir2, '.json')
 
-    d1 = os.path.join(tmpdir, 'dir1')
-    d2 = os.path.join(tmpdir, 'dir2')
+    d1 = os.path.join(tmpdir2, 'dir1')
+    d2 = os.path.join(tmpdir2, 'dir2')
     d2a = os.path.join(d2, 'sub-a')
     d2a1 = os.path.join(d2a, 'supersub-1')
     d2a2 = os.path.join(d2a, 'supersub-2')
@@ -58,21 +58,21 @@ def test_engine_folder_cleanup(tmpdir):
     e.cleanup(e.RAISE)
     del e
 
-    # all dirs are gone, EXCEPT FOR our original tmpdir, which our cleaners
+    # all dirs are gone, EXCEPT FOR our original tmpdir2, which our cleaners
     # were smart enough to leave behind
     assert not any(map(os.path.exists, [d1, d2, d2a, d2a1, d2a2]))
-    assert os.path.exists(tmpdir)
+    assert os.path.exists(tmpdir2)
 
     # FIXME: add a test to see what happens when we want to clean up a dir but
     # there's already files inside it ... we can add a test for BLASTAWAY mode
     # here I guess
 
 
-def test_symlink_cleanup_interaction(tmpdir):
-    cfgpath = gettmpfilepath(tmpdir)
+def test_symlink_cleanup_interaction(tmpdir2):
+    cfgpath = gettmpfilepath(tmpdir2)
 
-    d1 = os.path.join(tmpdir, 'dir1')
-    l1 = os.path.join(tmpdir, 'link1')
+    d1 = os.path.join(tmpdir2, 'dir1')
+    l1 = os.path.join(tmpdir2, 'link1')
     d1da = os.path.join(d1, 'dir-a')
     l1da = os.path.join(l1, 'dir-a')
 
@@ -148,10 +148,10 @@ def test_symlink_cleanup_interaction(tmpdir):
     os.unlink(cfgpath)
 
 
-def test_lineinfile_usage(tmpdir):
-    cfgpath = gettmpfilepath(tmpdir, '.json')
+def test_lineinfile_usage(tmpdir2):
+    cfgpath = gettmpfilepath(tmpdir2, '.json')
 
-    f1 = gettmpfilepath(tmpdir)
+    f1 = gettmpfilepath(tmpdir2)
     # make sure the following types of input raise exceptions
     bad = [
         "",  # empty line
@@ -237,15 +237,15 @@ def test_lineinfile_usage(tmpdir):
     assert contents(f1) == ""
 
 
-def test_lineinfile_cleanup_interaction(tmpdir):
+def test_lineinfile_cleanup_interaction(tmpdir2):
     # a temporary file where the engine can store its config
-    cfgpath = gettmpfilepath(tmpdir, '.json')
-    f1 = os.path.join(tmpdir, 'f1.txt')
-    d1 = os.path.join(tmpdir, 'f1.txt.dir')
+    cfgpath = gettmpfilepath(tmpdir2, '.json')
+    f1 = os.path.join(tmpdir2, 'f1.txt')
+    d1 = os.path.join(tmpdir2, 'f1.txt.dir')
     d1f1 = os.path.join(d1, 'f-1.txt')
-    d2 = os.path.join(tmpdir, 'dir2')
+    d2 = os.path.join(tmpdir2, 'dir2')
     d2f1 = os.path.join(d2, 'f-1.txt')
-    d3 = os.path.join(tmpdir, 'dir3')
+    d3 = os.path.join(tmpdir2, 'dir3')
     d3d1 = os.path.join(d3, 'sub-1')
     d3d2 = os.path.join(d3, 'sub-2')
     d3d1f1 = os.path.join(d3d1, 'somefile.txt')
@@ -379,15 +379,15 @@ def test_lineinfile_cleanup_interaction(tmpdir):
     assert not os.path.exists(d3)
 
 
-def test_blockinfile_lineinfile_cleanup_interaction(tmpdir):
+def test_blockinfile_lineinfile_cleanup_interaction(tmpdir2):
     '''
     Test that when a LineInFile is cleaned up, any other LineInFile() or
     BlockInFile() that affected the same file, needs a chance to re-check
     whether it is still valid. If *any* of the remaining Helpers needs to be
     reapplied, then they *all* need to be reapplied.
     '''
-    cfgpath = gettmpfilepath(tmpdir, '.json')
-    f1 = gettmpfilepath(tmpdir, '.txt')
+    cfgpath = gettmpfilepath(tmpdir2, '.json')
+    f1 = gettmpfilepath(tmpdir2, '.txt')
 
     # check that a LineInFile followed by a BlockInFile that both try to add
     # the same line will result in the file containing both things, even if
@@ -437,15 +437,15 @@ def test_blockinfile_lineinfile_cleanup_interaction(tmpdir):
     assert contents(f1) == "AAA\n"
 
 
-def test_cleanup_everything(tmpdir):
+def test_cleanup_everything(tmpdir2):
     '''
     test that recreating the engine, running nothing on it, then calling
     cleanup() will remove all of things that might be lying around
     '''
-    cfgpath = gettmpfilepath(tmpdir, '.json')
-    d1 = gettmpfilepath(tmpdir, '.d')
+    cfgpath = gettmpfilepath(tmpdir2, '.json')
+    d1 = gettmpfilepath(tmpdir2, '.d')
     d1f1 = os.path.join(d1, 'sub-file.txt')
-    l1 = gettmpfilepath(tmpdir, '.lnk')
+    l1 = gettmpfilepath(tmpdir2, '.lnk')
 
     e = Engine(cfgpath)
     e.run(MakeDir(d1))
@@ -467,10 +467,10 @@ def test_cleanup_everything(tmpdir):
     assert not os.path.islink(l1)
 
 
-def test_partial_run_cleanup(tmpdir):
-    cfgpath = gettmpfilepath(tmpdir, '.json')
-    d1 = os.path.join(tmpdir, 'dir1')
-    d2 = os.path.join(tmpdir, 'dir2')
+def test_partial_run_cleanup(tmpdir2):
+    cfgpath = gettmpfilepath(tmpdir2, '.json')
+    d1 = os.path.join(tmpdir2, 'dir1')
+    d2 = os.path.join(tmpdir2, 'dir2')
 
     # simulate adding our first repo which just creates d1
     e = Engine(cfgpath)
