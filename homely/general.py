@@ -4,9 +4,11 @@ import contextlib
 from copy import copy
 
 from homely._errors import HelperError
-from homely._engine2 import getengine, Helper, Engine, getrepoinfo
-from homely._cleaners import CleanLineInFile, CleanBlockInFile
-from homely._utils import filereplacer, _resolve, haveexecutable
+from homely._engine2 import getengine, Helper, Cleaner, Engine, getrepoinfo
+from homely._utils import (
+    filereplacer, _resolve, isnecessarypath, NoChangesNeeded)
+# allow importing from outside
+from homely._utils import haveexecutable
 from homely._ui import warning
 
 
@@ -78,6 +80,9 @@ class MakeDir(Helper):
     def pathsownable(self):
         return {self._path: Engine.TYPE_FOLDER}
 
+    def getclaims(self):
+        return []
+
 
 class MakeSymlink(Helper):
     def __init__(self, target, linkname):
@@ -85,6 +90,9 @@ class MakeSymlink(Helper):
         assert linkname.startswith('/')
         self._target = target
         self._linkname = linkname
+
+    def getclaims(self):
+        return []
 
     def getcleaner(self):
         return
@@ -100,17 +108,6 @@ class MakeSymlink(Helper):
     def makechanges(self):
         assert not os.path.exists(self._linkname)
         os.symlink(self._target, self._linkname)
-
-    # TODO: get rid of all of these functions ...
-    def undochanges(self, prevchanges):
-        raise Exception("TODO: move this to a cleaner")  # noqa
-        if not os.path.islink(self._dest):
-            return
-        if os.readlink(self._dest) == self._source:
-            os.unlink(self._dest)
-        else:
-            warning("Refusing to clean up symlink %s which now points to"
-                    " %s" % (self._dest, os.readlink(self._dest)))
 
     def affectspath(self, path):
         return path == self._linkname
@@ -201,6 +198,64 @@ class LineInFile(Helper):
 
     def affectspath(self, path):
         return path == self._filename
+
+    def getclaims(self):
+        return []
+
+
+class CleanLineInFile(Cleaner):
+    def __init__(self, filename, contents):
+        self._filename = filename
+        self._contents = contents
+
+    @property
+    def description(self):
+        return "Remove line from %s: %r" % (self._filename, self._contents)
+
+    def asdict(self):
+        return dict(filename=self._filename, contents=self._contents)
+
+    @classmethod
+    def fromdict(class_, data):
+        return class_(data["filename"], data["contents"])
+
+    def __eq__(self, other):
+        return (other._filename == self._filename and
+                other._contents == self._contents)
+
+    def isneeded(self):
+        if not os.path.exists(self._filename):
+            return False
+        with open(self._filename) as f:
+            for line in f:
+                if line.rstrip("\r\n") == self._contents:
+                    return True
+        return False
+
+    def wantspath(self, path):
+        return path == self._filename or isnecessarypath(path, self._filename)
+
+    def makechanges(self):
+        # if the file doesn't exist, we don't need to make changes
+        assert os.path.exists(self._filename)
+
+        with filereplacer(self._filename) as (tmp, origlines, NL):
+            # if the file doesn't exist any more, then no changes are needed
+            changed = False
+            if origlines is not None:
+                for line in origlines:
+                    if line == self._contents:
+                        changed = True
+                    else:
+                        tmp.write(line)
+                        tmp.write(NL)
+            if not changed:
+                raise NoChangesNeeded()
+
+        return [self._filename] if changed else []
+
+    def needsclaims(self):
+        return []
 
 
 class BlockInFile(Helper):
@@ -321,3 +376,80 @@ class BlockInFile(Helper):
 
     def pathsownable(self):
         return {self._filename: Engine.TYPE_FILE}
+
+    def getclaims(self):
+        return []
+
+
+class CleanBlockInFile(Cleaner):
+    def __init__(self, filename, prefix, suffix):
+        self._filename = filename
+        self._prefix = prefix
+        self._suffix = suffix
+
+    @property
+    def description(self):
+        return "Remove lines from %s: %r...%r" % (
+            self._filename,
+            self._prefix,
+            self._suffix,
+        )
+
+    def asdict(self):
+        return dict(filename=self._filename,
+                    prefix=self._prefix,
+                    suffix=self._suffix)
+
+    @classmethod
+    def fromdict(class_, data):
+        return class_(data["filename"], data["prefix"], data["suffix"])
+
+    def __eq__(self, other):
+        return (other._filename == self._filename and
+                other._prefix == self._prefix and
+                other._suffix == self._suffix)
+
+    def isneeded(self):
+        # the cleaner is needed if both the prefix and the suffix are found in
+        # the file, in the correct order
+        if not os.path.exists(self._filename):
+            return False
+
+        haveprefix = False
+
+        with open(self._filename) as f:
+            for line in [l.rstrip("\r\n") for l in f]:
+                if line == self._prefix:
+                    haveprefix = True
+                elif line == self._suffix and haveprefix:
+                    return True
+
+        return False
+
+    def wantspath(self, path):
+        return path == self._filename or isnecessarypath(path, self._filename)
+
+    def makechanges(self):
+        assert os.path.exists(self._filename)
+
+        with filereplacer(self._filename) as (tmp, origlines, NL):
+            changed = False
+            findsuffix = False
+            for line in origlines:
+                if findsuffix:
+                    if line == self._suffix:
+                        findsuffix = False
+                        changed = True
+                elif line == self._prefix:
+                    findsuffix = True
+                else:
+                    tmp.write(line)
+                    tmp.write(NL)
+            if findsuffix or not changed:
+                # we couldn't find the suffix ... don't change the file
+                raise NoChangesNeeded()
+
+        return [self._filename] if changed else []
+
+    def needsclaims(self):
+        return []
