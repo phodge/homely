@@ -184,7 +184,6 @@ def update(identifiers, nopull, only):
     else:
         updatelist = list(cfg.find_all())
         cleanup = True
-    assert len(updatelist)
     success = run_update(updatelist,
                          pullfirst=not nopull,
                          only=only,

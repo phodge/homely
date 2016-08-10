@@ -67,9 +67,8 @@ def run_update(infos, pullfirst, only=None, cancleanup=None):
     if only is None:
         only = []
     elif len(only):
-        assert len(infos) == 1
+        assert len(infos) <= 1
     global _CURRENT_REPO
-    assert len(infos)
     errors = False
 
     engine = initengine()
