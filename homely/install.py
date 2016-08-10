@@ -3,9 +3,8 @@ import subprocess
 
 from homely._errors import HelperError
 from homely._engine2 import Helper, Cleaner, getengine, Engine
-from homely._utils import haveexecutable
-from homely._ui import note, debug, isinteractive
-from homely._ui import allowpull
+from homely._utils import haveexecutable, isnecessarypath
+from homely._ui import note, debug, isinteractive, allowpull
 
 
 def installpkg(name=None, wantcmd=None, **methods):
@@ -101,7 +100,7 @@ class InstallFromSource(Helper):
             note("Cloning %s" % self._source_repo)
             pull_needed = False
             cmd = ['git', 'clone', self._source_repo, self._real_clone_to]
-            subprocess.run(cmd)
+            subprocess.check_call(cmd)
         else:
             pull_needed = True
             if not os.path.exists(os.path.join(self._real_clone_to, '.git')):
@@ -109,21 +108,22 @@ class InstallFromSource(Helper):
 
         # do we want a particular branch?
         if self._branch:
-            subprocess.run(['git', 'checkout', self._branch],
-                           cwd=self._real_clone_to)
+            subprocess.check_output(['git', 'checkout', self._branch],
+                                    cwd=self._real_clone_to)
             if pull_needed and allowpull():
                 note("Updating %s from %s" %
                      (self._clone_to, self._source_repo))
-                subprocess.run(['git', 'pull'], cwd=self._real_clone_to)
+                subprocess.check_output(['git', 'pull'],
+                                        cwd=self._real_clone_to)
         else:
             assert self._tag is not None
             if pull_needed and allowpull():
                 note("Updating %s from %s" %
-                    (self._clone_to, self._source_repo))
-                subprocess.run(['git', 'fetch', '--tags'],
-                               cwd=self._real_clone_to)
-            subprocess.run(['git', 'checkout', self._tag],
-                           cwd=self._real_clone_to)
+                     (self._clone_to, self._source_repo))
+                subprocess.check_output(['git', 'fetch', '--tags'],
+                                        cwd=self._real_clone_to)
+            subprocess.check_output(['git', 'checkout', self._tag],
+                                    cwd=self._real_clone_to)
 
         # run any compilation commands
         if self._compile is not None:
@@ -131,7 +131,7 @@ class InstallFromSource(Helper):
             # compiling, as this is our best way of determining that the
             # compilation has failed ...
             for cmd in self._compile:
-                subprocess.run(cmd, cwd=self._real_clone_to)
+                subprocess.check_output(cmd, cwd=self._real_clone_to)
 
         # create new symlinks
         for source, dest in self._symlinks:
@@ -194,7 +194,7 @@ class InstallPackage(Helper):
             cmd.append(cmdname)
             cmd.append('install')
             cmd.append(localname)
-            subprocess.run(cmd)
+            subprocess.check_output(cmd)
             # record the fact that we installed this thing ourselves
             factname = 'InstalledPackage:%s:%s' % (method, localname)
             self._setfact(factname, True)
