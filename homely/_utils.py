@@ -1,4 +1,5 @@
 import contextlib
+import subprocess
 from itertools import chain
 import os
 import tempfile
@@ -15,6 +16,17 @@ ENGINE2_CONFIG_PATH = os.path.join(CONFIG_DIR, 'engine2.json')
 
 def _resolve(path):
     return os.path.realpath(os.path.expanduser(path))
+
+
+def haveexecutable(name):
+    try:
+        otuput = subprocess.check_output(['which', name])
+        return True
+    except subprocess.CalledProcessError as err:
+        if err.returncode == 1:
+            return False
+        print(output)
+        raise
 
 
 class JsonConfig(object):
