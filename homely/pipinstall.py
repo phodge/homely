@@ -1,4 +1,3 @@
-import os
 from subprocess import check_output, check_call
 
 from homely._engine2 import Helper, Cleaner, getengine
@@ -73,6 +72,9 @@ class PIPInstall(Helper):
         check_call(cmd)
         factname = 'pipinstall:%s:%s' % (self._pipcmd, self._name)
         self._setfact(factname, True)
+
+    def affectspath(self, path):
+        return False
 
 
 class PIPCleaner(Cleaner):
