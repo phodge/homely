@@ -15,7 +15,7 @@ def tmpdir(request):
         print("rm -rf %s" % path)
         shutil.rmtree(path)
     request.addfinalizer(functools.partial(destructor, path))
-    return path
+    return os.path.realpath(path)
 
 
 def contents(path, new_content=None, strip=True):

@@ -67,3 +67,18 @@ def test_homely_add_repolist(tmpdir, HOME):
     # test that you can't add the same repo again
     system(HOMELY + ['add', repo2.url])
     checkrepolist(HOME, system, [repo1, repo2, repo3])
+
+    # test that adding a repo with something like 'homely add .' doesn't record
+    # a stupid path like '.'
+    repo4 = TestRepo(tmpdir, 'repo4')
+    contents(repo4.remotepath + '/HOMELY.py',
+             """
+             from homely.general import lineinfile
+             lineinfile('~/r4.txt', 'From R4')
+             """)
+    localrepo4 = os.path.join(HOME, 'repo4')
+    # use a Repo instance to clone it into our home dir manually
+    from homely._vcs.testhandler import Repo
+    Repo.frompath(repo4.url).clonetopath(localrepo4)
+    system(HOMELY + ['add', '.'], cwd=localrepo4)
+    checkrepolist(HOME, system, [repo1, repo2, repo3, repo4])

@@ -3,6 +3,7 @@ import os
 import subprocess
 
 import homely._vcs
+from homely._utils import _resolve
 
 
 class Repo(homely._vcs.Repo):
@@ -14,7 +15,7 @@ class Repo(homely._vcs.Repo):
         if os.path.isdir(repo_path):
             if not os.path.isdir(os.path.join(repo_path, '.git')):
                 return
-            return class_(repo_path,
+            return class_(_resolve(repo_path),
                           isremote=False,
                           iscanonical=False,
                           suggestedlocal=None
