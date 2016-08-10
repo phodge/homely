@@ -66,7 +66,7 @@ class Helper(object):
         - Engine.TYPE_FOLDER
         - Engine.TYPE_LINK
         '''
-        raise NotImplementedError("%s needs to implement .pathsownable(path)" %
+        raise NotImplementedError("%s needs to implement .pathsownable()" %
                                   self.__class__.__name__)
 
 
