@@ -18,8 +18,8 @@ _known_pips = set()
 
 def _haspkg(pipcmd, name):
     output = check_output([pipcmd, 'list', '--disable-pip-version-check'])
-    find = b'%s ' % name.encode('utf-8')
-    for line in output.split(b"\n"):
+    find = '%s ' % name
+    for line in output.decode('utf-8').split("\n"):
         if line.startswith(find):
             return True
     return False
