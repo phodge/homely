@@ -1,14 +1,22 @@
 import os
 import subprocess
 
-from click import echo
-
 from homely._errors import HelperError
-from homely.general import UpdateHelper
-from homely._ui import note, debug
+from homely._engine2 import Helper, Cleaner, getengine, Engine
+from homely._utils import haveexecutable
+from homely._ui import note, debug, isinteractive
+from homely._ui import allowpull
 
 
-class InstallFromSource(UpdateHelper):
+def installpkg(name=None, wantcmd=None, **methods):
+    for key in methods:
+        assert key in InstallPackage.METHODS
+
+    # FIXME: make sure the user specifies at least one way to install the thing
+    getengine().run(InstallPackage(name, methods, wantcmd))
+
+
+class InstallFromSource(Helper):
     _title = None
     _source_repo = None
     _clone_to = None
@@ -25,15 +33,6 @@ class InstallFromSource(UpdateHelper):
         self._clone_to = clone_to
         self._real_clone_to = os.path.expanduser(clone_to)
 
-    @property
-    def identifiers(self):
-        return dict(source_repo=self._source_repo,
-                    clone_to=self._clone_to)
-
-    @classmethod
-    def fromidentifiers(class_, identifiers):
-        return class_(identifiers["source_repo"], identifiers["clone_to"])
-
     def select_branch(self, branch_name):
         assert self._tag is None
         self._branch = branch_name
@@ -42,13 +41,32 @@ class InstallFromSource(UpdateHelper):
         assert self._branch is None
         self._tag = tag_name
 
-    def symlink(self, source, dest):
-        self._symlinks.append((os.path.join(self._real_clone_to, source),
-                               os.path.expanduser(dest)))
+    def symlink(self, target, linkname):
+        self._symlinks.append((os.path.join(self._real_clone_to, target),
+                               os.path.expanduser(linkname)))
 
     def compile_cmd(self, commands):
         assert self._compile is None
         self._compile = commands
+
+    @property
+    def description(self):
+        return self._title
+
+    def getcleaner(self):
+        return
+
+    def affectspath(self, path):
+        return isnecessarypath(self._real_clone_to, path)
+
+    def pathsownable(self):
+        ret = {self._real_clone_to: Engine.TYPE_FOLDER}
+        for target, linkname in self._symlinks:
+            ret[linkname] = Engine.TYPE_LINK
+        return ret
+
+    def getclaims(self):
+        return []
 
     def isdone(self):
         if not os.path.exists(self._real_clone_to):
@@ -67,47 +85,41 @@ class InstallFromSource(UpdateHelper):
             return False
 
         # do the symlinks exist?
-        for source, dest in self._symlinks:
-            # FIXME: return not-done if the target files don't exist
-            if not os.path.islink(dest):
+        for target, linkname in self._symlinks:
+            if not os.path.islink(linkname):
                 return False
-
-        # FIXME: it is possible that the compilation step may have failed, and
-        # we have no way to determine if that is the case.
+            if os.readlink(linkname) != target:
+                return False
 
         # it appears to be done ... yay
         return True
 
-    def descchanges(self):
-        return self._title
-
-    def makechanges(self, prevchanges):
+    def makechanges(self):
         assert self._source_repo is not None
         assert self._clone_to is not None
-        changes = {}
         if not os.path.exists(self._real_clone_to):
-            echo("Cloning %s" % self._source_repo)
+            note("Cloning %s" % self._source_repo)
             pull_needed = False
             cmd = ['git', 'clone', self._source_repo, self._real_clone_to]
             subprocess.run(cmd)
-            changes["made_clone_dir"] = True
         else:
-            echo("Updating %s from %s" % (self._clone_to, self._source_repo))
             pull_needed = True
             if not os.path.exists(os.path.join(self._real_clone_to, '.git')):
                 raise HelperError("%s is not a git repo" % self._real_clone_to)
-            changes["made_clone_dir"] = prevchanges.get("made_clone_dir",
-                                                        False)
 
         # do we want a particular branch?
         if self._branch:
             subprocess.run(['git', 'checkout', self._branch],
                            cwd=self._real_clone_to)
-            if pull_needed:
+            if pull_needed and allowpull():
+                note("Updating %s from %s" %
+                     (self._clone_to, self._source_repo))
                 subprocess.run(['git', 'pull'], cwd=self._real_clone_to)
         else:
             assert self._tag is not None
-            if pull_needed:
+            if pull_needed and allowpull():
+                note("Updating %s from %s" %
+                    (self._clone_to, self._source_repo))
                 subprocess.run(['git', 'fetch', '--tags'],
                                cwd=self._real_clone_to)
             subprocess.run(['git', 'checkout', self._tag],
@@ -121,16 +133,7 @@ class InstallFromSource(UpdateHelper):
             for cmd in self._compile:
                 subprocess.run(cmd, cwd=self._real_clone_to)
 
-        # what symlinks were created last time? What symlinks need to be
-        # created now?
-        newsymlinks = set([dest for _, dest in self._symlinks])
-        for path in prevchanges.get("symlinks_made", []):
-            if os.path.islink(path) and path not in newsymlinks:
-                note("Cleaning up symlink: %s" % path)
-                os.unlink(path)
-
         # create new symlinks
-        changes["symlinks_made"] = []
         for source, dest in self._symlinks:
             debug("Ensure symlink exists: %s -> %s" % (source, dest))
             if os.path.islink(dest):
@@ -142,12 +145,115 @@ class InstallFromSource(UpdateHelper):
             if os.path.exists(dest):
                 raise HelperError("%s already exists" % dest)
             os.symlink(source, dest)
-            changes["symlinks_made"].append(dest)
 
-        return changes
 
-    def undochanges(self, prevchanges):
-        for dest in prevchanges["symlinks_made"]:
-            if os.path.islink(dest):
-                note("Cleaning up symlink: %s" % dest)
-                os.unlink(dest)
+class InstallPackage(Helper):
+    METHODS = ('brew', 'yum', 'port', 'apt')
+    _ASROOT = ('yum', 'port', 'apt')
+    _COMMANDS = {'apt': 'apt-get'}
+    _UNINSTALL = {'apt': 'remove', 'yum': 'erase'}
+
+    def __init__(self, name, methods, wantcmd):
+        super(InstallPackage, self).__init__()
+        self._name = name
+        self._methods = methods
+        self._wantcmd = name if wantcmd is None else wantcmd
+
+    def getcleaner(self):
+        return PackageCleaner(self._name, self._methods)
+
+    def pathsownable(self):
+        return {}
+
+    def isdone(self):
+        return haveexecutable(self._wantcmd)
+
+    @property
+    def description(self):
+        how = [m for m in self.METHODS if self._methods.get(m, True)]
+        return "Install package %s using %s" % (self._name, how)
+
+    def getclaims(self):
+        yield "package:%s" % self._name
+
+    def makechanges(self):
+        # try each method
+        for method in self.METHODS:
+            cmdname = self._COMMANDS.get(method, method)
+            localname = self._methods.get(method, self._name)
+
+            # see if the required executable is installed
+            if not haveexecutable(cmdname):
+                continue
+
+            cmd = []
+            if method in self._ASROOT:
+                if not isinteractive():
+                    raise HelperError("Need to be able to escalate to root")
+                cmd.append('sudo')
+            cmd.append(cmdname)
+            cmd.append('install')
+            cmd.append(localname)
+            subprocess.run(cmd)
+            # record the fact that we installed this thing ourselves
+            factname = 'InstalledPackage:%s:%s' % (method, localname)
+            self._setfact(factname, True)
+            return
+        raise HelperError("No way to install %s" % self._name)
+
+
+class PackageCleaner(Cleaner):
+    def __init__(self, name, methods):
+        super(PackageCleaner, self).__init__()
+        self._name = name
+        self._methods = methods
+
+    def asdict(self):
+        return dict(name=self._name, methods=self._methods)
+
+    @classmethod
+    def fromdict(class_, data):
+        return class_(data["name"], data["methods"])
+
+    def __eq__(self, other):
+        return self._name == other._name and self._methods == other._methods
+
+    @property
+    def description(self):
+        return "Remove package %s" % self._name
+
+    def needsclaims(self):
+        yield "package:%s" % self._name
+
+    def isneeded(self):
+        # look for any of the facts saying we installed these things
+        for method in InstallPackage.METHODS:
+            localname = self._methods.get(method, self._name)
+            factname = 'InstalledPackage:%s:%s' % (method, localname)
+            if self._getfact(factname, False):
+                return True
+        return False
+
+    def makechanges(self):
+        # look for any of the facts saying we installed these things
+        for method in InstallPackage.METHODS:
+            localname = self._methods.get(method, self._name)
+            factname = 'InstalledPackage:%s:%s' % (method, localname)
+            if not self._getfact(factname, False):
+                continue
+
+            cmdname = InstallPackage._COMMANDS.get(method, method)
+            cmd = []
+            if method in InstallPackage._ASROOT:
+                if not isinteractive():
+                    raise HelperError("Need to be able to escalate to root")
+                cmd.append('sudo')
+            cmd.append(cmdname)
+            cmd.append(InstallPackage._UNINSTALL.get(method, 'uninstall'))
+            cmd.append(localname)
+            try:
+                subprocess.check_call(cmd)
+            finally:
+                # always clear the fact
+                self._clearfact(factname)
+        raise HelperError("Didn't remove package %s" % self._name)
