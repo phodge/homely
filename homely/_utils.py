@@ -52,8 +52,9 @@ class JsonConfig(object):
         # make dirs needed for config file
         os.makedirs(os.path.dirname(self.jsonpath), mode=0o755, exist_ok=True)
         # write the config file now
+        dumped = simplejson.dumps(self.jsondata, indent=' ' * 4)
         with open(self.jsonpath, 'w') as f:
-            f.write(simplejson.dumps(self.jsondata, indent=' ' * 4))
+            f.write(dumped)
 
 
 class RepoListConfig(JsonConfig):
