@@ -18,11 +18,11 @@ def tmpdir(request):
     return path
 
 
-def contents(path, new_content=None):
+def contents(path, new_content=None, strip=True):
     if new_content is not None:
         # if new_content was a triple-quoted python string, try and strip off
         # the indent
-        if new_content.startswith('\n'):
+        if strip and new_content.startswith('\n'):
             indent = len(new_content) - len(new_content[1:].lstrip(' ')) - 1
             stripped = []
             for line in new_content[1:].split('\n'):

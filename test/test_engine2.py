@@ -195,12 +195,12 @@ def test_lineinfile_usage(tmpdir):
 
     # make sure LineInFile() doesn't blow away empty lines
     # - adding to end of file
-    contents(f1, "\n\n")
+    contents(f1, "\n\n", strip=False)
     e = Engine(cfgpath)
     e.run(LineInFile(f1, "AAA"))
     assert contents(f1) == "\n\nAAA\n"
     # - adding to start of file
-    contents(f1, "\n\n")
+    contents(f1, "\n\n", strip=False)
     e = Engine(cfgpath)
     e.run(LineInFile(f1, "AAA", WHERE_TOP))
     assert contents(f1) == "AAA\n\n\n"
@@ -210,7 +210,7 @@ def test_lineinfile_usage(tmpdir):
     del e
     assert contents(f1) == "\n\n"
     # - replacing something in the middle
-    contents(f1, "\n\nAAA\n\n\n")
+    contents(f1, "\n\nAAA\n\n\n", strip=False)
     e = Engine(cfgpath)
     e.run(LineInFile(f1, "AAA"))
     assert contents(f1) == "\n\nAAA\n\n\n"
