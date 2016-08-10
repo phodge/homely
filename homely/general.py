@@ -1,15 +1,11 @@
 import os
-import re
-import contextlib
 from copy import copy
 
-from homely._errors import HelperError
 from homely._engine2 import getengine, Helper, Cleaner, Engine, getrepoinfo
 from homely._utils import (
     filereplacer, _resolve, isnecessarypath, NoChangesNeeded)
 # allow importing from outside
-from homely._utils import haveexecutable
-from homely._ui import warning
+from homely._utils import haveexecutable  # noqa
 
 
 def run(updatehelper):
@@ -34,6 +30,12 @@ def mkdir(path):
 def lineinfile(filename, contents, where=None):
     filename = _resolve(filename)
     obj = LineInFile(filename, contents, where)
+    getengine().run(obj)
+
+
+def blockinfile(filename, lines, prefix, suffix, where=None):
+    filename = _resolve(filename)
+    obj = BlockInFile(filename, lines, prefix, suffix, where)
     getengine().run(obj)
 
 
