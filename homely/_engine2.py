@@ -1,8 +1,13 @@
 import os
 import simplejson
 
-from homely._errors import CleanupConflict, CleanupObstruction
-from homely._utils import isnecessarypath, ENGINE2_CONFIG_PATH, RepoInfo
+from homely._errors import CleanupConflict, CleanupObstruction, HelperError
+from homely._utils import (
+    isnecessarypath,
+    ENGINE2_CONFIG_PATH,
+    RepoInfo,
+    FactConfig,
+)
 from homely._ui import note, debug, warning
 
 
@@ -40,9 +45,38 @@ def _exists(path):
     return os.path.exists(path) or os.path.islink(path)
 
 
-class Helper(object):
+class _AccessibleFacts(object):
+    _facts = None
+
+    def _setfact(self, name, value):
+        if self._facts is None:
+            self._facts = FactConfig()
+        self._facts.jsondata[name] = value
+        self._facts.writejson()
+
+    def _clearfact(self, name):
+        if self._facts is None:
+            self._facts = FactConfig()
+        self._facts.jsondata.pop(name, None)
+        self._facts.writejson()
+
+    def _getfact(self, name, *args):
+        if self._facts is None:
+            self._facts = FactConfig()
+        if len(args):
+            return self._facts.jsondata.get(name, *args)
+        return self._facts.jsondata[name]
+
+
+class Helper(_AccessibleFacts):
+    _facts = None
+
     def getcleaner(self):
         raise NotImplementedError("%s needs to implement .getcleaner()" %
+                                  self.__class__.__name__)
+
+    def getclaims(self):
+        raise NotImplementedError("%s needs to implement .getclaims() -> []" %
                                   self.__class__.__name__)
 
     def isdone(self):
@@ -70,25 +104,29 @@ class Helper(object):
                                   self.__class__.__name__)
 
 
-_cleaners = []
-
-
-def cleaner(class_):
-    _cleaners.append(class_)
-    return class_
-
-
 def cleanerfromdict(data):
-    # NOTE: we need to make sure the cleaners module is imported or else the
-    # _cleaners list will still be empty
-    import homely._cleaners  # noqa - ignore warning about this module being imported but not used
-    for class_ in _cleaners:
-        c = class_.fromdict(data)
-        if c is not None:
-            return c
+    # import the module
+    from importlib import import_module
+    # FIXME: handle an ImportError here in case the module disappears
+    module = import_module(data["module"])
+
+    # get the class from the module
+    # FIXME: also need to handle this nicely
+    class_ = getattr(module, data["class"])
+
+    # now load up the cleaner
+    # FIXME: handle exceptions when the cleaner can't be loaded nicely
+    return class_.fromdict(data["params"])
 
 
-class Cleaner(object):
+class Cleaner(_AccessibleFacts):
+    def fulldict(self):
+        return {
+            "module": self.__class__.__module__,
+            "class": self.__class__.__name__,
+            "params": self.asdict(),
+        }
+
     def asdict(self):
         raise NotImplementedError(
             "%s needs to define .asdict() and "
@@ -106,6 +144,11 @@ class Cleaner(object):
     def description(self):
         raise NotImplementedError("%s needs to define @property .description" %
                                   self.__class__.__name__)
+
+    def needsclaims(self):
+        raise NotImplementedError(
+            "%s needs to implement .needsclaims() -> []" %
+            self.__class__.__name__)
 
     def wantspath(self, path):
         raise NotImplementedError("%s needs to implement .wantspath()" %
@@ -150,6 +193,8 @@ class Engine(object):
         self._created = set()
         self._only = set()
         self._section = None
+        # another way of keeping track of things we've claimed
+        self._claims = set()
 
         try:
             with open(cfgpath, 'r') as f:
@@ -175,9 +220,9 @@ class Engine(object):
 
     def _savecfg(self):
         # start with the old cleaners
-        cleaners = [c.asdict() for c in self._old_cleaners]
+        cleaners = [c.fulldict() for c in self._old_cleaners]
         # append any new cleaners
-        cleaners.extend([c.asdict() for c in self._new_cleaners])
+        cleaners.extend([c.fulldict() for c in self._new_cleaners])
         paths_owned = {}
         for path in self._old_paths_owned:
             paths_owned[path] = self._old_paths_owned[path]
@@ -226,6 +271,9 @@ class Engine(object):
 
         cfg_modified = False
 
+        # what claims does this helper make?
+        self._claims.update(*helper.getclaims())
+
         # get a cleaner for this helper
         cleaner = helper.getcleaner()
         if cleaner is not None:
@@ -260,7 +308,10 @@ class Engine(object):
                 self._savecfg()
                 cfg_modified = False
 
-            helper.makechanges()
+            try:
+                helper.makechanges()
+            except HelperError as err:
+                warning("  Failed: %s" % err.args[0])
         else:
             note("ALREADY DONE: %s" % helper.description)
         self._helpers.append(helper)
@@ -322,6 +373,14 @@ class Engine(object):
         if not cleaner.isneeded():
             note("  Not needed: %s" % cleaner.description)
             return
+
+        # if there are still helpers with claims over things the cleaner wants
+        # to remove, then the cleaner needs to wait
+        for claim in cleaner.needsclaims():
+            if claim in self._claims:
+                note("  Postponed: Something else claimed %r" % claim)
+                self._addcleaner(cleaner)
+                return
 
         # run the cleaner now
         note("  Cleaning: %s" % cleaner.description)

@@ -12,6 +12,7 @@ from homely._vcs import Repo, fromdict
 CONFIG_DIR = os.path.join(os.environ['HOME'], '.homely')
 REPO_CONFIG_PATH = os.path.join(CONFIG_DIR, 'repos.json')
 ENGINE2_CONFIG_PATH = os.path.join(CONFIG_DIR, 'engine2.json')
+FACT_CONFIG_PATH = os.path.join(CONFIG_DIR, 'facts.json')
 
 
 def _resolve(path):
@@ -249,6 +250,16 @@ class RepoScriptConfig(JsonConfig):
 
     def setquestionanswer(self, name, value):
         self.jsondata["questions"][name] = value
+
+
+class FactConfig(JsonConfig):
+    jsonpath = FACT_CONFIG_PATH
+
+    def checkjson(self):
+        pass
+
+    def defaultjson(self):
+        return {}
 
 
 @contextlib.contextmanager
