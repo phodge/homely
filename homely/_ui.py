@@ -11,6 +11,7 @@ from homely._vcs import Repo
 _INTERACTIVE = False
 _VERBOSE = False
 _FRAGILE = False
+_ALLOWPULL = True
 
 
 def setinteractive(value):
@@ -26,6 +27,11 @@ def setverbose(value):
 def setfragile(value):
     global _FRAGILE
     _FRAGILE = bool(value)
+
+
+def setallowpull(value):
+    global _ALLOWPULL
+    _ALLOWPULL = bool(value)
 
 
 def note(message):
@@ -125,6 +131,10 @@ def isinteractive():
     provide input interactively. Otherwise, False is returned.
     '''
     return _INTERACTIVE and sys.__stdin__.isatty() and sys.stderr.isatty()
+
+
+def allowpull():
+    return _ALLOWPULL
 
 
 def addfromremote(repo, dest_path):

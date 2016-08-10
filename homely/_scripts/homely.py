@@ -6,7 +6,8 @@ from click import echo, group, argument, option, UsageError, ClickException
 from homely._errors import RepoError, JsonError
 from homely._utils import RepoListConfig, saveconfig, RepoInfo
 from homely._ui import (
-    run_update, addfromremote, yesno, setverbose, setinteractive, setfragile,
+    run_update, addfromremote, yesno,
+    setverbose, setinteractive, setfragile, setallowpull,
     isinteractive, warning, note
 )
 from homely._vcs import getrepohandler
@@ -170,6 +171,7 @@ def update(identifiers, nopull, only):
     Each REPO must be a repoid or localpath from
     ~/.homely/repos.json.
     '''
+    setallowpull(not nopull)
     cfg = RepoListConfig()
     if len(identifiers):
         updatedict = {}
