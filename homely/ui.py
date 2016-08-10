@@ -1,2 +1,2 @@
 # export only these items from internal _ui module
-from homely._ui import warning, heading, yesnooption
+from homely._ui import warning, heading, yesnooption, isinteractive
