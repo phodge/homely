@@ -6,7 +6,7 @@ from copy import copy
 from homely._errors import HelperError
 from homely._engine2 import getengine, Helper, Engine, getrepoinfo
 from homely._cleaners import CleanLineInFile, CleanBlockInFile
-from homely._utils import filereplacer, _resolve
+from homely._utils import filereplacer, _resolve, haveexecutable
 from homely._ui import warning
 
 
@@ -50,51 +50,6 @@ def symlink(target, linkname=None):
     else:
         linkname = _resolve(linkname)
     getengine().run(MakeSymlink(target, linkname))
-
-
-# TODO: phase out all use of this old thing
-class UpdateHelper(object):
-    _section = None
-
-    @property
-    def identifiers(self):
-        raise NotImplementedError(
-            "%s needs to implement @property identifiers()" %
-            self.__class__.__name__)
-
-    @classmethod
-    def fromidentifiers(class_, identifiers):
-        prototype = "@classmethod fromidentifiers(class_, identifiers)"
-        raise NotImplementedError("%s needs to implement %s" %
-                                  (class_.__name__, prototype))
-
-    @property
-    def uniqueid(self):
-        identifiers = self.identifiers
-        items = [self.__class__.__name__]
-        for key in sorted(identifiers):
-            items.extend([key, identifiers[key]])
-        return repr(items)
-
-    def setsection(self, name):
-        self._section = name
-
-    def getsection(self):
-        return self._section
-
-    def isdone(self):
-        raise NotImplementedError("%s needs to implement isdone()" %
-                                  (self.__class__.__name__))
-
-    def makechanges(self):
-        raise NotImplementedError("%s needs to implement .makechanges()" %
-                                  self.__class__.__name__)
-
-    # TODO: get rid of this permanently
-    def undochanges(self, prevchanges):
-        prototype = "undochanges(self, prevchanges)"
-        raise NotImplementedError("%s needs to implement %s" %
-                                  (self.__class__.__name__, prototype))
 
 
 class MakeDir(Helper):
