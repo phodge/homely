@@ -36,17 +36,19 @@ def lineinfile(filename, contents, where=None):
 
 
 def symlink(target, linkname=None):
-    target = _resolve(target)
-    linkname = _resolve(linkname)
     # if [target] doesn't start with '/', assume it is relative to the repo
-    if not target.startswith('/'):
+    if '/' not in target:
         info = getrepoinfo()
         target = os.path.join(info.localrepo.repo_path, target)
+    else:
+        target = _resolve(target)
     # if [linkname] is omited, assume the symlink goes into $HOME/ at the top
     # level
     if linkname is None:
         linkname = os.path.join(os.environ.get('HOME'),
                                 os.path.basename(target))
+    else:
+        linkname = _resolve(linkname)
     getengine().run(MakeSymlink(target, linkname))
 
 
