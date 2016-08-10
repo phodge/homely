@@ -138,8 +138,8 @@ def addfromremote(repo, dest_path):
         match = rlist.find_by_canonical(repo.repo_path)
         if match:
             note("Repo [%s] from %s has already been added" %
-                 (match.shortid(), repo.canonical))
-            return match
+                 (match.shortid(), repo.repo_path))
+            return match, True
 
     # figure out where the temporary clone should be moved to after it is
     # created
