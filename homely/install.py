@@ -5,7 +5,7 @@ from click import echo
 
 from homely._errors import HelperError
 from homely.general import UpdateHelper
-from homely._ui import verbecho
+from homely._ui import note, debug
 
 
 class InstallFromSource(UpdateHelper):
@@ -49,9 +49,6 @@ class InstallFromSource(UpdateHelper):
     def compile_cmd(self, commands):
         assert self._compile is None
         self._compile = commands
-
-    def iscleanable(self):
-        return os.path.exists(self._real_clone_to)
 
     def isdone(self):
         if not os.path.exists(self._real_clone_to):
@@ -129,13 +126,13 @@ class InstallFromSource(UpdateHelper):
         newsymlinks = set([dest for _, dest in self._symlinks])
         for path in prevchanges.get("symlinks_made", []):
             if os.path.islink(path) and path not in newsymlinks:
-                verbecho("Cleaning up symlink: %s" % path)
+                note("Cleaning up symlink: %s" % path)
                 os.unlink(path)
 
         # create new symlinks
         changes["symlinks_made"] = []
         for source, dest in self._symlinks:
-            verbecho("Ensure symlink exists: %s -> %s" % (source, dest))
+            debug("Ensure symlink exists: %s -> %s" % (source, dest))
             if os.path.islink(dest):
                 target = os.readlink(dest)
                 if os.path.realpath(target) != os.path.realpath(source):
@@ -152,5 +149,5 @@ class InstallFromSource(UpdateHelper):
     def undochanges(self, prevchanges):
         for dest in prevchanges["symlinks_made"]:
             if os.path.islink(dest):
-                verbecho("Cleaning up symlink: %s" % dest)
+                note("Cleaning up symlink: %s" % dest)
                 os.unlink(dest)

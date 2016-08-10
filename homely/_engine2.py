@@ -1,0 +1,441 @@
+import os
+import simplejson
+
+from homely._errors import CleanupConflict, CleanupObstruction
+from homely._utils import isnecessarypath, ENGINE2_CONFIG_PATH, RepoInfo
+from homely._ui import note, debug, warning
+
+
+_ENGINE = None
+_REPO = None
+
+
+def initengine():
+    global _ENGINE
+    _ENGINE = Engine(ENGINE2_CONFIG_PATH)
+    return _ENGINE
+
+
+def resetengine():
+    global _ENGINE
+    _ENGINE = None
+
+
+def getengine():
+    assert _ENGINE is not None
+    return _ENGINE
+
+
+def setrepoinfo(info):
+    assert info is None or isinstance(info, RepoInfo)
+    global _REPO
+    _REPO = info
+
+
+def getrepoinfo():
+    return _REPO
+
+
+def _exists(path):
+    return os.path.exists(path) or os.path.islink(path)
+
+
+class Helper(object):
+    def getcleaner(self):
+        raise NotImplementedError("%s needs to implement .getcleaner()" %
+                                  self.__class__.__name__)
+
+    def isdone(self):
+        raise NotImplementedError("%s needs to implement .isdone()" %
+                                  self.__class__.__name__)
+
+    def makechanges(self):
+        raise NotImplementedError("%s needs to implement .makechanges()" %
+                                  self.__class__.__name__)
+
+    @property
+    def description(self):
+        raise NotImplementedError("%s needs to define @property .description" %
+                                  self.__class__.__name__)
+
+    # FIXME: give this a better name :-\
+    def pathsownable(self):
+        '''
+        Return a dict of {PATH: TYPE} where TYPE is one of:
+        - Engine.TYPE_FILE
+        - Engine.TYPE_FOLDER
+        - Engine.TYPE_LINK
+        '''
+        raise NotImplementedError("%s needs to implement .pathsownable(path)" %
+                                  self.__class__.__name__)
+
+
+_cleaners = []
+
+
+def cleaner(class_):
+    _cleaners.append(class_)
+    return class_
+
+
+def cleanerfromdict(data):
+    # NOTE: we need to make sure the cleaners module is imported or else the
+    # _cleaners list will still be empty
+    import homely._cleaners  # noqa - ignore warning about this module being imported but not used
+    for class_ in _cleaners:
+        c = class_.fromdict(data)
+        if c is not None:
+            return c
+
+
+class Cleaner(object):
+    def asdict(self):
+        raise NotImplementedError(
+            "%s needs to define .asdict() and "
+            "@classmethod .fromdict(class_, data)" %
+            self.__class__.__name__)
+
+    @classmethod
+    def fromdict(class_, data):
+        raise NotImplementedError(
+            "%s needs to define .asdict() and "
+            "@classmethod .fromdict(class_, data)" %
+            class_.__name__)
+
+    @property
+    def description(self):
+        raise NotImplementedError("%s needs to define @property .description" %
+                                  self.__class__.__name__)
+
+    def wantspath(self, path):
+        raise NotImplementedError("%s needs to implement .wantspath()" %
+                                  self.__class__.__name__)
+
+    def issame(self, other):
+        return self.__class__ == other.__class__ and self.__eq__(other)
+
+    def __eq__(self, other):
+        raise NotImplementedError("%s needs to implement .__eq__(other)" %
+                                  self.__class__.__name__)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def makechanges(self):
+        raise NotImplementedError("%s needs to implement .makechanges()" %
+                                  self.__class__.__name__)
+
+
+class Engine(object):
+    # possible actions to take when a conflict occurs between cleaners
+    RAISE = "__raise__"
+    WARN = "__warn__"
+    ASK = "__ask__"
+    POSTPONE = "__postpone__"
+
+    TYPE_FILE = "file"
+    TYPE_FOLDER = "directory"
+    TYPE_LINK = "symlink"
+
+    def __init__(self, cfgpath):
+        super(Engine, self).__init__()
+        self._cfgpath = cfgpath
+        self._old_cleaners = []
+        self._new_cleaners = []
+        self._helpers = []
+        self._old_paths_owned = {}
+        self._new_paths_owned = {}
+        self._postponed = set()
+        # keep track of which things we created ourselves
+        self._created = set()
+        self._only = set()
+        self._section = None
+
+        try:
+            with open(cfgpath, 'r') as f:
+                raw = f.read()
+                data = simplejson.loads(raw)
+                if not isinstance(data, dict):
+                    raise Exception("Invalid json in %s" % cfgpath)
+                for item in data.get('cleaners', []):
+                    cleaner = cleanerfromdict(item)
+                    if cleaner is None:
+                        warning("No cleaner for %s" % repr(item))
+                    else:
+                        self._old_cleaners.append(cleaner)
+                self._old_paths_owned = data.get('paths_owned', {})
+                for path in data.get('paths_postponed', []):
+                    if path in self._old_paths_owned:
+                        self._postponed.add(path)
+                for path in data.get('paths_created', []):
+                    if path in self._old_paths_owned:
+                        self._created.add(path)
+        except FileNotFoundError:
+            pass
+
+    def _savecfg(self):
+        # start with the old cleaners
+        cleaners = [c.asdict() for c in self._old_cleaners]
+        # append any new cleaners
+        cleaners.extend([c.asdict() for c in self._new_cleaners])
+        paths_owned = {}
+        for path in self._old_paths_owned:
+            paths_owned[path] = self._old_paths_owned[path]
+        for path in self._new_paths_owned:
+            paths_owned[path] = self._new_paths_owned[path]
+        data = dict(cleaners=cleaners,
+                    paths_owned=paths_owned,
+                    paths_postponed=list(self._postponed),
+                    paths_created=list(self._created),
+                    )
+        dumped = simplejson.dumps(data, indent=' ' * 4)
+        with open(self._cfgpath, 'w') as f:
+            f.write(dumped)
+
+    def _removecleaner(self, cleaner):
+        # remove the cleaner from the list if it already exists
+        self._old_cleaners = [
+            oldc for oldc in self._old_cleaners
+            if not oldc.issame(cleaner)
+        ]
+
+    def _addcleaner(self, cleaner):
+        # add a cleaner (it is guaranteed not to exist in the old list)
+        # NOTE we need to make sure it is only added once
+        for c in self._new_cleaners:
+            if c.issame(cleaner):
+                return
+        self._new_cleaners.append(cleaner)
+
+    def onlysections(self, names):
+        self._only.update(names)
+
+    def pushsection(self, name):
+        if self._section is not None:
+            raise Exception("Cannot nest section %r inside section %r" %
+                            (name, self._section))
+        self._section = name
+        return name in self._only or not len(self._only)
+
+    def popsection(self, name):
+        assert self._section == name
+        self._section = None
+
+    def run(self, helper):
+        assert isinstance(helper, Helper)
+
+        cfg_modified = False
+
+        # get a cleaner for this helper
+        cleaner = helper.getcleaner()
+        if cleaner is not None:
+            cfg_modified = True
+
+            # remove the cleaner from the list of old cleaners
+            self._removecleaner(cleaner)
+
+            # add the cleaner to the list of new cleaners
+            self._addcleaner(cleaner)
+
+        for path, type_ in helper.pathsownable().items():
+            cfg_modified = True
+            self._new_paths_owned[path] = type_
+            self._old_paths_owned.pop(path, None)
+
+        # if the helper isn't already done, tell it to do its thing now
+        if not helper.isdone():
+            note("RUNNING: %s" % helper.description)
+            # take ownership of any paths that don't exist yet!
+            for path, type_ in helper.pathsownable().items():
+                if type_ in (self.TYPE_FILE, self.TYPE_FOLDER):
+                    exists = os.path.exists(path)
+                else:
+                    exists = os.path.islink(path)
+                if not exists:
+                    self._created.add(path)
+                    cfg_modified = True
+
+            if cfg_modified:
+                # save the updated config before we try anything
+                self._savecfg()
+                cfg_modified = False
+
+            helper.makechanges()
+        else:
+            note("ALREADY DONE: %s" % helper.description)
+        self._helpers.append(helper)
+
+        # save the config now if we were successful
+        if cfg_modified:
+            # save the updated config before we try anything
+            self._savecfg()
+
+    def cleanup(self, conflicts):
+        assert conflicts in (self.RAISE, self.WARN, self.POSTPONE, self.ASK)
+        note("CLEANING UP %d items ..." % (
+            len(self._old_cleaners) + len(self._created)))
+        stack = list(self._old_cleaners)
+        affected = []
+        while len(stack):
+            deferred = []
+            for cleaner in stack:
+                # TODO: do we still need this complexity?
+                self._removecleaner(cleaner)
+                self._tryclean(cleaner, conflicts, affected)
+                self._savecfg()
+
+            assert len(deferred) < len(stack), "Every cleaner wants to go last"
+            stack = deferred
+
+        # all old cleaners should now be finished, or delayed
+        assert len(self._old_cleaners) == 0
+
+        # re-run any helpers that touch the affected files
+        for path in affected:
+            for helper in self._helpers:
+                if helper.affectspath(path) and not helper.isdone():
+                    note("REDO: %s" % helper.description)
+                    helper.makechanges()
+
+        # now, clean up the old paths we found
+        while len(self._old_paths_owned):
+            before = len(self._old_paths_owned)
+            for path in list(self._old_paths_owned.keys()):
+                type_ = self._old_paths_owned[path]
+                self._trycleanpath(path, type_, conflicts)
+            if len(self._old_paths_owned) >= before:
+                raise Exception("All paths want to delay cleaning")
+
+    def pathstoclean(self):
+        ret = {}
+        for path, type_ in self._old_paths_owned.items():
+            if path in self._created:
+                ret[path] = type_
+        for path, type_ in self._new_paths_owned.items():
+            if path in self._created:
+                ret[path] = type_
+        return ret
+
+    def _tryclean(self, cleaner, conflicts, affected):
+        # if the cleaner is not needed, we get rid of it
+        # FIXME try/except around the isneeded() call
+        if not cleaner.isneeded():
+            note("  Not needed: %s" % cleaner.description)
+            return
+
+        # run the cleaner now
+        note("  Cleaning: %s" % cleaner.description)
+        try:
+            affected.extend(cleaner.makechanges())
+        except CleanupObstruction as err:
+            why = err.args[0]
+            if conflicts == self.RAISE:
+                raise
+            if conflicts == self.POSTPONE:
+                note("    Postponed: %s" % why)
+                # add the cleaner back in
+                self._addcleaner(cleaner)
+                return
+            # NOTE: eventually we'd like to ask the user what to do, but
+            # for now we just issue a warning
+            assert conflicts in (self.WARN, self.ASK)
+            warning("    Aborted: %s" % err.why)
+
+    def _trycleanpath(self, path, type_, conflicts):
+        def _discard():
+            note("    Forgetting about %s %s" % (type_, path))
+            self._old_paths_owned.pop(path)
+            self._postponed.discard(path)
+            self._created.discard(path)
+            self._savecfg()
+
+        def _remove():
+            # remove the thing
+            if type_ == self.TYPE_FOLDER:
+                # TODO: what do we do if the folder isn't empty?
+                note("    Removing dir %s" % path)
+                debug("      rmdir %s" % path)
+                os.rmdir(path)
+            elif type_ == self.TYPE_FILE:
+                if os.stat(path).st_size == 0:
+                    note("  Removing empty %s" % path)
+                    debug("    rm -f %s" % path)
+                    os.unlink(path)
+                else:
+                    note("  Refusing to remove non-empty %s" % path)
+            else:
+                note("    Removing link %s" % path)
+                debug("      rm -f %s" % path)
+                os.unlink(path)
+            _discard()
+
+        def _postpone():
+            note("  Postponing cleanup of path: %s" % path)
+            self._postponed.add(path)
+            assert path not in self._new_paths_owned
+            self._new_paths_owned[path] = type_
+            self._old_paths_owned.pop(path)
+            self._savecfg()
+
+        # if we didn't create the path, then we don't need to clean it up
+        if path not in self._created:
+            return _discard()
+
+        # if the path no longer exists, we have nothing to do
+        if not _exists(path):
+            return _discard()
+
+        # if the thing has the wrong type, we'll issue an note() and just skip
+        if type_ == self.TYPE_FILE:
+            correcttype = os.path.isfile(path)
+        elif type_ == self.TYPE_FOLDER:
+            correcttype = os.path.isdir(path)
+        else:
+            assert type_ == self.TYPE_LINK
+            correcttype = os.path.islink(path)
+        if not correcttype:
+            note("  Ignoring: Won't remove %s as it is no longer a %s" % (
+                 path, type_))
+            return _discard()
+
+        # work out if there is another path we need to remove first
+        for otherpath in self._old_paths_owned:
+            if otherpath != path and isnecessarypath(path, otherpath):
+                # If there's another path we need to do first, then don't do
+                # anything just yet. NOTE: there is an assertion to ensure that
+                # we can't get stuck in an infinite loop repeatedly not
+                # removing things.
+                return
+
+        # if any helpers want the path, don't delete it
+        wantedby = None
+        for c in self._new_cleaners:
+            if c.wantspath(path):
+                wantedby = c
+                break
+
+        if not wantedby:
+            for otherpath in self._new_paths_owned:
+                if isnecessarypath(path, otherpath):
+                    wantedby = otherpath
+
+        if wantedby:
+            # if we previously postponed this path, keep postponing it
+            # while there are still things hanging around that want it
+            if path in self._postponed:
+                return _postpone()
+            if conflicts == self.ASK:
+                raise Exception("TODO: ask the user what to do")  # noqa
+                # NOTE: options are:
+                # A) postpone until it can run later
+                # B) discard it
+            if conflicts == self.RAISE:
+                raise CleanupConflict(conflictpath=path, pathwanter=wantedby)
+            if conflicts == self.POSTPONE:
+                return _postpone()
+            assert conflicts == self.WARN
+            raise Exception("TODO: issue the warning")  # noqa
+            return _discard()
+
+        # if nothing else wants this path, clean it up now
+        return _remove()

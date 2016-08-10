@@ -1,27 +1,46 @@
 import os
-import subprocess
 import sys
-import tempfile
 
 from importlib.machinery import SourceFileLoader
 
-from click import echo, ClickException
-
-from homely._errors import RepoError, HelperError
-from homely._utils import RepoInfo, RepoListConfig, RepoScriptConfig, GitHubURL
-from homely._engine import initengine, getengine
+from homely._errors import HelperError
+from homely._utils import RepoInfo, RepoListConfig, RepoScriptConfig, tmpdir
+from homely._vcs import Repo
 
 
-_ALLOWINTERACTIVE = True
+_INTERACTIVE = False
 _VERBOSE = False
+_FRAGILE = False
 
 
-def verbecho(message):
-    # FIXME: handling of verbecho() is a horrible mess
+def setinteractive(value):
+    global _INTERACTIVE
+    _INTERACTIVE = bool(value)
+
+
+def setverbose(value):
+    global _VERBOSE
+    _VERBOSE = bool(value)
+
+
+def setfragile(value):
+    global _FRAGILE
+    _FRAGILE = bool(value)
+
+
+def note(message):
+    sys.stdout.write("INFO: ")
+    sys.stdout.write(message)
+    sys.stdout.write("\n")
+    sys.stdout.flush()
+
+
+def debug(message):
     if _VERBOSE:
-        sys.stdout.write("INFO: ")
+        sys.stdout.write("DEBUG: ")
         sys.stdout.write(message)
         sys.stdout.write("\n")
+        sys.stdout.flush()
 
 
 def heading(message):
@@ -29,50 +48,76 @@ def heading(message):
     sys.stdout.write("\n")
     sys.stdout.write("=" * len(message))
     sys.stdout.write("\n")
+    sys.stdout.flush()
 
 
 def warning(message):
+    if _FRAGILE:
+        raise Exception(message)
     sys.stderr.write("WARNING: ")
     sys.stderr.write(message)
     sys.stderr.write("\n")
+    sys.stderr.flush()
 
 
-def run_update(info, pullfirst, allowinteractive,
-               verbose=False, only=None, skip=None):
-    global _ALLOWINTERACTIVE, _VERBOSE
-    _VERBOSE = verbose
-    _ALLOWINTERACTIVE = allowinteractive
-    assert isinstance(info, RepoInfo)
-    heading("Updating from %s [%s]" % (info.localpath, info.shorthash))
-    if pullfirst:
-        # FIXME: warn if there are oustanding changes in the repo
-        # FIXME: allow the user to configure whether they want to use 'git
-        # pull' or some other command to update the repo
-        sys.stdout.write("%s: Retrieving updates using git pull\n" %
-                         info.localpath)
-        cmd = ['git', 'pull']
-        subprocess.check_call(cmd, cwd=info.localpath)
-    else:
-        # FIXME: notify the user if there are oustanding changes in the repo
-        pass
+def run_update(infos, pullfirst, only=None, cancleanup=None):
+    from homely._engine2 import initengine, resetengine, setrepoinfo
 
-    # make sure the HOMELY.py script exists
-    pyscript = os.path.join(info.localpath, 'HOMELY.py')
-    if not os.path.exists(pyscript):
-        raise RepoError("%s does not exist" % pyscript)
+    assert cancleanup is not None
+    if only is None:
+        only = []
+    elif len(only):
+        assert len(infos) == 1
+    global _CURRENT_REPO
+    assert len(infos)
+    errors = False
 
-    engine = initengine(info)
-    source = SourceFileLoader('__imported_by_homely', pyscript)
-    try:
-        source.load_module()
-        if only is not None and len(only):
+    engine = initengine()
+
+    for info in infos:
+        setrepoinfo(info)
+        assert isinstance(info, RepoInfo)
+        _CURRENT_REPO = info
+        localrepo = info.localrepo
+        heading("Updating from %s [%s]" %
+                (info.localrepo.repo_path, info.shortid()))
+        if pullfirst:
+            if localrepo.isdirty():
+                warning("Can't use %r in %s: uncommitted changes" % (
+                    localrepo.pulldesc, localrepo.repo_path))
+            else:
+                note("Running %r in %s" %
+                     (localrepo.pulldesc, localrepo.repo_path))
+                localrepo.pullchanges()
+
+        # make sure the HOMELY.py script exists
+        pyscript = os.path.join(info.localrepo.repo_path, 'HOMELY.py')
+        if not os.path.exists(pyscript):
+            warning("%s does not exist" % pyscript)
+            errors = True
+            continue
+
+        if len(only):
             engine.onlysections(only)
-        if skip is not None and len(skip):
-            engine.skipsections(skip)
-        engine.execute()
-    except HelperError as err:
-        sys.stderr.write("ERROR: %s\n" % str(err))
-        sys.exit(1)
+
+        source = SourceFileLoader('__imported_by_homely', pyscript)
+        try:
+            source.load_module()
+        except HelperError as err:
+            warning(str(err))
+            errors = True
+
+    setrepoinfo(None)
+
+    if all((cancleanup,
+            not (errors or len(only)),
+            len(infos) == RepoListConfig().repo_count(),
+            )):
+        engine.cleanup(engine.RAISE)
+
+    resetengine()
+
+    return not errors
 
 
 def isinteractive():
@@ -80,114 +125,85 @@ def isinteractive():
     Returns True if the script is being run in a context where the user can
     provide input interactively. Otherwise, False is returned.
     '''
-    return _ALLOWINTERACTIVE and sys.__stdin__.isatty() and sys.stderr.isatty()
+    return _INTERACTIVE and sys.__stdin__.isatty() and sys.stderr.isatty()
 
 
-def addfromurl(repo_path, dest_path, verbose, interactive):
+def addfromremote(repo, dest_path):
+    assert isinstance(repo, Repo) and repo.isremote
+
     rlist = RepoListConfig()
 
-    # is it a github url?
-    ghurl = GitHubURL.loadfromurl(repo_path)
-    clone_path = repo_path
-    if ghurl:
+    if repo.iscanonical:
         # abort if we have already added this repo before
-        match = rlist.find_by_ghurl(ghurl)
+        match = rlist.find_by_canonical(repo.repo_path)
         if match:
-            echo("Repo [%s] from %s has already been added" %
-                 (match.shorthash, match.githuburl.ashttps()))
-            return
+            note("Repo [%s] from %s has already been added" %
+                 (match.shortid(), repo.canonical))
+            return match
 
-        clone_path = repo_path
-
-    # figure out where the temporary clone should be moved to
-    confirm_path = False
+    # figure out where the temporary clone should be moved to after it is
+    # created
     if dest_path is None:
-        if ghurl:
-            base = ghurl.getname()
-        else:
-            base = os.path.basename(repo_path.rstrip('/'))
-            if base.endswith('.git'):
-                base = base[0:-4]
-        dest_path = os.path.join(os.environ.get('HOME'), base)
-        confirm_path = interactive
+        assert repo.suggestedlocal is not None
+        dest_path = os.path.join(os.environ["HOME"], repo.suggestedlocal)
 
-    tmpdir = None
-    try:
-        tmpdir = tempfile.TemporaryDirectory()
-
+    with tmpdir(os.path.basename(dest_path)) as tmp:
         # clone the repo to a temporary location
-        verbecho("Cloning %s to %s")
-        subprocess.check_call(['git', 'clone', clone_path, tmpdir.name])
+        note("HOME: %s" % os.environ["HOME"])
+        note("tmp:  %s" % tmp)
+        note("Cloning %s to tmp:%s" % (repo.repo_path, tmp))
+        repo.clonetopath(tmp)
 
         # find out the first commit id
-        commithash = RepoInfo.getfirsthash(tmpdir.name)
+        localrepo = repo.frompath(tmp)
+        assert isinstance(localrepo, repo.__class__)
+        tmprepoid = localrepo.getrepoid()
 
-        # if we recognise the first commit id, record the githuburl onto the
-        # repo info so we don't have to download it again
-        match = rlist.find_repo(commithash)
+        # if we recognise the repo, record the canonical path onto
+        # the repo info so we don't have to download it again
+        match = rlist.find_by_id(tmprepoid)
         if match is not None:
-            echo("Repo [%s] from has already been added" % match.shorthash)
-            if ghurl:
-                match.githuburl = ghurl
+            note("Repo [%s] from has already been added" %
+                 match.localrepo.shortid(tmprepoid))
+            if repo.iscanonical:
+                match.canonicalrepo = repo
                 rlist.add_repo(match)
                 rlist.writejson()
-            return
+            return match, True
 
         if os.path.exists(dest_path):
-            # if the dest path is the same repo, then we just need to do a git
-            # pull in that dir
-            try:
-                desthash = RepoInfo.getfirsthash(dest_path)
-                if desthash != commithash:
-                    raise Exception("Repo with hash %s already exists" %
-                                    desthash)
-                # run a git pull in that repo
-                echo("Using git pull in %s" % dest_path)
-                subprocess.check_call(['git', 'pull'], cwd=dest_path)
-            except:
-                echo("Can't clone into %s - path already exists" % dest_path,
-                     err=True)
-                raise
-        # ask the user if this path is ok?
-        elif confirm_path and not yesno('Clone into %s?' % dest_path,
-                                        True, None):
-            # FIXME: how would click library like me to exit(1) here?
-            sys.exit(1)
-        else:
-            os.rename(tmpdir.name, dest_path)
-    finally:
-        if tmpdir and os.path.exists(tmpdir.name):
-            tmpdir.cleanup()
+            destrepo = localrepo.frompath(dest_path)
 
-    # add the local repo to our config
-    return RepoInfo(dest_path, commithash, ghurl)
+            if not destrepo:
+                # TODO: use a different type of exception here
+                raise Exception("DEST_PATH %s already exists" % dest_path)
 
+            # check that the repo there is the right repo
+            destid = destrepo.getrepoid()
+            if destid != tmprepoid:
+                # TODO: this should be a different type of exception
+                raise Exception("Repo with id [%s] already exists at %s" %
+                                (destrepo.getrepoid(False), dest_path))
 
-def addfromlocal(repo_path, verbose, interactive):
-    repo_path = repo_path.rstrip('/')
-    rlist = RepoListConfig()
+            # we can use the repo that already exists at dest_path
+            note("Using the existing repo [%s] at %s" %
+                 (destrepo.shortid(destid), dest_path))
+            return RepoInfo(destrepo, destid), True
 
-    # the repo must exist
-    if not os.path.exists(repo_path):
-        raise ClickException("Repo %s does not exist" % repo_path)
-    if not os.path.exists(os.path.join(repo_path, '.git')):
-        raise ClickException("%s is not a git repo" % repo_path)
+        # move our temporary clone into the final destination
+        os.rename(tmp, dest_path)
 
-    # find out the first commit id
-    commithash = RepoInfo.getfirsthash(repo_path)
-
-    # if we recognise the first commit id, then we are already done
-    match = rlist.find_repo(commithash)
-    if match is not None:
-        echo("Repo [%s] from %s has already been added" %
-             (match.shorthash, repo_path))
-        return
-
-    # need to add the local repo to our config
-    return RepoInfo(repo_path, commithash)
+    destrepo = localrepo.frompath(dest_path)
+    assert destrepo is not None
+    info = RepoInfo(destrepo,
+                    destrepo.getrepoid(),
+                    repo if repo.iscanonical else None,
+                    )
+    return info, False
 
 
 def yesno(prompt, default, recommended=None):
+    assert _INTERACTIVE
     if default is True:
         options = "Y/n"
     elif default is False:
@@ -214,6 +230,16 @@ def yesno(prompt, default, recommended=None):
             sys.stderr.write("ERROR: Invalid answer: %r\n" % (input_, ))
 
 
+# this needs to be set in order for things to work correctly
+_CURRENT_REPO = None
+
+
+def setcurrentrepo(info):
+    assert isinstance(info, RepoInfo)
+    global _CURRENT_REPO
+    _CURRENT_REPO = info
+
+
 def yesnooption(name, prompt, default=None):
     '''
     Ask the user for a yes/no answer to question [prompt]. Store the result as
@@ -228,8 +254,7 @@ def yesnooption(name, prompt, default=None):
     if default is not None:
         assert default in (True, False)
 
-    info = getengine().getrepoinfo()
-    cfg = RepoScriptConfig(info)
+    cfg = RepoScriptConfig(_CURRENT_REPO)
 
     previous_value = cfg.getquestionanswer(name)
     if previous_value is not None:

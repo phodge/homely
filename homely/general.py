@@ -1,54 +1,56 @@
 import os
 import re
 import contextlib
+from copy import copy
 
 from homely._errors import HelperError
-from homely._engine import getengine
-from homely._utils import filereplacer
+from homely._engine2 import getengine, Helper, Engine, getrepoinfo
+from homely._cleaners import CleanLineInFile, CleanBlockInFile
+from homely._utils import filereplacer, _resolve
 from homely._ui import warning
 
 
-def add(updatehelper):
-    getengine().add(updatehelper)
+def run(updatehelper):
+    getengine().run(updatehelper)
 
 
-@contextlib.contextmanager
-def section(name):
-    if re.match('[^A-Za-z0-9_:\-\[\]<>]', name):
-        raise HelperError("%r is not a valid section name" % name)
-
-    getengine().pushsection(name)
-    yield
-    getengine().popsection(name)
+def section(func):
+    name = func.__name__
+    engine = getengine()
+    try:
+        if engine.pushsection(name):
+            func()
+    finally:
+        engine.popsection(name)
 
 
 def mkdir(path):
-    path = os.path.expanduser(path)
-    getengine().add(MakeDir(path=path))
+    path = _resolve(path)
+    getengine().run(MakeDir(path))
 
 
-def lineinfile(filename, contents, prefix=None, regex=None):
-    filename = os.path.expanduser(filename)
-    obj = LineInFile(filename=filename, contents=contents)
-    if prefix is not None:
-        obj.findprefix(prefix)
-    elif regex is not None:
-        obj.findregex(regex)
-    getengine().add(obj)
+def lineinfile(filename, contents, where=None):
+    filename = _resolve(filename)
+    obj = LineInFile(filename, contents, where)
+    getengine().run(obj)
 
 
-def symlink(source, dest=None):
-    # if [source] doesn't start with '/', assume it is relative to the repo
-    if not source.startswith('/'):
-        info = getengine().getrepoinfo()
-        source = os.path.join(info.localpath, source)
-    # if [dest] is omited, assume the symlink goes into $HOME/ at the top level
-    if dest is None:
-        dest = os.path.join(os.environ.get('HOME'), os.path.basename(source))
-    helper = MakeSymlink(source, dest)
-    getengine().add(helper)
+def symlink(target, linkname=None):
+    target = _resolve(target)
+    linkname = _resolve(linkname)
+    # if [target] doesn't start with '/', assume it is relative to the repo
+    if not target.startswith('/'):
+        info = getrepoinfo()
+        target = os.path.join(info.localrepo.repo_path, target)
+    # if [linkname] is omited, assume the symlink goes into $HOME/ at the top
+    # level
+    if linkname is None:
+        linkname = os.path.join(os.environ.get('HOME'),
+                                os.path.basename(target))
+    getengine().run(MakeSymlink(target, linkname))
 
 
+# TODO: phase out all use of this old thing
 class UpdateHelper(object):
     _section = None
 
@@ -78,126 +80,73 @@ class UpdateHelper(object):
     def getsection(self):
         return self._section
 
-    def iscleanable(self):
-        raise NotImplementedError("%s needs to implement iscleanable()" %
-                                  (self.__class__.__name__))
-
     def isdone(self):
         raise NotImplementedError("%s needs to implement isdone()" %
                                   (self.__class__.__name__))
 
-    def makechanges(self, prevchanges):
-        prototype = "makechanges(self, prevchanges)"
-        raise NotImplementedError("%s needs to implement %s" %
-                                  (self.__class__.__name__, prototype))
+    def makechanges(self):
+        raise NotImplementedError("%s needs to implement .makechanges()" %
+                                  self.__class__.__name__)
 
+    # TODO: get rid of this permanently
     def undochanges(self, prevchanges):
         prototype = "undochanges(self, prevchanges)"
         raise NotImplementedError("%s needs to implement %s" %
                                   (self.__class__.__name__, prototype))
 
 
-class MakeDir(UpdateHelper):
+class MakeDir(Helper):
     _path = None
 
     def __init__(self, path):
+        super(MakeDir, self).__init__()
         self._path = path
 
     @property
-    def identifiers(self):
-        return dict(path=self._path)
+    def description(self):
+        return "Create dir %s" % self._path
 
-    @classmethod
-    def fromidentifiers(class_, identifiers):
-        return class_(identifiers["path"])
-
-    def iscleanable(self):
-        return os.path.isdir(self._path)
+    def getcleaner(self):
+        return
 
     def isdone(self):
-        return os.path.isdir(self._path)
+        return os.path.exists(self._path) and os.path.isdir(self._path)
 
-    def descchanges(self):
-        return "Creating directory %s" % self._path
+    def makechanges(self):
+        os.mkdir(self._path)
 
-    def makechanges(self, prevchanges):
-        if os.path.islink(self._path):
-            raise HelperError("%s is already a symlink" % self._path)
+    def affectspath(self, path):
+        return path == self._path
 
-        changes = {
-            "dirs_created": prevchanges.get("dirs_created", []),
-        }
-
-        check = []
-        path = self._path
-        prev = None
-        while path != prev:
-            prev = path
-            check.insert(0, path)
-            path = os.path.dirname(path)
-        for path in check:
-            if os.path.isdir(path):
-                continue
-            if os.path.exists(self._path):
-                raise HelperError("%s already exists" % self._path)
-            changes["dirs_created"].append(path)
-            os.makedirs(path)
-
-        return changes
-
-    def undochanges(self, prevchanges):
-        if self._path in prevchanges["dirs_created"]:
-            # ensure the folder is empty before deleting it
-            if len(os.listdir(self._path)):
-                warning("Refusing to clean up non-empty folder %s" %
-                        self._path)
-            else:
-                os.rmdir(self._path)
+    def pathsownable(self):
+        return {self._path: Engine.TYPE_FOLDER}
 
 
-class MakeSymlink(UpdateHelper):
-    def __init__(self, source, dest):
-        self._dest = dest
-        self._source = source
+class MakeSymlink(Helper):
+    def __init__(self, target, linkname):
+        assert target.startswith('/')
+        assert linkname.startswith('/')
+        self._target = target
+        self._linkname = linkname
+
+    def getcleaner(self):
+        return
+
+    def isdone(self):
+        return (os.path.islink(self._linkname) and
+                os.readlink(self._linkname) == self._target)
 
     @property
-    def identifiers(self):
-        return dict(source=self._source, dest=self._dest)
+    def description(self):
+        return "Create symlink %s -> %s" % (self._linkname, self._target)
 
-    @classmethod
-    def fromidentifiers(class_, identifiers):
-        return class_(identifiers['source'], identifiers["dest"])
+    def makechanges(self):
+        assert not os.path.exists(self._linkname)
+        os.symlink(self._target, self._linkname)
 
-    def iscleanable(self):
-        return os.path.islink(self._dest)
-
-    def isdone(self):
-        return (os.path.islink(self._dest) and
-                os.readlink(self._dest) == self._source)
-
-    def descchanges(self):
-        return "Creating symlink %s -> %s" % (self._dest, self._source)
-
-    def makechanges(self, prevchanges):
-        if os.path.islink(self._dest):
-            current = os.readlink(self._dest)
-            if current == self._source:
-                return prevchanges
-            raise HelperError("%s is already a symlink to %s" %
-                              (self._dest, current))
-
-        if os.path.exists(self._dest):
-            raise HelperError("Can't create symlink %s: a file already exists"
-                              " at that path" % (self._dest, current))
-
-        changes = {
-            "links_created": prevchanges.get("links_created", []),
-        }
-        os.symlink(self._source, self._dest)
-        changes["links_created"].append([self._source, self._dest])
-        return changes
-
+    # TODO: get rid of all of these functions ...
     def undochanges(self, prevchanges):
+        raise Exception("TODO: move this to a cleaner")  # noqa
         if not os.path.islink(self._dest):
             return
         if os.readlink(self._dest) == self._source:
@@ -206,81 +155,212 @@ class MakeSymlink(UpdateHelper):
             warning("Refusing to clean up symlink %s which now points to"
                     " %s" % (self._dest, os.readlink(self._dest)))
 
+    def affectspath(self, path):
+        return path == self._linkname
 
-class LineInFile(UpdateHelper):
-    _filename = None
-    _contents = None
-    _findprefix = None
-    _findregex = None
+    def pathsownable(self):
+        return {self._linkname: Engine.TYPE_LINK}
 
-    def __init__(self, filename, contents):
+
+WHERE_TOP = "__TOP__"
+WHERE_END = "__END__"
+WHERE_ANY = "__ANY__"
+
+
+class LineInFile(Helper):
+    def __init__(self, filename, contents, where=None):
         super(LineInFile, self).__init__()
         self._filename = filename
         self._contents = contents
-
-    def findprefix(self, prefix):
-        self._findprefix = prefix
-
-    def findregex(self, regex):
-        self._findregex = regex
+        if not len(contents):
+            raise Exception("LineInFile cannot work with empty contents")
+        if "\n" in contents or "\r" in contents:
+            raise Exception("LineInFile contents cannot include linebreaks")
+        if contents.strip() != contents:
+            raise Exception(
+                "LineInFile contents cannot start or end with whitespace")
+        if where is None:
+            where = WHERE_ANY
+        self._where = where
 
     @property
-    def identifiers(self):
-        return dict(filename=self._filename,
-                    contents=self._contents)
+    def description(self):
+        pos = ""
+        if self._where == WHERE_TOP:
+            pos = " (at top)"
+        elif self._where == WHERE_END:
+            pos = " (at end)"
+        return "Add line to %s: %r%s" % (self._filename, self._contents, pos)
 
-    @classmethod
-    def fromidentifiers(class_, identifiers):
-        return class_(identifiers["filename"], identifiers["contents"])
+    def getcleaner(self):
+        return CleanLineInFile(self._filename, self._contents)
 
     def isdone(self):
-        try:
-            with open(self._filename) as f:
-                for line in f.readlines():
-                    if line.rstrip() == self._contents:
-                        return True
-        except FileNotFoundError:
-            pass
-        return False
+        if not os.path.exists(self._filename):
+            return False
+        foundat = []
+        linecount = 0
+        with open(self._filename) as f:
+            for line in f.readlines():
+                linecount += 1
+                if line.rstrip('\r\n') == self._contents:
+                    foundat.append(linecount)
+        # if the line appears multiple times, we count it as NOT done
+        if len(foundat) != 1:
+            return False
+        if self._where == WHERE_TOP:
+            return foundat[0] == 1
+        if self._where == WHERE_END:
+            return foundat[0] == linecount
+        return True
 
-    def descchanges(self):
-        return "Adding line to %s: %s" % (self._filename, self._contents)
-
-    def makechanges(self, prevchanges):
-        changes = {
-            "old_line": None,
-        }
-
-        if self._findprefix:
-            def matchline(line):
-                return line.startswith(self._findprefix)
-        elif self._findregex:
-            # FIXME: implement regex matching
-            raise Exception("FIXME: implement regex")  # noqa
-        else:
-            def matchline(line):
-                return line.rstrip() == self._contents
-
-        with filereplacer(self._filename) as (tmp, orig):
-            modified = False
-            if orig is not None:
-                # read through the original file and look for a line to replace
-                for line in orig.readlines():
-                    if not modified and matchline(line):
-                        modified = True
-                        tmp.write(self._contents)
-                        # FIXME: respect the existing lines' line endings!
-                        tmp.write("\n")
-                        if "old_line" not in changes:
-                            changes["old_line"] = line.rstrip()
-                    else:
-                        tmp.write(line)
-            # if we didn't write out the new line by replacing parts of the
-            # original, then we'll just have to pop the new line on the end
-            if not modified:
+    def makechanges(self):
+        # the content wasn't found in the file, so we'll have to add it
+        with filereplacer(self._filename) as (tmp, origlines, NL):
+            seen = False
+            # if the new line goes at the top, write it out first
+            if self._where == WHERE_TOP:
                 tmp.write(self._contents)
-                # FIXME: respect the existing lines' line endings!
-                tmp.write("\n")
-                changes["old_line"] = None
+                tmp.write(NL)
+                seen = True
+            # read through the original file and look for a line to replace
+            if origlines is not None:
+                for line in origlines:
+                    if line == self._contents:
+                        # skip the line if it's already been seen before, or it
+                        # needs to move to the end of the file
+                        if seen or self._where == WHERE_END:
+                            continue
+                        seen = True
+                    tmp.write(line)
+                    tmp.write(NL)
+            if not seen:
+                assert self._where in (WHERE_END, WHERE_ANY)
+                tmp.write(self._contents)
+                tmp.write(NL)
 
-        return changes
+    def pathsownable(self):
+        return {self._filename: Engine.TYPE_FILE}
+
+    def affectspath(self, path):
+        return path == self._filename
+
+
+class BlockInFile(Helper):
+    def __init__(self, filename, lines, prefix, suffix, where=None):
+        self._filename = filename
+        self._lines = lines
+        self._prefix = prefix
+        self._suffix = suffix
+        self._where = WHERE_ANY if where is None else where
+
+    @property
+    def description(self):
+        pos = {WHERE_TOP: "top of ", WHERE_END: "end of ", WHERE_ANY: ""}
+        return "Add %d lines to %s%s: %r...%r" % (
+            2 + len(self._lines),
+            pos[self._where],
+            self._filename,
+            self._prefix,
+            self._suffix,
+        )
+
+    def getcleaner(self):
+        return CleanBlockInFile(self._filename,
+                                self._prefix,
+                                self._suffix,
+                                )
+
+    def isdone(self):
+        if not os.path.exists(self._filename):
+            return False
+
+        # look to see if our contents appear in the file
+        with open(self._filename) as f:
+            firstline = True
+            count = 0
+            expect = None
+            prev = None
+            for line in f:
+                stripped = line.rstrip('\r\n')
+                if firstline and self._where == WHERE_TOP:
+                    if stripped != self._prefix:
+                        return False
+                if expect is not None:
+                    if stripped != expect.pop(0):
+                        return False
+                    if len(expect):
+                        prev = "INNER"
+                    else:
+                        prev = "SUFFIX"
+                        count += 1
+                elif stripped == self._prefix:
+                    expect = copy(self._lines)
+                    expect.extend(self._suffix)
+                    prev = "PREFIX"
+                else:
+                    prev = "OTHER"
+        if self._where == WHERE_END and prev != "SUFFIX":
+            return False
+        return count == 1
+
+    def makechanges(self):
+        with filereplacer(self._filename) as (tmp, origlines, NL):
+            findsuffix = False
+            found = False
+
+            def _writeall():
+                nonlocal found
+                found = True
+                tmp.write(self._prefix)
+                tmp.write(NL)
+                for line in self._lines:
+                    tmp.write(line)
+                    tmp.write(NL)
+                tmp.write(self._suffix)
+                tmp.write(NL)
+
+            if self._where == WHERE_TOP:
+                _writeall()
+            if origlines is not None:
+                for line in origlines:
+                    if findsuffix:
+                        # while we're looking for the suffix, discard any other
+                        # lines we encounter
+                        # encountered into a temporary holding area
+                        if line != self._suffix:
+                            continue
+
+                        # We've found the suffix! If we're allowed to write the
+                        # block out anywhere, and we haven't written it out
+                        # yet write it out here, now
+                        if self._where == WHERE_ANY and not found:
+                            _writeall()
+                        findsuffix = False
+                        continue
+
+                    if line == self._prefix:
+                        findsuffix = True
+                        continue
+
+                    tmp.write(line)
+                    tmp.write(NL)
+
+            if findsuffix:
+                # FIXME: some sort of exception that we can handle nicely
+                raise Exception(
+                    "Error in %s: Found prefix %r but not suffix %r" % (
+                        self._filename,
+                        self._prefix,
+                        self._suffix,
+                    ))
+
+            # if we haven't found the block yet, write it out now
+            if not found:
+                _writeall()
+
+    def affectspath(self, path):
+        return path == self._filename
+
+    def pathsownable(self):
+        return {self._filename: Engine.TYPE_FILE}

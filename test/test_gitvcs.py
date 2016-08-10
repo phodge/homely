@@ -30,9 +30,9 @@ def test_git(tmpdir):
         https,
     ]
     for repo_path in tests:
-        vcsrepo = Repo.frompath(repo_path)
-        assert vcsrepo.iscanonical == (repo_path == https)
-        assert vcsrepo.isremote is True
+        repo = Repo.frompath(repo_path)
+        assert repo.iscanonical == (repo_path == https)
+        assert repo.isremote is True
 
     # check that frompath() works on folders also
     assert Repo.frompath(tmpdir) is None

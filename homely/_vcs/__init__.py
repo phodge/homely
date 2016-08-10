@@ -22,10 +22,18 @@ def _gethandlers():
 
 def getrepohandler(repo_path):
     for class_ in _handlers or _gethandlers():
-        vcsrepo = class_.frompath(repo_path)
-        if vcsrepo is not None:
-            return vcsrepo
+        repo = class_.frompath(repo_path)
+        if repo is not None:
+            return repo
     raise RepoError("No handler for repo at %s" % repo_path)
+
+
+def fromdict(row):
+    for class_ in _handlers or _gethandlers():
+        obj = class_.fromdict(row)
+        if obj is not None:
+            return obj
+    raise Exception("No Repo handler wants to load %r" % row)
 
 
 class Repo(object):
@@ -92,6 +100,7 @@ class Repo(object):
             repo_path=self.repo_path,
             isremote=self.isremote,
             iscanonical=self.iscanonical,
+            suggestedlocal=self.suggestedlocal,
         )
 
     @classmethod
@@ -100,4 +109,5 @@ class Repo(object):
             return class_(row["repo_path"],
                           row["isremote"],
                           row["iscanonical"],
+                          row["suggestedlocal"],
                           )

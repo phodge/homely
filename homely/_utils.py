@@ -1,44 +1,20 @@
 import contextlib
+from itertools import chain
 import os
-import subprocess
+import tempfile
 
 import simplejson
 
-from homely._errors import JsonError, RepoError
+from homely._errors import JsonError
+from homely._vcs import Repo, fromdict
 
-CONFIG_DIR = os.path.join(os.environ.get('HOME'), '.homely')
+CONFIG_DIR = os.path.join(os.environ['HOME'], '.homely')
 REPO_CONFIG_PATH = os.path.join(CONFIG_DIR, 'repos.json')
+ENGINE2_CONFIG_PATH = os.path.join(CONFIG_DIR, 'engine2.json')
 
 
 def _resolve(path):
     return os.path.realpath(os.path.expanduser(path))
-
-
-class GitHubURL(object):
-    @classmethod
-    def loadfromurl(class_, url):
-        import re
-        m = re.match('^(https://|git@)github\.com[/:]([^/]+)/([^/]+)', url)
-        if not m:
-            return
-        _, user, name = m.groups()
-        scheme = 'https' if url.startswith('https://') else 'ssh'
-        if name.endswith('.git'):
-            name = name[0:-4]
-        return class_(user, name, scheme)
-
-    def __init__(self, user, name, scheme):
-        self._user = user
-        self._name = name
-
-    def getname(self):
-        return self._name
-
-    def ashttps(self):
-        return 'https://github.com/%s/%s.git' % (self._user, self._name)
-
-    def asssh(self):
-        return 'git@github.com:%s/%s.git' % (self._user, self._name)
 
 
 class JsonConfig(object):
@@ -53,7 +29,7 @@ class JsonConfig(object):
                     raise FileNotFoundError(None)
                 self.jsondata = simplejson.loads(data)
                 self.checkjson()
-        except FileNotFoundError as err:
+        except FileNotFoundError:
             self.jsondata = self.defaultjson()
         except simplejson.JSONDecodeError:
             raise JsonError("%s does not contain valid JSON" % self.jsonpath)
@@ -84,87 +60,128 @@ class RepoListConfig(JsonConfig):
     jsonpath = REPO_CONFIG_PATH
     jsondata = None
 
-    def __init__(self):
-        super(RepoListConfig, self).__init__()
-
-        # fix any paths that have changed
-        modified = False
-        for entry in self.jsondata:
-            resolved = _resolve(entry['localpath'])
-            if resolved != entry['localpath']:
-                entry['localpath'] = resolved
-                modified = True
-        if modified:
-            self.writejson()
-
     def defaultjson(self):
         return []
 
     def checkjson(self):
         assert isinstance(self.jsondata, list)
-        for entry in self.jsondata:
-            assert 'commithash' in entry
-            assert 'localpath' in entry
+        for row in self.jsondata:
+            assert 'repoid' in row
+            assert 'localrepo' in row
+            assert 'localpath' in row
+            if 'canonicalpath' in row:
+                assert 'canonicalrepo' in row
 
     def add_repo(self, info):
         assert isinstance(info, RepoInfo)
-        commithash = info.commithash
         modified = False
-        for repo in self.jsondata:
-            if repo["commithash"] == commithash:
-                # change the local path in the config
-                repo["localpath"] = _resolve(info.localpath)
-                if info.githuburl is not None:
-                    repo["githuburl"] = info.githuburl.ashttps()
+        for row in self.jsondata:
+            if row["repoid"] == info.repoid:
+                row.update(self._infotodict(info))
                 modified = True
                 break
         if not modified:
-            self.jsondata.append(info.asdict())
+            self.jsondata.append(self._infotodict(info))
 
-    def remove_repo(self, commithash):
+    @staticmethod
+    def _infotodict(info):
+        assert isinstance(info, RepoInfo)
+        ret = {
+            "repoid": info.repoid,
+            "localpath": info.localrepo.repo_path,
+            "localrepo": info.localrepo.asdict(),
+        }
+        if info.canonicalrepo is not None:
+            ret["canonicalpath"] = info.canonicalrepo.repo_path
+            ret["canonicalrepo"] = info.canonicalrepo.asdict()
+        return ret
+
+    def _infofromdict(self, row):
+        localrepo = fromdict(row["localrepo"])
+        assert localrepo is not None
+        if row.get("canonicalpath"):
+            canonical = fromdict(row["canonicalrepo"])
+        else:
+            canonical = None
+        return RepoInfo(
+            localrepo,
+            row["repoid"],
+            canonical,
+        )
+
+    def remove_repo(self, repoid):
         newdata = []
-        for repo in self.jsondata:
-            if repo["commithash"] != commithash:
-                newdata.append(repo)
+        for row in self.jsondata:
+            if row["repoid"] != repoid:
+                newdata.append(row)
         self.jsondata = newdata
 
-    def find_repo(self, hash_or_path):
-        for repo in self.jsondata:
-            match = False
-            if hash_or_path == repo["commithash"]:
-                match = True
-            elif _resolve(hash_or_path) == _resolve(repo["localpath"]):
-                match = True
-            if match:
-                return RepoInfo.fromdict(repo)
+    def find_by_id(self, repoid):
+        """
+        Returns the repo with the specified <repoid>
+        """
+        for row in self.jsondata:
+            if repoid == row["repoid"]:
+                return self._infofromdict(row)
 
-    def find_by_ghurl(self, ghurl):
-        assert isinstance(ghurl, GitHubURL)
-        httpsurl = ghurl.ashttps()
-        for repo in self.jsondata:
-            if httpsurl == repo.get("githuburl"):
-                return RepoInfo.fromdict(repo)
+    def find_by_localpath(self, path):
+        """
+        Returns the repo with the specified local <path>
+        """
+        # note that the paths in self.jsondata were already _resolve()'d in the
+        # class' __init__()
+        resolved = _resolve(path)
+        for row in self.jsondata:
+            if resolved == os.path.realpath(row["localpath"]):
+                return self._infofromdict(row)
+
+    def find_by_canonical(self, repo_path):
+        for row in self.jsondata:
+            if repo_path == row.get("canonicalpath"):
+                return self._infofromdict(row)
+
+    def find_by_any(self, identifier, how):
+        """
+        how should be a string with any or all of the characters "ilc"
+        """
+        if "i" in how:
+            match = self.find_by_id(identifier)
+            if match:
+                return match
+        if "l" in how:
+            match = self.find_by_localpath(identifier)
+            if match:
+                return match
+        if "c" in how:
+            match = self.find_by_canonical(identifier)
+            if match:
+                return match
 
     def find_all(self):
-        for repo in self.jsondata:
-            yield RepoInfo.fromdict(repo)
+        for row in self.jsondata:
+            yield self._infofromdict(row)
+
+    def repo_count(self):
+        return len(self.jsondata)
 
 
 class RepoScriptConfig(JsonConfig):
     jsondata = None
 
     def __init__(self, info):
+        assert isinstance(info, RepoInfo)
         self.jsonpath = os.path.join(CONFIG_DIR,
                                      'repos',
-                                     info.commithash + '.json')
+                                     info.repoid + '.json')
         super(RepoScriptConfig, self).__init__()
 
     @staticmethod
     def remove(info):
         assert isinstance(info, RepoInfo)
-        os.unlink(os.path.join(CONFIG_DIR, 'repos', info.commithash + '.json'))
+        os.unlink(os.path.join(CONFIG_DIR, 'repos', info.repoid + '.json'))
 
     def defaultjson(self):
+        # TODO: prevthings and prevchanges are not needed with the new engine
         return {
             # a list of things that were installed on the last run
             "prevthings": [],
@@ -229,55 +246,25 @@ def saveconfig(cfg):
 
 
 class RepoInfo(object):
-    localpath = None
-    commithash = None
-    githuburl = None
+    def __init__(self, localrepo, repoid, canonicalrepo=None):
+        if localrepo is not None:
+            assert isinstance(localrepo, Repo)
+            assert not localrepo.isremote
+        if canonicalrepo is not None:
+            assert isinstance(canonicalrepo, Repo)
+            assert canonicalrepo.isremote
+            assert canonicalrepo.iscanonical
 
-    def __init__(self, path, commithash=None, githuburl=None):
-        path = _resolve(path)
+        self.localrepo = localrepo
+        self.canonicalrepo = canonicalrepo
+        self.repoid = repoid
 
-        # make sure the path is valid
-        if not os.path.exists(path):
-            raise RepoError("%s does not exist" % path)
-        if not os.path.exists(os.path.join(path, '.git')):
-            raise RepoError("%s is not a valid git repo" % path)
-        self.localpath = path
-        if commithash is None:
-            # ask git for the commit hash
-            self.commithash = self.getfirsthash(path)
-        else:
-            self.commithash = commithash
-        if githuburl is not None:
-            assert isinstance(githuburl, GitHubURL)
-        self.githuburl = githuburl
+    def shortid(self):
+        return self.localrepo.shortid(self.repoid)
 
-    @classmethod
-    def fromdict(class_, data):
-        ret = class_(data["localpath"], data.get("commithash"))
-        githuburl = data.get("githuburl")
-        if githuburl is not None:
-            ret.githuburl = GitHubURL.loadfromurl(githuburl)
-            assert ret.githuburl is not None
-        return ret
 
-    def asdict(self):
-        ret = {"localpath": self.localpath}
-        if self.commithash is not None:
-            ret["commithash"] = self.commithash
-        if self.githuburl is not None:
-            ret["githuburl"] = self.githuburl.ashttps()
-        return ret
-
-    @staticmethod
-    def getfirsthash(localpath):
-        cmd = ['git', 'rev-list', '--max-parents=0', 'HEAD']
-        return (subprocess.check_output(cmd, cwd=localpath)
-                .rstrip()
-                .decode('utf-8'))
-
-    @property
-    def shorthash(self):
-        return self.commithash[0:8]
+class NoChangesNeeded(Exception):
+    """See filereplacer() for more info"""
 
 
 @contextlib.contextmanager
@@ -285,10 +272,13 @@ def filereplacer(filepath):
     """
     This context manager yields two file pointers:
 
-    orig:
-        a file descriptor as if you had used open(filepath)
+    origlines:
+        a generator that yields lines from the original file
     tmp:
         a file descriptor as if you had used open(tempfile.mkstemp(), 'w')
+    NL:
+        one of "\n", "\r\n" or "\r" depending on what is encountered first in
+        orig. If orig is empty or doesn't exist, then "\n" is used.
 
     Note that upon successful exiting of the context manager, the file
     nominated by filepath will be replaced by the temp file. This will be done
@@ -296,6 +286,9 @@ def filereplacer(filepath):
 
     If the context block raises an exception, the original file is not changed,
     and the temp file is deleted.
+
+    If the context block raises a NoChangesNeeded exception, then any changes
+    to tmpfile are discarded.
     """
     import shutil
     # create the tmp dir if it doesn't exist yet
@@ -305,12 +298,26 @@ def filereplacer(filepath):
     try:
         if os.path.exists(filepath):
             shutil.copy2(filepath, tmpname)
-        with open(tmpname, 'w') as tmp:
+        with open(tmpname, 'w', newline="") as tmp:
             try:
-                with open(filepath, 'r') as orig:
-                    yield tmp, orig
+                with open(filepath, 'r', newline="") as orig:
+                    NL = "\n"
+                    origlines = []
+                    firstline = None
+                    for firstline in orig:
+                        break
+                    if firstline is not None:
+                        stripped = firstline.rstrip('\r\n')
+                        NL = firstline[len(stripped):]
+                        assert NL in ("\r", "\n", "\r\n"), "Bad NL %r" % NL
+                        origlines = chain([stripped],
+                                          (l.rstrip('\r\n') for l in orig))
+                    yield tmp, origlines, NL
             except FileNotFoundError:
-                yield tmp, None
+                yield tmp, None, "\n"
+    except NoChangesNeeded:
+        with contextlib.suppress(FileNotFoundError):
+            os.unlink(tmpname)
     except:
         with contextlib.suppress(FileNotFoundError):
             os.unlink(tmpname)
@@ -366,3 +373,15 @@ def isnecessarypath(parent, child):
                 return True
 
     return False
+
+
+@contextlib.contextmanager
+def tmpdir(name):
+    assert '/' not in name, "Invalid name %r" % name
+    tmp = None
+    try:
+        tmp = tempfile.TemporaryDirectory()
+        yield os.path.join(tmp.name, name)
+    finally:
+        if tmp and os.path.exists(tmp.name):
+            tmp.cleanup()
