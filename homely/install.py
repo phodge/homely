@@ -257,3 +257,6 @@ class PackageCleaner(Cleaner):
                 # always clear the fact
                 self._clearfact(factname)
         raise HelperError("Didn't remove package %s" % self._name)
+
+    def wantspath(self, path):
+        return False
