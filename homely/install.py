@@ -194,7 +194,7 @@ class InstallPackage(Helper):
             cmd.append(cmdname)
             cmd.append('install')
             cmd.append(localname)
-            subprocess.check_output(cmd)
+            subprocess.check_call(cmd)
             # record the fact that we installed this thing ourselves
             factname = 'InstalledPackage:%s:%s' % (method, localname)
             self._setfact(factname, True)
