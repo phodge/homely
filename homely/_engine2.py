@@ -414,7 +414,14 @@ class Engine(object):
                 # TODO: what do we do if the folder isn't empty?
                 note("    Removing dir %s" % path)
                 debug("      rmdir %s" % path)
-                os.rmdir(path)
+                try:
+                    os.rmdir(path)
+                except OSError as err:
+                    from errno import ENOTEMPTY
+                    if err.errno == ENOTEMPTY:
+                        warning("      Directory not empty")
+                    else:
+                        raise
             elif type_ == self.TYPE_FILE:
                 if os.stat(path).st_size == 0:
                     note("  Removing empty %s" % path)
