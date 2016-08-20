@@ -17,7 +17,7 @@ setup(
     ],
     keywords='dotfiles environment configuration tools utilities automation',
     packages=find_packages(),
-    install_requires=['simplejson', 'click'],
+    install_requires=['simplejson', 'click', 'requests'],
     scripts=['bin/homely'],
     # automatic version number using setuptools_scm
     use_scm_version=True,

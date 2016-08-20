@@ -1,6 +1,7 @@
 import os
 from copy import copy
 
+from homely._errors import HelperError
 from homely._engine2 import getengine, Helper, Cleaner, Engine, getrepoinfo
 from homely._utils import (
     filereplacer, _resolve, isnecessarypath, NoChangesNeeded)
@@ -25,6 +26,10 @@ def section(func):
 def mkdir(path):
     path = _resolve(path)
     getengine().run(MakeDir(path))
+
+
+def download(url, dest, expiry=None):
+    getengine().run(Download(url, _resolve(dest), expiry))
 
 
 def lineinfile(filename, contents, where=None):
@@ -116,6 +121,44 @@ class MakeSymlink(Helper):
 
     def pathsownable(self):
         return {self._linkname: Engine.TYPE_LINK}
+
+
+class Download(Helper):
+    def __init__(self, url, dest, expiry=None):
+        assert dest.startswith('/')
+        self._url = url
+        self._dest = dest
+        self._expiry = expiry
+
+    def getclaims(self):
+        return []
+
+    def getcleaner(self):
+        return
+
+    def isdone(self):
+        # TODO: make it so that we retry after the file is <self._expiry>
+        # seconds old
+        return os.path.exists(self._dest)
+
+    @property
+    def description(self):
+        return "Download %s to %s" % (self._url, self._dest)
+
+    def makechanges(self):
+        import requests
+        r = requests.get(self._url)
+        if r.status_code != 200:
+            raise HelperError("Download of %s failed: %s"
+                              % (self._url, r.status_code))
+        with open(self._dest, 'w') as f:
+            f.write(r.text)
+
+    def affectspath(self, path):
+        return path == self._dest
+
+    def pathsownable(self):
+        return {self._dest: Engine.TYPE_FILE}
 
 
 WHERE_TOP = "__TOP__"
