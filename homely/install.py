@@ -168,12 +168,12 @@ class InstallPackage(Helper):
     _INSTALL = {
         'apt': lambda name: ['apt-get', 'install', name,
                              '--quiet', '--assume-yes'],
-        'yum': lambda name: ['yum', 'install', name, '--assume-yes'],
+        'yum': lambda name: ['yum', 'install', name, '--assumeyes'],
     }
     _UNINSTALL = {
         'apt': lambda name: ['apt-get', 'remove', name,
                              '--quiet', '--assume-yes'],
-        'yum': lambda name: ['yum', 'erase', name, '--assume-yes'],
+        'yum': lambda name: ['yum', 'erase', name, '--assumeyes'],
     }
 
     def __init__(self, name, methods, wantcmd):
@@ -215,7 +215,7 @@ class InstallPackage(Helper):
             def getdefaultcmd(name):
                 return [method, 'install', name]
 
-            cmd = self._INSTALL.get(method, getdefaultcmd)(self._name)
+            cmd = self._INSTALL.get(method, getdefaultcmd)(localname)
             if method in self._ASROOT:
                 if not isinteractive():
                     raise HelperError("Need to be able to escalate to root")
@@ -271,7 +271,7 @@ class PackageCleaner(Cleaner):
             def defaultuninstall(name):
                 return [method, 'uninstall', name]
 
-            cmd = self._UNINSTALL.get(method, defaultuninstall)(self._name)
+            cmd = self._UNINSTALL.get(method, defaultuninstall)(localname)
             if method in InstallPackage._ASROOT:
                 if not isinteractive():
                     raise HelperError("Need to be able to escalate to root")
