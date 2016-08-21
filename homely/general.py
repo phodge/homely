@@ -72,7 +72,7 @@ def writefile(filename):
         stream = io.StringIO('foo')
         yield stream
         stream.seek(0)
-        getengine().run(WriteFile(filename, stream.read()))
+        getengine().run(WriteFile(_resolve(filename), stream.read()))
     finally:
         if stream:
             stream.close()
