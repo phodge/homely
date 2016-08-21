@@ -1,4 +1,6 @@
 import os
+import io
+from contextlib import contextmanager
 from copy import copy
 
 from homely._errors import HelperError
@@ -61,6 +63,19 @@ def symlink(target, linkname=None):
         head, tail = os.path.split(linkname)
         linkname = os.path.join(_resolve(head), tail)
     getengine().run(MakeSymlink(target, linkname))
+
+
+@contextmanager
+def writefile(filename):
+    stream = None
+    try:
+        stream = io.StringIO('foo')
+        yield stream
+        stream.seek(0)
+        getengine().run(WriteFile(filename, stream.read()))
+    finally:
+        if stream:
+            stream.close()
 
 
 class MakeDir(Helper):
@@ -499,4 +514,44 @@ class CleanBlockInFile(Cleaner):
         return [self._filename] if changed else []
 
     def needsclaims(self):
+        return []
+
+
+class WriteFile(Helper):
+    def __init__(self, filename, contents, canoverwrite=False):
+        self._filename = filename
+        self._contents = contents
+        self._canoverwrite = canoverwrite
+
+    @property
+    def description(self):
+        return "Write file %s" % self._filename
+
+    def getcleaner(self):
+        # no cleaner needed
+        pass
+
+    def isdone(self):
+        if os.path.islink(self._filename):
+            return False
+        try:
+            with open(self._filename, 'r') as f:
+                if f.read() == self._contents:
+                    return True
+        except FileNotFoundError:
+            pass
+        return False
+
+    def makechanges(self):
+        assert not os.path.islink(self._filename)
+        with open(self._filename, 'w') as f:
+            f.write(self._contents)
+
+    def pathsownable(self):
+        return {self._filename: Engine.TYPE_FILE_ALL}
+
+    def affectspath(self, path):
+        return path == self._filename
+
+    def getclaims(self):
         return []
