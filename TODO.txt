@@ -1,0 +1,7 @@
+- automatically switch on cloning via ssh if ssh to github.com works ... see
+  https://help.github.com/articles/testing-your-ssh-connection/
+- swap a github repo to the ssh path automatically if we know we can:
+  https://help.github.com/articles/changing-a-remote-s-url/
+- capture errors on each section and prevent it stopping the whole thing
+- create homely.__version__ variable using:
+  https://pypi.python.org/pypi/setuptools_scm
