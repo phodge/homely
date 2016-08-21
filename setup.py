@@ -22,6 +22,5 @@ setup(
     # automatic version number using setuptools_scm
     use_scm_version=True,
     setup_requires=['setuptools_scm'],
-    # TODO: use write_to to put the version in homely.__version__
-    #write_to='homely/__init__.py',
+    write_to='homely/__init__.py',
 )
