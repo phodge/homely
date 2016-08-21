@@ -1,6 +1,31 @@
 import os
 
-from pytest import getsystemfn, TestRepo, contents, HOMELY, checkrepolist
+from pytest import getsystemfn, TestRepo, contents, HOMELY
+
+
+def test_symlink_recreate(HOME, tmpdir):
+    system = getsystemfn(HOME)
+
+    def _addfake(name, createfile):
+        # create a fake repo and add it
+        tr = TestRepo(tmpdir, name)
+        tf = os.path.join(tr.remotepath, createfile)
+        with open(tf, 'w') as f:
+            f.write('hello world')
+        contents(tr.remotepath + '/HOMELY.py',
+                 """
+                 from homely.general import symlink
+                 symlink('%s', '~/%s')
+                 """ % (createfile, createfile))
+        system(HOMELY + ['add', tr.url])
+        local = '%s/%s' % (tr.suggestedlocal(HOME), createfile)
+        assert os.readlink('%s/%s' % (HOME, createfile)) == local
+
+    # add a fake repo
+    _addfake('repo1', 'file1.txt')
+
+    # try doing a homely update
+    system(HOMELY + ['update'])
 
 
 def test_homely_update(HOME, tmpdir):

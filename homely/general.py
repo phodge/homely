@@ -57,7 +57,9 @@ def symlink(target, linkname=None):
         linkname = os.path.join(os.environ.get('HOME'),
                                 os.path.basename(target))
     else:
-        linkname = _resolve(linkname)
+        assert '/' in linkname
+        head, tail = os.path.split(linkname)
+        linkname = os.path.join(_resolve(head), tail)
     getengine().run(MakeSymlink(target, linkname))
 
 
