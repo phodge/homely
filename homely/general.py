@@ -87,7 +87,7 @@ class MakeDir(Helper):
         return path == self._path
 
     def pathsownable(self):
-        return {self._path: Engine.TYPE_FOLDER}
+        return {self._path: Engine.TYPE_FOLDER_ONLY}
 
     def getclaims(self):
         return []
@@ -160,7 +160,7 @@ class Download(Helper):
         return path == self._dest
 
     def pathsownable(self):
-        return {self._dest: Engine.TYPE_FILE}
+        return {self._dest: Engine.TYPE_FILE_ALL}
 
 
 WHERE_TOP = "__TOP__"
@@ -241,7 +241,7 @@ class LineInFile(Helper):
                 tmp.write(NL)
 
     def pathsownable(self):
-        return {self._filename: Engine.TYPE_FILE}
+        return {self._filename: Engine.TYPE_FILE_PART}
 
     def affectspath(self, path):
         return path == self._filename
@@ -422,7 +422,7 @@ class BlockInFile(Helper):
         return path == self._filename
 
     def pathsownable(self):
-        return {self._filename: Engine.TYPE_FILE}
+        return {self._filename: Engine.TYPE_FILE_PART}
 
     def getclaims(self):
         return []

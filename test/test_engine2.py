@@ -299,7 +299,7 @@ def test_lineinfile_cleanup_interaction(tmpdir):
     # the important thing to note is that the engine still knows that it needs
     # to clean up the directory later
     e = Engine(cfgpath)
-    assert e.pathstoclean()[d1] == e.TYPE_FOLDER
+    assert e.pathstoclean()[d1] == e.TYPE_FOLDER_ONLY
     del e
 
     # if we get rid of one of the LineInFile() items, the file and dir still

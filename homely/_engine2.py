@@ -92,12 +92,13 @@ class Helper(_AccessibleFacts):
         raise NotImplementedError("%s needs to define @property .description" %
                                   self.__class__.__name__)
 
-    # FIXME: give this a better name :-\
     def pathsownable(self):
         '''
         Return a dict of {PATH: TYPE} where TYPE is one of:
-        - Engine.TYPE_FILE
-        - Engine.TYPE_FOLDER
+        - Engine.TYPE_FILE_PART
+        - Engine.TYPE_FILE_ALL
+        - Engine.TYPE_FOLDER_ONLY
+        - Engine.TYPE_FOLDER_ALL
         - Engine.TYPE_LINK
         '''
         raise NotImplementedError("%s needs to implement .pathsownable()" %
@@ -180,8 +181,10 @@ class Engine(object):
     ASK = "__ask__"
     POSTPONE = "__postpone__"
 
-    TYPE_FILE = "file"
-    TYPE_FOLDER = "directory"
+    TYPE_FILE_ALL = "whole_file"
+    TYPE_FILE_PART = "file"
+    TYPE_FOLDER_ALL = "dir_and_children"
+    TYPE_FOLDER_ONLY = "directory"
     TYPE_LINK = "symlink"
 
     def __init__(self, cfgpath):
@@ -299,7 +302,9 @@ class Engine(object):
             note("RUNNING: %s" % helper.description)
             # take ownership of any paths that don't exist yet!
             for path, type_ in helper.pathsownable().items():
-                if type_ in (self.TYPE_FILE, self.TYPE_FOLDER):
+                if type_ in (self.TYPE_FILE_ALL, self.TYPE_FOLDER_ALL):
+                    exists = path in self._created
+                elif type_ in (self.TYPE_FILE_PART, self.TYPE_FOLDER_ONLY):
                     exists = os.path.exists(path)
                 else:
                     exists = os.path.islink(path)
@@ -414,7 +419,7 @@ class Engine(object):
 
         def _remove():
             # remove the thing
-            if type_ == self.TYPE_FOLDER:
+            if type_ == self.TYPE_FOLDER_ONLY:
                 # TODO: what do we do if the folder isn't empty?
                 note("    Removing dir %s" % path)
                 debug("      rmdir %s" % path)
@@ -426,7 +431,11 @@ class Engine(object):
                         warning("      Directory not empty")
                     else:
                         raise
-            elif type_ == self.TYPE_FILE:
+            elif type_ == self.TYPE_FILE_ALL:
+                note("  Removing %s" % path)
+                debug("    rm -f %s" % path)
+                os.unlink(path)
+            elif type_ == self.TYPE_FILE_PART:
                 if os.stat(path).st_size == 0:
                     note("  Removing empty %s" % path)
                     debug("    rm -f %s" % path)
@@ -456,9 +465,9 @@ class Engine(object):
             return _discard()
 
         # if the thing has the wrong type, we'll issue an note() and just skip
-        if type_ == self.TYPE_FILE:
+        if type_ in (self.TYPE_FILE_PART, self.TYPE_FILE_ALL):
             correcttype = os.path.isfile(path)
-        elif type_ == self.TYPE_FOLDER:
+        elif type_ in (self.TYPE_FOLDER_ONLY, self.TYPE_FOLDER_ALL):
             correcttype = os.path.isdir(path)
         else:
             assert type_ == self.TYPE_LINK

@@ -59,7 +59,7 @@ class InstallFromSource(Helper):
         return isnecessarypath(self._real_clone_to, path)
 
     def pathsownable(self):
-        ret = {self._real_clone_to: Engine.TYPE_FOLDER}
+        ret = {self._real_clone_to: Engine.TYPE_FOLDER_ONLY}
         for target, linkname in self._symlinks:
             ret[linkname] = Engine.TYPE_LINK
         return ret
