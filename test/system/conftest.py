@@ -2,17 +2,18 @@ import os
 import subprocess
 import re
 import pytest
+import sys
 
 from pytest import homelyroot
 
 
 HOMELY = ['python3',
-            os.path.join(homelyroot, 'bin', 'homely'),
-            '--no-interactive',
-            '--verbose',
-            # use fragile mode so that warnings will raise an exception instead
-            '--fragile',
-            ]
+          os.path.join(homelyroot, 'bin', 'homely'),
+          '--no-interactive',
+          '--verbose',
+          # use fragile mode so that warnings will raise an exception instead
+          '--fragile',
+          ]
 
 
 @pytest.fixture(scope="function")
@@ -65,6 +66,10 @@ class TestRepo(object):
 def getsystemfn(homedir):
     env = os.environ.copy()
     env["HOME"] = homedir
+    # FIXME: we have to manually add all paths to $PYTHONPATH because python in
+    # the subprocess tries looking for packages in our custom $HOME and it
+    # doesn't work.
+    env["PYTHONPATH"] = ":".join(sys.path)
 
     def system(cmd, cwd=None, capture=False, expecterror=False):
         try:
@@ -122,8 +127,6 @@ def checkrepolist(HOME, systemfn, expected):
         if id_ not in found:
             raise Exception("homely repolist is missing repo %s: %s" % (
                 id_, expected[id_].url))
-
-
 
 
 def pytest_namespace():

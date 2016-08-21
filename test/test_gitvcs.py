@@ -5,6 +5,15 @@ from subprocess import check_call
 from pytest import contents
 
 
+GIT = [
+    'git',
+    '-c',
+    'user.name=John Smith',
+    '-c',
+    'user.email=john@example.com',
+]
+
+
 def makegitrepo(tmpdir, name):
     path = os.path.join(tmpdir, name)
 
@@ -12,11 +21,11 @@ def makegitrepo(tmpdir, name):
         check_call(cmd, cwd=path)
 
     os.mkdir(path)
-    system(['git', 'init'])
+    system(GIT + ['init'])
     readme = os.path.join(path, 'README.md')
     contents(readme, "Hello\n")
-    system(['git', 'add', 'README.md'])
-    system(['git', 'commit', '-m', 'Added readme'])
+    system(GIT + ['add', 'README.md'])
+    system(GIT + ['commit', '-m', 'Added readme'])
     return path
 
 
@@ -57,7 +66,7 @@ def test_git(tmpdir):
     with open(os.path.join(fake1path, 'file.txt'), 'w'):
         pass
     assert not fake1repo.isdirty()
-    check_call(['git', 'add', 'file.txt'], cwd=fake1path)
+    check_call(GIT + ['add', 'file.txt'], cwd=fake1path)
     assert fake1repo.isdirty()
 
     clone1path = os.path.join(tmpdir, 'clone1')
@@ -67,6 +76,6 @@ def test_git(tmpdir):
 
     # test repo.pullchanges() by making a change in the original fake
     assert not os.path.exists(os.path.join(clone1path, 'file.txt'))
-    check_call(['git', 'commit', '-m', 'Added file'], cwd=fake1path)
+    check_call(GIT + ['commit', '-m', 'Added file'], cwd=fake1path)
     clone1repo.pullchanges()
     assert os.path.exists(os.path.join(clone1path, 'file.txt'))
