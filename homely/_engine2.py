@@ -103,6 +103,10 @@ class Helper(_AccessibleFacts):
         raise NotImplementedError("%s needs to implement .pathsownable()" %
                                   self.__class__.__name__)
 
+    def affectspath(self, path):
+        raise NotImplementedError("%s needs to implement .affectspath(path)" %
+                                  self.__class__.__name__)
+
 
 def cleanerfromdict(data):
     # import the module
