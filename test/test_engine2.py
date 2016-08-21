@@ -2,8 +2,11 @@ from pytest import gettmpfilepath, contents
 
 import os
 
+import simplejson
+
 from homely.general import (
     LineInFile, BlockInFile, MakeDir, MakeSymlink, WHERE_TOP, WHERE_END,
+    WriteFile, writefile
 )
 from homely._engine2 import Engine
 from homely._errors import CleanupConflict
@@ -491,3 +494,76 @@ def test_partial_run_cleanup(tmpdir):
     e.run(MakeDir(d2))
     e.cleanup(e.RAISE)
     assert not os.path.isdir(d1) and os.path.isdir(d2)
+
+
+def test_writefile_usage(tmpdir):
+    cfgpath = gettmpfilepath(tmpdir, '.json')
+
+    # the file we'll be playing with
+    f1 = os.path.join(tmpdir, 'f1.txt')
+    f2 = os.path.join(tmpdir, 'f2.txt')
+    f3 = os.path.join(tmpdir, 'f3.json')
+
+    # use LineInFile to put stuff in the file
+    e = Engine(cfgpath)
+    e.run(LineInFile(f1, 'AAA'))
+    e.run(LineInFile(f1, 'BBB'))
+    del e
+    assert contents(f1) == "AAA\nBBB\n"
+
+    # now use WriteFile() to give it new contents
+    e = Engine(cfgpath)
+    e.run(WriteFile(f1, "BBB\nCCC\n"))
+    assert contents(f1) == "BBB\nCCC\n"
+    e.cleanup(e.RAISE)
+    del e
+    # make sure the cleanup didn't blow anything away
+    assert contents(f1) == "BBB\nCCC\n"
+
+    # make sure the file is removed on cleanup
+    e = Engine(cfgpath)
+    e.cleanup(e.RAISE)
+    del e
+    assert not os.path.exists(f1)
+
+    contents(f2, "Already here!\n")
+    assert os.path.exists(f2)
+    e = Engine(cfgpath)
+    e.run(WriteFile(f2, "AAA\nBBB\n", canoverwrite=True))
+    e.cleanup(e.RAISE)
+    del e
+    assert contents(f2) == "AAA\nBBB\n"
+
+    # running a LineInFile() won't clean up what's already there
+    e = Engine(cfgpath)
+    e.run(LineInFile(f2, "CCC"))
+    e.cleanup(e.RAISE)
+    del e
+    assert contents(f2) == "AAA\nBBB\nCCC\n"
+
+    # note that removing the LineInFile() doesn't clean up the file because we
+    # no longer know whether the user put their config in there
+    e = Engine(cfgpath)
+    e.cleanup(e.RAISE)
+    del e
+    assert not os.path.exists(f1)
+    assert os.path.exists(f2)
+
+    # now test the context manager
+    import homely._engine2
+    e = Engine(cfgpath)
+    homely._engine2._ENGINE = e
+    data = {"z": [3, 4, 5, True], "y": "Hello world", "x": None}
+    with writefile(f3) as f:
+        f.write(simplejson.dumps(data))
+    e.cleanup(e.RAISE)
+    del e
+    assert os.path.exists(f3)
+    with open(f3, 'r') as f:
+        assert simplejson.loads(f.read()) == data
+
+    # prove that the WriteFile() disappearing results in the file being removed
+    e = Engine(cfgpath)
+    e.cleanup(e.RAISE)
+    del e
+    assert not os.path.exists(f3)
