@@ -16,7 +16,8 @@ _ALLOWPULL = True
 
 def setinteractive(value):
     global _INTERACTIVE
-    _INTERACTIVE = bool(value)
+    assert value in (True, False, "ASSUME")
+    _INTERACTIVE = value
 
 
 def setverbose(value):
@@ -271,6 +272,8 @@ def yesnooption(name, prompt, default=None):
             # FIXME: issue a warning about the old value of [name] not being
             # compatible
             previous_value = None
+        elif _INTERACTIVE == "ASSUME":
+            return previous_value
 
     if not isinteractive():
         # non-interactive - return the previous value

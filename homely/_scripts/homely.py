@@ -164,13 +164,17 @@ def remove(identifier, force, update):
 @option('--nopull', is_flag=True)
 @option('--only', '-o', multiple=True,
         help="Only process the named sections (whole names only)")
-def update(identifiers, nopull, only):
+@option('--assume', '-a', is_flag=True,
+        help="Assume that previous answers to yes/no prompts are correct")
+def update(identifiers, nopull, only, assume):
     '''
     Git pull the specified REPOs and then re-run them.
 
     Each REPO must be a repoid or localpath from
     ~/.homely/repos.json.
     '''
+    if assume:
+        setinteractive("ASSUME")
     setallowpull(not nopull)
     cfg = RepoListConfig()
     if len(identifiers):
