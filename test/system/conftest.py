@@ -79,6 +79,8 @@ def getsystemfn(homedir):
                                              stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as err:
             if not expecterror:
+                if cwd is not None:
+                    print('$ cd %s' % cwd)
                 print('$', ' \\\n    '.join([
                     ("'%s'" % arg.replace("'", "''")
                      if not re.match(r"[a-zA-Z0-9_\-.:/~$]", arg)
