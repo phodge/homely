@@ -1,6 +1,6 @@
 import os
 
-from pytest import getsystemfn, TestRepo, contents, HOMELY, checkrepolist
+from pytest import getsystemfn, TempRepo, contents, HOMELY, checkrepolist
 
 
 def test_homely_remove(tmpdir, HOME):
@@ -8,7 +8,7 @@ def test_homely_remove(tmpdir, HOME):
 
     def _addfake(name, createfile):
         # create a fake repo and add it
-        tr = TestRepo(tmpdir, name)
+        tr = TempRepo(tmpdir, name)
         tf = os.path.join(HOME, createfile)
         contents(tr.remotepath + '/HOMELY.py',
                  """

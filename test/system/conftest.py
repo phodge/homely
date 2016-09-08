@@ -1,7 +1,6 @@
 import os
 import subprocess
 import re
-import pytest
 import sys
 
 from pytest import homelyroot
@@ -19,7 +18,7 @@ HOMELY = ['python3',
 NEXT_ID = 1
 
 
-class TestRepo(object):
+class TempRepo(object):
     def __init__(self, tmpdir, name):
         import hashlib
         import datetime
@@ -126,7 +125,7 @@ def checkrepolist(HOME, systemfn, expected):
 
 def pytest_namespace():
     return dict(
-        TestRepo=TestRepo,
+        TempRepo=TempRepo,
         getsystemfn=getsystemfn,
         checkrepolist=checkrepolist,
         HOMELY=HOMELY,

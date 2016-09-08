@@ -1,13 +1,13 @@
 import os
 
-from pytest import getsystemfn, TestRepo, contents, HOMELY, checkrepolist
+from pytest import getsystemfn, TempRepo, contents, HOMELY, checkrepolist
 
 
 def test_homely_add_repolist(tmpdir, HOME):
     system = getsystemfn(HOME)
 
     # make a fake repo - create a dir, a folder, and a symlink
-    repo1 = TestRepo(tmpdir, 'repo1')
+    repo1 = TempRepo(tmpdir, 'repo1')
     homedir1 = os.path.join(HOME, 'dir1')
     homelink1 = os.path.join(HOME, 'link1')
     homedir1file = os.path.join(homelink1, 'file.txt')
@@ -31,7 +31,7 @@ def test_homely_add_repolist(tmpdir, HOME):
     assert contents(homedir1file) == "Hello World\n"
 
     # make another repo that creates more things
-    repo2 = TestRepo(tmpdir, 'repo2')
+    repo2 = TempRepo(tmpdir, 'repo2')
     repo2file = os.path.join(HOME, 'file2.txt')
     assert not os.path.exists(repo2file)
     contents(repo2.remotepath + '/HOMELY.py',
@@ -46,7 +46,7 @@ def test_homely_add_repolist(tmpdir, HOME):
     checkrepolist(HOME, system, [repo1, repo2])
 
     # a 3rd repo, but we're going to clone it into our home dir manually
-    repo3 = TestRepo(tmpdir, 'repo3')
+    repo3 = TempRepo(tmpdir, 'repo3')
     contents(repo3.remotepath + '/HOMELY.py',
              """
              from homely.general import lineinfile
@@ -70,7 +70,7 @@ def test_homely_add_repolist(tmpdir, HOME):
 
     # test that adding a repo with something like 'homely add .' doesn't record
     # a stupid path like '.'
-    repo4 = TestRepo(tmpdir, 'repo4')
+    repo4 = TempRepo(tmpdir, 'repo4')
     contents(repo4.remotepath + '/HOMELY.py',
              """
              from homely.general import lineinfile

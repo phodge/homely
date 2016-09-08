@@ -1,6 +1,6 @@
 import os
 
-from pytest import getsystemfn, TestRepo, contents, HOMELY
+from pytest import getsystemfn, TempRepo, contents, HOMELY
 
 
 def test_symlink_recreate(HOME, tmpdir):
@@ -8,7 +8,7 @@ def test_symlink_recreate(HOME, tmpdir):
 
     def _addfake(name, createfile):
         # create a fake repo and add it
-        tr = TestRepo(tmpdir, name)
+        tr = TempRepo(tmpdir, name)
         tf = os.path.join(tr.remotepath, createfile)
         with open(tf, 'w') as f:
             f.write('hello world')
@@ -33,7 +33,7 @@ def test_homely_update(HOME, tmpdir):
 
     def _addfake(name, createfile):
         # create a fake repo and add it
-        tr = TestRepo(tmpdir, name)
+        tr = TempRepo(tmpdir, name)
         tf = os.path.join(HOME, createfile)
         contents(tr.remotepath + '/HOMELY.py',
                  """
