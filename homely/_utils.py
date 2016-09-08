@@ -21,12 +21,11 @@ def _resolve(path):
 
 def haveexecutable(name):
     try:
-        otuput = subprocess.check_output(['which', name])
+        subprocess.check_call(['which', name], stdout=None, stderr=None)
         return True
     except subprocess.CalledProcessError as err:
         if err.returncode == 1:
             return False
-        print(output)
         raise
 
 
