@@ -4,7 +4,7 @@ setup(
     name='homely',
     description=('Automate the installation of your personal config files and'
                  ' favourite tools'),
-    url='https://github.com/toomuchphp/homely/',
+    url='https://github.com/phodge/homely/',
     author='Peter Hodge',
     license='MIT',
     classifiers=[
