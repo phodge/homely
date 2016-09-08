@@ -18,6 +18,13 @@ def tmpdir(request):
     return os.path.realpath(path)
 
 
+@pytest.fixture(scope="function")
+def HOME(tmpdir):
+    home = os.path.join(tmpdir, 'john')
+    os.mkdir(home)
+    return home
+
+
 def contents(path, new_content=None, strip=True):
     if new_content is not None:
         # if new_content was a triple-quoted python string, try and strip off

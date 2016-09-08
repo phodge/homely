@@ -16,13 +16,6 @@ HOMELY = ['python3',
           ]
 
 
-@pytest.fixture(scope="function")
-def HOME(tmpdir):
-    home = os.path.join(tmpdir, 'john')
-    os.mkdir(home)
-    return home
-
-
 NEXT_ID = 1
 
 
