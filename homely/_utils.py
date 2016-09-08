@@ -2,6 +2,7 @@ import contextlib
 import subprocess
 from itertools import chain
 import os
+import re
 import tempfile
 
 import simplejson
@@ -15,8 +16,45 @@ ENGINE2_CONFIG_PATH = os.path.join(CONFIG_DIR, 'engine2.json')
 FACT_CONFIG_PATH = os.path.join(CONFIG_DIR, 'facts.json')
 
 
-def _resolve(path):
-    return os.path.realpath(os.path.expanduser(path))
+_urlregex = re.compile(r"^[a-zA-Z0-9+\-.]{2,20}://")
+
+
+def _expandpath(path):
+    if path.startswith('~'):
+        path = os.path.expanduser(path)
+    path = os.path.expandvars(path)
+    if not (path.startswith('/') or _urlregex.match(path)):
+        path = os.path.realpath(path)
+    return path
+
+
+def _repopath2real(path, repo):
+    assert isinstance(repo, Repo)
+    assert not path.endswith('/')
+    assert not repo.isremote
+    if path.startswith('~'):
+        path = os.path.expanduser(path)
+    path = os.path.expandvars(path)
+    if not _urlregex.match(path):
+        if not path.startswith('/'):
+            path = os.path.join(repo.repo_path, path)
+        path = os.path.realpath(path)
+    return path
+
+
+def _homepath2real(path, debug=False):
+    assert not path.endswith('/')
+    # expand ~
+    if path.startswith('~'):
+        path = os.path.expanduser(path)
+    # expand variables
+    path = os.path.expandvars(path)
+    head = path.split(os.sep, 1)[0]
+    # paths relative to the current dir are not allowed
+    assert head != '.', 'Relative path not allowed'
+    if not (head in ('', '..') or _urlregex.match(path)):
+        path = os.path.join(os.environ['HOME'], path)
+    return path
 
 
 def haveexecutable(name):
@@ -141,9 +179,9 @@ class RepoListConfig(JsonConfig):
         """
         Returns the repo with the specified local <path>
         """
-        # note that the paths in self.jsondata were already _resolve()'d in the
-        # class' __init__()
-        resolved = _resolve(path)
+        # note that the paths in self.jsondata were already _homepath2real()'d
+        # in the class' __init__()
+        resolved = _homepath2real(path)
         for row in self.jsondata:
             if resolved == os.path.realpath(row["localpath"]):
                 return self._infofromdict(row)

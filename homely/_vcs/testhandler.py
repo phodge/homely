@@ -2,7 +2,7 @@ import os
 import shutil
 
 import homely._vcs
-from homely._utils import _resolve
+from homely._utils import _expandpath
 from homely._ui import note
 
 
@@ -32,11 +32,10 @@ class Repo(homely._vcs.Repo):
         if not os.path.exists(os.path.join(repo_path, MARKERFILE)):
             return
 
-        return class_(_resolve(repo_path),
+        return class_(_expandpath(repo_path),
                       isremote=False,
                       iscanonical=False,
-                      suggestedlocal=None,
-                      )
+                      suggestedlocal=None)
 
     def clonetopath(self, dest_path):
         assert not os.path.exists(dest_path)

@@ -6,7 +6,9 @@ from copy import copy
 from homely._errors import HelperError
 from homely._engine2 import getengine, Helper, Cleaner, Engine, getrepoinfo
 from homely._utils import (
-    filereplacer, _resolve, isnecessarypath, NoChangesNeeded)
+    filereplacer, _repopath2real, _homepath2real, isnecessarypath,
+    NoChangesNeeded
+)
 # allow importing from outside
 from homely._utils import haveexecutable  # noqa
 
@@ -26,42 +28,37 @@ def section(func):
 
 
 def mkdir(path):
-    path = _resolve(path)
+    path = _homepath2real(path)
     getengine().run(MakeDir(path))
 
 
 def download(url, dest, expiry=None):
-    getengine().run(Download(url, _resolve(dest), expiry))
+    getengine().run(Download(url, _homepath2real(dest), expiry))
 
 
 def lineinfile(filename, contents, where=None):
-    filename = _resolve(filename)
+    filename = _homepath2real(filename)
     obj = LineInFile(filename, contents, where)
     getengine().run(obj)
 
 
 def blockinfile(filename, lines, prefix, suffix, where=None):
-    filename = _resolve(filename)
+    filename = _homepath2real(filename)
     obj = BlockInFile(filename, lines, prefix, suffix, where)
     getengine().run(obj)
 
 
 def symlink(target, linkname=None):
-    # if [target] doesn't start with '/', assume it is relative to the repo
-    if '/' not in target:
-        info = getrepoinfo()
-        target = os.path.join(info.localrepo.repo_path, target)
-    else:
-        target = _resolve(target)
+    # expand <target> to a path relative to the current repo
+    target = _repopath2real(target, getrepoinfo().localrepo)
+
     # if [linkname] is omited, assume the symlink goes into $HOME/ at the top
     # level
     if linkname is None:
         linkname = os.path.join(os.environ.get('HOME'),
                                 os.path.basename(target))
     else:
-        assert '/' in linkname
-        head, tail = os.path.split(linkname)
-        linkname = os.path.join(_resolve(head), tail)
+        linkname = _homepath2real(linkname)
     getengine().run(MakeSymlink(target, linkname))
 
 
@@ -72,7 +69,7 @@ def writefile(filename):
         stream = io.StringIO('foo')
         yield stream
         stream.seek(0)
-        getengine().run(WriteFile(_resolve(filename), stream.read()))
+        getengine().run(WriteFile(_homepath2real(filename), stream.read()))
     finally:
         if stream:
             stream.close()
@@ -114,6 +111,7 @@ class MakeSymlink(Helper):
         assert linkname.startswith('/')
         self._target = target
         self._linkname = linkname
+        assert self._target != self._linkname
 
     def getclaims(self):
         return []
