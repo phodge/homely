@@ -1,5 +1,5 @@
 import pytest
-
+import sys
 import functools
 import os
 import shutil
@@ -22,6 +22,11 @@ def tmpdir(request):
 def HOME(tmpdir):
     home = os.path.join(tmpdir, 'john')
     os.mkdir(home)
+    # NOTE: homely._utils makes use of os.environ['HOME'], so we need to
+    # destroy the module if it has already been loaded, and override the env
+    # variable
+    sys.modules.pop('homely._utils', None)
+    os.environ['HOME'] = home
     return home
 
 

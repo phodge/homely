@@ -4,15 +4,11 @@ import os
 
 import simplejson
 
-from homely.general import (
-    LineInFile, BlockInFile, MakeDir, MakeSymlink, WHERE_TOP, WHERE_END,
-    WriteFile, writefile
-)
-from homely._engine2 import Engine
-from homely._errors import CleanupConflict
-
 
 def test_engine_folder_cleanup(tmpdir):
+    from homely._engine2 import Engine
+    from homely.general import MakeDir
+
     # first thing ... test mkdir cleanup
     # a temporary file where the engine can store its config
     cfgpath = gettmpfilepath(tmpdir, '.json')
@@ -72,6 +68,12 @@ def test_engine_folder_cleanup(tmpdir):
 
 
 def test_symlink_cleanup_interaction(tmpdir):
+    from homely._engine2 import Engine
+    from homely._errors import CleanupConflict
+    from homely.general import MakeDir, MakeSymlink
+    #LineInFile, BlockInFile, WHERE_TOP, WHERE_END,
+    #WriteFile, writefile
+
     cfgpath = gettmpfilepath(tmpdir)
 
     d1 = os.path.join(tmpdir, 'dir1')
@@ -152,6 +154,9 @@ def test_symlink_cleanup_interaction(tmpdir):
 
 
 def test_lineinfile_usage(tmpdir):
+    from homely._engine2 import Engine
+    from homely.general import LineInFile, WHERE_TOP, WHERE_END
+
     cfgpath = gettmpfilepath(tmpdir, '.json')
 
     f1 = gettmpfilepath(tmpdir)
@@ -241,6 +246,9 @@ def test_lineinfile_usage(tmpdir):
 
 
 def test_lineinfile_cleanup_interaction(tmpdir):
+    from homely._engine2 import Engine
+    from homely.general import MakeDir, LineInFile
+
     # a temporary file where the engine can store its config
     cfgpath = gettmpfilepath(tmpdir, '.json')
     f1 = os.path.join(tmpdir, 'f1.txt')
@@ -389,6 +397,9 @@ def test_blockinfile_lineinfile_cleanup_interaction(tmpdir):
     whether it is still valid. If *any* of the remaining Helpers needs to be
     reapplied, then they *all* need to be reapplied.
     '''
+    from homely._engine2 import Engine
+    from homely.general import LineInFile, BlockInFile
+
     cfgpath = gettmpfilepath(tmpdir, '.json')
     f1 = gettmpfilepath(tmpdir, '.txt')
 
@@ -445,6 +456,9 @@ def test_cleanup_everything(tmpdir):
     test that recreating the engine, running nothing on it, then calling
     cleanup() will remove all of things that might be lying around
     '''
+    from homely._engine2 import Engine
+    from homely.general import MakeDir, MakeSymlink, LineInFile
+
     cfgpath = gettmpfilepath(tmpdir, '.json')
     d1 = gettmpfilepath(tmpdir, '.d')
     d1f1 = os.path.join(d1, 'sub-file.txt')
@@ -471,6 +485,9 @@ def test_cleanup_everything(tmpdir):
 
 
 def test_partial_run_cleanup(tmpdir):
+    from homely._engine2 import Engine
+    from homely.general import MakeDir
+
     cfgpath = gettmpfilepath(tmpdir, '.json')
     d1 = os.path.join(tmpdir, 'dir1')
     d2 = os.path.join(tmpdir, 'dir2')
@@ -497,6 +514,9 @@ def test_partial_run_cleanup(tmpdir):
 
 
 def test_writefile_usage(tmpdir):
+    from homely._engine2 import Engine
+    from homely.general import LineInFile, WriteFile, writefile
+
     cfgpath = gettmpfilepath(tmpdir, '.json')
 
     # the file we'll be playing with

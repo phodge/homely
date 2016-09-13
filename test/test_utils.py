@@ -1,10 +1,8 @@
 import os
 
-from homely._utils import isnecessarypath
-from homely._utils import _repopath2real, _homepath2real
-
 
 def test_paths(tmpdir, HOME):
+    from homely._utils import isnecessarypath
     l1 = os.path.join(tmpdir, 'link1')
     d1 = os.path.join(tmpdir, 'dir1')
     d1s = os.path.join(d1, 'subdir')
@@ -31,6 +29,8 @@ fixed = [
 
 
 def test_expansion_homepath(tmpdir):
+    from homely._utils import _homepath2real
+
     # test how various paths expand out to the home dir
     os.environ["HOME"] = tmpdir
 
@@ -59,7 +59,7 @@ def test_expansion_homepath(tmpdir):
     for path in badpaths:
         try:
             _homepath2real(path)
-        except:
+        except Exception:
             pass
         else:
             raise Exception("Expected an error from %r!" % path)
@@ -69,6 +69,7 @@ def test_expansion_homepath(tmpdir):
 
 
 def test_expansion_repopath(tmpdir):
+    from homely._utils import _repopath2real
     os.environ["HOME"] = tmpdir
 
     rdir = os.path.join(tmpdir, 'repo.git')
