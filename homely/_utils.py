@@ -2,6 +2,7 @@ import contextlib
 import subprocess
 from itertools import chain
 import os
+from os.path import join, exists
 import re
 import tempfile
 
@@ -10,10 +11,25 @@ import simplejson
 from homely._errors import JsonError
 from homely._vcs import Repo, fromdict
 
-CONFIG_DIR = os.path.join(os.environ['HOME'], '.homely')
-REPO_CONFIG_PATH = os.path.join(CONFIG_DIR, 'repos.json')
-ENGINE2_CONFIG_PATH = os.path.join(CONFIG_DIR, 'engine2.json')
-FACT_CONFIG_PATH = os.path.join(CONFIG_DIR, 'facts.json')
+
+ROOT = join(os.environ['HOME'], '.homely')
+REPO_CONFIG_PATH = join(ROOT, 'repos.json')
+ENGINE2_CONFIG_PATH = join(ROOT, 'engine2.json')
+FACT_CONFIG_PATH = join(ROOT, 'facts.json')
+
+# contains the PID of the currently running homely process
+RUNFILE = join(ROOT, "update-running")
+# written to when a complete update is finished successfully
+TIMEFILE = join(ROOT, "update-time")
+# contains the name of the section currently being executed by 'homely update'
+SECTIONFILE = join(ROOT, "update-section")
+# this file is touched when a 'homely update' of using all sections is
+# unsuccessful
+FAILFILE = join(ROOT, "update-failed")
+# this file is used to control the pause/unpause state
+PAUSEFILE = join(ROOT, "update-paused")
+# contains the output of the last 'homely autoupdate' run
+OUTFILE = join(ROOT, "autoupdate-output.txt")
 
 
 _urlregex = re.compile(r"^[a-zA-Z0-9+\-.]{2,20}://")
@@ -37,7 +53,7 @@ def _repopath2real(path, repo):
     path = os.path.expandvars(path)
     if not _urlregex.match(path):
         if not path.startswith('/'):
-            path = os.path.join(repo.repo_path, path)
+            path = join(repo.repo_path, path)
         path = os.path.realpath(path)
     return path
 
@@ -53,7 +69,7 @@ def _homepath2real(path, debug=False):
     # paths relative to the current dir are not allowed
     assert head != '.', 'Relative path not allowed'
     if not (head in ('', '..') or _urlregex.match(path)):
-        path = os.path.join(os.environ['HOME'], path)
+        path = join(os.environ['HOME'], path)
     return path
 
 
@@ -221,15 +237,13 @@ class RepoScriptConfig(JsonConfig):
 
     def __init__(self, info):
         assert isinstance(info, RepoInfo)
-        self.jsonpath = os.path.join(CONFIG_DIR,
-                                     'repos',
-                                     info.repoid + '.json')
+        self.jsonpath = join(ROOT, 'repos', info.repoid + '.json')
         super(RepoScriptConfig, self).__init__()
 
     @staticmethod
     def remove(info):
         assert isinstance(info, RepoInfo)
-        os.unlink(os.path.join(CONFIG_DIR, 'repos', info.repoid + '.json'))
+        os.unlink(join(ROOT, 'repos', info.repoid + '.json'))
 
     def defaultjson(self):
         # TODO: prevthings and prevchanges are not needed with the new engine
@@ -353,11 +367,11 @@ def filereplacer(filepath):
     """
     import shutil
     # create the tmp dir if it doesn't exist yet
-    tmpdir = os.path.join(CONFIG_DIR, 'tmp')
+    tmpdir = join(ROOT, 'tmp')
     os.makedirs(tmpdir, mode=0o700, exist_ok=True)
-    tmpname = os.path.join(tmpdir, os.path.basename(filepath))
+    tmpname = join(tmpdir, os.path.basename(filepath))
     try:
-        if os.path.exists(filepath):
+        if exists(filepath):
             shutil.copy2(filepath, tmpname)
         with open(tmpname, 'w', newline="") as tmp:
             try:
@@ -417,7 +431,7 @@ def isnecessarypath(parent, child):
     prefix = '/'
     parts = child.split('/')
     while len(parts):
-        prefix = os.path.realpath(os.path.join(prefix, parts.pop(0)))
+        prefix = os.path.realpath(join(prefix, parts.pop(0)))
         common = os.path.commonprefix([prefix, head])
 
         # if at any time we stumble upon the parent as we are reconstructing
@@ -442,7 +456,7 @@ def tmpdir(name):
     tmp = None
     try:
         tmp = tempfile.TemporaryDirectory()
-        yield os.path.join(tmp.name, name)
+        yield join(tmp.name, name)
     finally:
-        if tmp and os.path.exists(tmp.name):
+        if tmp and exists(tmp.name):
             tmp.cleanup()
