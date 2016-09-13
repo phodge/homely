@@ -1,5 +1,6 @@
 import pytest
 import sys
+import time
 import functools
 import os
 import shutil
@@ -93,6 +94,19 @@ def gettmpfilepath(tmpdir, suffix=".txt"):
         NEXT_FILE += 1
 
 
+def waitfor(desc, maxtime=1, interval=0.05):
+    """
+    wait up to maxtime
+    """
+    yield
+    start = time.time()
+    while True:
+        time.sleep(interval)
+        yield
+        if time.time() > (start + maxtime):
+            raise Exception("Waited too long for: %s" % desc)
+
+
 def pytest_namespace():
     # path to the bin dir
     homelyroot = os.path.dirname(os.path.dirname(__file__))
@@ -100,5 +114,6 @@ def pytest_namespace():
         contents=contents,
         gettmpfilepath=gettmpfilepath,
         homelyroot=homelyroot,
+        waitfor=waitfor,
         withtmpdir=withtmpdir,
     )
