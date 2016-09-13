@@ -1,8 +1,8 @@
 import os
-import subprocess
 import re
 import sys
 from subprocess import Popen, STDOUT, TimeoutExpired
+from contextlib import contextmanager
 
 from pytest import homelyroot, withtmpdir
 
@@ -116,6 +116,64 @@ def getsystemfn(homedir):
     return system
 
 
+def getjobstartfn(homedir):
+    env = _getfakeenv(homedir)
+
+    @contextmanager
+    @withtmpdir
+    def jobstart(cmd, tmpdir, cwd=None):
+        outpath = tmpdir + '/stdout'
+        errpath = tmpdir + '/stderr'
+        proc = None
+        failed = False
+        retval = '<NOT SPAWNED>'
+        try:
+            with open(outpath, 'w') as stdout, open(errpath, 'w') as stderr:
+                proc = Popen(cmd,
+                             cwd=cwd,
+                             env=env,
+                             stdout=stdout,
+                             stderr=stderr,
+                             )
+                try:
+                    yield proc
+                except Exception:
+                    # has the background job died?
+                    retval = proc.poll()
+                    if retval is None:
+                        # just kill the background job silently
+                        proc.kill()
+                        failed = False
+                    else:
+                        failed = True
+                    raise
+
+                # send an interupt to the background process
+                retval = proc.poll()
+                if retval is None:
+                    try:
+                        # give the process up to 2 seconds to finish
+                        retval = proc.wait(1)
+                    except TimeoutExpired:
+                        # kill the background process if it didn't finish
+                        retval = '<KILLED>'
+                        proc.kill()
+                        failed = True
+                        raise Exception("Job had to be killed")
+                failed = retval != 0
+        finally:
+            if failed:
+                print('retval: %r' % (retval, ))
+                with open(outpath, 'r') as stdout:
+                    print('STDOUT:')
+                    print(stdout.read())
+                with open(errpath, 'r') as stderr:
+                    print('STDERR:')
+                    print(stderr.read())
+
+    return jobstart
+
+
 def checkrepolist(HOME, systemfn, expected):
     # turn expected into a dict for easy lookup
     expected = {r.getrepoid(): r for r in expected}
@@ -142,6 +200,7 @@ def pytest_namespace():
     return dict(
         TempRepo=TempRepo,
         getsystemfn=getsystemfn,
+        getjobstartfn=getjobstartfn,
         checkrepolist=checkrepolist,
         HOMELY=HOMELY,
     )
