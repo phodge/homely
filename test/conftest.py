@@ -6,6 +6,38 @@ import shutil
 import tempfile
 
 
+def withtmpdir(func):
+    """Decorator for <func> that generates an extra kwarg tmpdir="/path" which
+    is a randomly-generated temp dir. A new temp dir is generated on each call
+    to <func>, and the temp dirs are automatically cleaned up when <func> ends.
+
+    Note: this decorator needs to go inside any contextlib.contextmanager
+    decorator
+    """
+    def stdwrapper(*args, **kwargs):
+        tmpdir = None
+        try:
+            tmpdir = tempfile.mkdtemp()
+            return func(*args, tmpdir=tmpdir, **kwargs)
+        finally:
+            if tmpdir and os.path.exists(tmpdir):
+                shutil.rmtree(tmpdir)
+
+    def genwrapper(*args, **kwargs):
+        tmpdir = None
+        try:
+            tmpdir = tempfile.mkdtemp()
+            yield from func(*args, tmpdir=tmpdir, **kwargs)
+        finally:
+            if tmpdir and os.path.exists(tmpdir):
+                shutil.rmtree(tmpdir)
+    import inspect
+    wrapper = genwrapper if inspect.isgeneratorfunction(func) else stdwrapper
+    wrapper.__name__ = func.__name__
+    wrapper.__doc__ = func.__doc__
+    return wrapper
+
+
 @pytest.fixture(scope="function")
 def tmpdir(request):
     path = tempfile.mkdtemp()
@@ -68,4 +100,5 @@ def pytest_namespace():
         contents=contents,
         gettmpfilepath=gettmpfilepath,
         homelyroot=homelyroot,
+        withtmpdir=withtmpdir,
     )
