@@ -2,17 +2,21 @@ import os
 import subprocess
 import re
 import sys
+from subprocess import Popen, STDOUT, TimeoutExpired
 
-from pytest import homelyroot
+from pytest import homelyroot, withtmpdir
 
 
-HOMELY = ['python3',
-          os.path.join(homelyroot, 'bin', 'homely'),
-          '--no-interactive',
-          '--verbose',
-          # use fragile mode so that warnings will raise an exception instead
-          '--fragile',
-          ]
+def HOMELY(command):
+    return [
+        'python3',
+        os.path.join(homelyroot, 'bin', 'homely'),
+        command,
+        # use fragile mode so that warnings will raise an exception instead
+        '--fragile',
+        '--no-interactive',
+        '--verbose',
+    ]
 
 
 NEXT_ID = 1
@@ -55,45 +59,59 @@ class TempRepo(object):
         return os.path.join(HOME, self._name)
 
 
-def getsystemfn(homedir):
+def _getfakeenv(homedir):
     env = os.environ.copy()
     env["HOME"] = homedir
     # FIXME: we have to manually add all paths to $PYTHONPATH because python in
     # the subprocess tries looking for packages in our custom $HOME and it
     # doesn't work.
     env["PYTHONPATH"] = ":".join(sys.path)
+    return env
 
-    def system(cmd, cwd=None, capture=False, expecterror=False):
+
+def getsystemfn(homedir):
+    env = _getfakeenv(homedir)
+
+    @withtmpdir
+    def system(cmd, cwd=None, expecterror=False, tmpdir=None):
+        returncode = '<NOT SPAWNED>'
         try:
-            output = subprocess.check_output(cmd,
-                                             cwd=cwd,
-                                             env=env,
-                                             stderr=subprocess.STDOUT)
-        except subprocess.CalledProcessError as err:
-            if not expecterror:
-                if cwd is not None:
-                    print('$ cd %s' % cwd)
-                print('$', ' \\\n    '.join([
-                    ("'%s'" % arg.replace("'", "''")
-                     if not re.match(r"[a-zA-Z0-9_\-.:/~$]", arg)
-                     else arg)
-                    for arg in cmd
-                ]))
-                print(err.output.decode('utf-8'))
-                raise
-        else:
-            if capture:
-                assert not expecterror
-                return output.decode('utf-8')
-            if expecterror:
-                print('$', ' \\\n    '.join([
-                    ("'%s'" % arg.replace("'", "''")
-                     if not re.match(r"[a-zA-Z0-9_\-.:/~$]", arg)
-                     else arg)
-                    for arg in cmd
-                ]))
-                print(output.decode('utf-8'))
-                raise Exception("Expected this command to fail")
+            stdoutpath = tmpdir + '/stdout'
+            with open(stdoutpath, 'w') as stdout:
+                sub = Popen(cmd,
+                            cwd=cwd,
+                            env=env,
+                            stdout=stdout,
+                            stderr=STDOUT)
+                try:
+                    returncode = sub.wait(1)
+                except TimeoutExpired:
+                    returncode = '<KILLED>'
+                    sub.kill()
+                    raise Exception("Command did not finish quickly enough")
+
+                if returncode == 0:
+                    if expecterror:
+                        raise Exception("Expected exit(%d) but got clean exit" % expecterror)
+                elif expecterror:
+                    assert type(expecterror) is int
+                    assert returncode == expecterror, ("Expected exit(%d) but got exit(%d)"
+                                                       % (expecterror, returncode))
+                else:
+                    raise Exception("Program did not exit cleanly")
+        except Exception:
+            if cwd is not None:
+                print('$ cd %s' % cwd)
+            print(returncode, '$', ' \\\n    '.join([
+                ("'%s'" % arg.replace("'", "''")
+                    if not re.match(r"[a-zA-Z0-9_\-.:/~$]", arg)
+                    else arg)
+                for arg in cmd
+            ]))
+            print(open(stdoutpath).read())
+            raise
+
+        return open(stdoutpath, 'r').read()
 
     return system
 
@@ -103,11 +121,8 @@ def checkrepolist(HOME, systemfn, expected):
     expected = {r.getrepoid(): r for r in expected}
     found = set()
 
-    cmd = HOMELY + [
-        'repolist',
-        '--format=%(repoid)s|%(localpath)s',
-    ]
-    output = systemfn(cmd, capture=True)
+    cmd = HOMELY('repolist') + ['--format=%(repoid)s|%(localpath)s']
+    output = systemfn(cmd)
     for line in output.split("\n"):
         if line:
             id_, local = line.split('|')
