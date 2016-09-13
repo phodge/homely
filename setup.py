@@ -20,7 +20,8 @@ setup(
     install_requires=['simplejson', 'click', 'requests'],
     scripts=['bin/homely'],
     # automatic version number using setuptools_scm
-    use_scm_version=True,
     setup_requires=['setuptools_scm'],
-    write_to='homely/__init__.py',
+    use_scm_version={
+        "write_to": 'homely/__init__.py',
+    },
 )
