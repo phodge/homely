@@ -5,7 +5,7 @@ from click import echo, group, argument, option, UsageError, ClickException
 
 from homely._errors import RepoError, JsonError
 from homely._utils import (
-    RepoListConfig, saveconfig, RepoInfo, getstatus, STATUSCODES,
+    RepoListConfig, saveconfig, RepoInfo, getstatus, STATUSCODES, mkcfgdir
 )
 from homely._ui import (
     run_update, addfromremote, yesno,
@@ -58,6 +58,7 @@ def add(repo_path, dest_path):
     '''
     Install a new repo on your system
     '''
+    mkcfgdir()
     repo = getrepohandler(repo_path)
     if not repo:
         raise ClickException("No handler for repo at %s" % repo_path)
@@ -191,6 +192,7 @@ def update(identifiers, nopull, only, assume):
     Each REPO must be a repoid or localpath from
     ~/.homely/repos.json.
     '''
+    mkcfgdir()
     if assume:
         setinteractive("ASSUME")
     setallowpull(not nopull)

@@ -35,6 +35,11 @@ OUTFILE = join(ROOT, "autoupdate-output.txt")
 _urlregex = re.compile(r"^[a-zA-Z0-9+\-.]{2,20}://")
 
 
+def mkcfgdir():
+    if not exists(ROOT):
+        os.mkdir(ROOT)
+
+
 def _expandpath(path):
     if path.startswith('~'):
         path = os.path.expanduser(path)
