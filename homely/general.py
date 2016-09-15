@@ -9,6 +9,8 @@ from homely._utils import (
     filereplacer, _repopath2real, _homepath2real, isnecessarypath,
     NoChangesNeeded
 )
+from homely._ui import entersection
+
 # allow importing from outside
 from homely._utils import haveexecutable  # noqa
 
@@ -21,8 +23,9 @@ def section(func):
     name = func.__name__
     engine = getengine()
     try:
-        if engine.pushsection(name):
-            func()
+        with entersection(":" + name + "()"):
+            if engine.pushsection(name):
+                func()
     finally:
         engine.popsection(name)
 
