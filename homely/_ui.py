@@ -1,10 +1,14 @@
 import os
 import sys
-
+import time
 from importlib.machinery import SourceFileLoader
+from contextlib import contextmanager
 
 from homely._errors import HelperError
-from homely._utils import RepoInfo, RepoListConfig, RepoScriptConfig, tmpdir
+from homely._utils import (
+    RepoInfo, RepoListConfig, RepoScriptConfig, tmpdir,
+    RUNFILE, FAILFILE, TIMEFILE, SECTIONFILE,
+)
 from homely._vcs import Repo
 
 
@@ -12,6 +16,16 @@ _INTERACTIVE = False
 _VERBOSE = False
 _FRAGILE = False
 _ALLOWPULL = True
+
+
+_OUTSTREAM = sys.stdout
+_ERRSTREAM = sys.stderr
+
+
+def setstreams(outstream, errstream):
+    global _OUTSTREAM, _ERRSTREAM
+    _OUTSTREAM = outstream
+    _ERRSTREAM = errstream
 
 
 def setinteractive(value):
@@ -78,50 +92,86 @@ def run_update(infos, pullfirst, only=None, cancleanup=None):
     global _CURRENT_REPO
     errors = False
 
-    engine = initengine()
+    # create the runfile now
+    try:
+        with open(RUNFILE, 'x') as f:
+            f.write(str(os.getpid()))
+    except FileExistsError:
+        with open(RUNFILE, 'r') as f:
+            pid = f.read().strip()
+        warning("Updating is already running (PID={})".format(pid))
+        return False
 
-    for info in infos:
-        setrepoinfo(info)
-        assert isinstance(info, RepoInfo)
-        _CURRENT_REPO = info
-        localrepo = info.localrepo
-        heading("Updating from %s [%s]" %
-                (info.localrepo.repo_path, info.shortid()))
-        if pullfirst:
-            if localrepo.isdirty():
-                warning("Can't use %r in %s: uncommitted changes" % (
-                    localrepo.pulldesc, localrepo.repo_path))
+    isfullupdate = False
+    if (cancleanup
+            and (not len(only))
+            and len(infos) == RepoListConfig().repo_count()):
+        isfullupdate = True
+        # remove the failfile
+        if os.path.exists(FAILFILE):
+            os.unlink(FAILFILE)
+
+    try:
+        # write the section file with the current section name
+        _write(SECTIONFILE, "<preparing>")
+
+        engine = initengine()
+
+        for info in infos:
+            setrepoinfo(info)
+            assert isinstance(info, RepoInfo)
+            _CURRENT_REPO = info
+            localrepo = info.localrepo
+            with entersection(os.path.basename(localrepo.repo_path)):
+                heading("Updating from %s [%s]" %
+                        (localrepo.repo_path, info.shortid()))
+                if pullfirst:
+                    if localrepo.isdirty():
+                        warning("Can't use %r in %s: uncommitted changes" % (
+                            localrepo.pulldesc, localrepo.repo_path))
+                    else:
+                        note("Running %r in %s" %
+                             (localrepo.pulldesc, localrepo.repo_path))
+                        localrepo.pullchanges()
+
+                # make sure the HOMELY.py script exists
+                pyscript = os.path.join(localrepo.repo_path, 'HOMELY.py')
+                if not os.path.exists(pyscript):
+                    warning("%s does not exist" % pyscript)
+                    errors = True
+                    continue
+
+                if len(only):
+                    engine.onlysections(only)
+
+                source = SourceFileLoader('__imported_by_homely', pyscript)
+                try:
+                    source.load_module()
+                except HelperError as err:
+                    warning(str(err))
+                    errors = True
+
+        setrepoinfo(None)
+
+        if isfullupdate and not errors:
+            _write(SECTIONFILE, "<cleaning up>")
+            engine.cleanup(engine.RAISE)
+
+        resetengine()
+        os.unlink(SECTIONFILE)
+    except (Exception, KeyboardInterrupt) as err:
+        errors = True
+        raise
+    finally:
+        if isfullupdate:
+            if errors:
+                # touch the FAILFILE if there were errors
+                with open(FAILFILE, 'w') as f:
+                    pass
             else:
-                note("Running %r in %s" %
-                     (localrepo.pulldesc, localrepo.repo_path))
-                localrepo.pullchanges()
-
-        # make sure the HOMELY.py script exists
-        pyscript = os.path.join(info.localrepo.repo_path, 'HOMELY.py')
-        if not os.path.exists(pyscript):
-            warning("%s does not exist" % pyscript)
-            errors = True
-            continue
-
-        if len(only):
-            engine.onlysections(only)
-
-        source = SourceFileLoader('__imported_by_homely', pyscript)
-        try:
-            source.load_module()
-        except HelperError as err:
-            warning(str(err))
-            errors = True
-
-    setrepoinfo(None)
-
-    if all((cancleanup,
-            not (errors or len(only)),
-            len(infos) == RepoListConfig().repo_count(),
-            )):
-        engine.cleanup(engine.RAISE)
-
-    resetengine()
+                _write(TIMEFILE, time.strftime("%H:%M"))
+        if os.path.exists(RUNFILE):
+            os.unlink(RUNFILE)
 
     return not errors
 
@@ -287,3 +337,28 @@ def yesnooption(name, prompt, default=None):
     cfg.setquestionanswer(name, choice)
     cfg.writejson()
     return choice
+
+
+def _write(path, content):
+    with open(path + ".new", 'w') as f:
+        f.write(content)
+    os.replace(path + ".new", path)
+
+
+_PREV_SECTION = []
+_CURRENT_SECTION = ""
+
+
+@contextmanager
+def entersection(name):
+    global _CURRENT_SECTION, _PREV_SECTION
+    _PREV_SECTION.append(_CURRENT_SECTION)
+    try:
+        # update the section name and put it in the file
+        _CURRENT_SECTION = _CURRENT_SECTION + name
+        _write(SECTIONFILE, _CURRENT_SECTION)
+        yield
+    finally:
+        # restore the previous section name
+        _CURRENT_SECTION = _PREV_SECTION.pop()
+        _write(SECTIONFILE, _CURRENT_SECTION)
