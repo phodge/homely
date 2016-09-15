@@ -4,7 +4,9 @@ import sys
 from click import echo, group, argument, option, UsageError, ClickException
 
 from homely._errors import RepoError, JsonError
-from homely._utils import RepoListConfig, saveconfig, RepoInfo
+from homely._utils import (
+    RepoListConfig, saveconfig, RepoInfo, getstatus, STATUSCODES,
+)
 from homely._ui import (
     run_update, addfromremote, yesno,
     setverbose, setinteractive, setfragile, setallowpull,
@@ -228,6 +230,23 @@ def updatecheck():
     raise Exception("TODO: check timestamp in ~/.homely/last-check")  # noqa
     raise Exception("TODO: update all repos if necessary")  # noqa
     raise Exception("TODO: put new timestamp in ~/.homely/last-check")  # noqa
+
+
+@homely.command()
+@_globals
+def updatestatus():
+    """
+    Returns an exit code indicating the state of the current or previous
+    'homely update' process. The exit code will be one of the following:
+      0  ..  No 'homely update' process is running.
+      2  ..  A 'homely update' process has never been run.
+      3  ..  A 'homely update' process is currently running.
+      4  ..  Updates using 'autoupdate' are currently paused.
+      5  ..  The most recent update raised Warnings or failed altogether.
+      1  ..  (An unexpected error occurred trying to get the status.)
+    """
+    status = getstatus()[0]
+    sys.exit(STATUSCODES[status])
 
 
 def main():

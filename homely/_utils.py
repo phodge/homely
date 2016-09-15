@@ -460,3 +460,43 @@ def tmpdir(name):
     finally:
         if tmp and exists(tmp.name):
             tmp.cleanup()
+
+
+class UpdateStatus(object):
+    OK = "ok"
+    NEVER = "never"
+    RUNNING = "running"
+    FAILED = "failed"
+    NOCONN = "noconn"
+    PAUSED = "paused"
+
+
+STATUSCODES = {
+    UpdateStatus.OK: 0,
+    UpdateStatus.NEVER: 2,
+    UpdateStatus.RUNNING: 3,
+    UpdateStatus.FAILED: 4,
+    UpdateStatus.NOCONN: 5,
+    UpdateStatus.PAUSED: 6,
+}
+
+
+def getstatus():
+    """Get the status of the previous 'homely update', or any 'homely update'
+    that may be running in another process.
+    """
+    if exists(RUNFILE):
+        mtime = os.stat(RUNFILE).st_mtime
+        with open(SECTIONFILE) as f:
+            section = f.read().strip()
+        # what section?
+        return UpdateStatus.RUNNING, mtime, section
+    if exists(PAUSEFILE):
+        return UpdateStatus.PAUSED, None, None
+    if exists(FAILFILE):
+        mtime = os.stat(FAILFILE).st_mtime
+        return UpdateStatus.FAILED, mtime, None
+    if exists(TIMEFILE):
+        mtime = os.stat(TIMEFILE).st_mtime
+        return UpdateStatus.OK, mtime, None
+    return UpdateStatus.NEVER, None, None
