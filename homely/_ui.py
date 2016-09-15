@@ -15,6 +15,7 @@ from homely._vcs import Repo
 _INTERACTIVE = False
 _VERBOSE = False
 _FRAGILE = False
+_WARNINGS = 0
 _ALLOWPULL = True
 
 
@@ -73,6 +74,8 @@ def heading(message):
 
 
 def warning(message):
+    global _WARNINGS
+    _WARNINGS += 1
     if _FRAGILE:
         raise Exception(message)
     sys.stderr.write("WARNING: ")
@@ -138,7 +141,6 @@ def run_update(infos, pullfirst, only=None, cancleanup=None):
                 pyscript = os.path.join(localrepo.repo_path, 'HOMELY.py')
                 if not os.path.exists(pyscript):
                     warning("%s does not exist" % pyscript)
-                    errors = True
                     continue
 
                 if len(only):
@@ -164,8 +166,8 @@ def run_update(infos, pullfirst, only=None, cancleanup=None):
         raise
     finally:
         if isfullupdate:
-            if errors:
-                # touch the FAILFILE if there were errors
+            if errors or _WARNINGS:
+                # touch the FAILFILE if there were errors or warnings
                 with open(FAILFILE, 'w') as f:
                     pass
             else:
