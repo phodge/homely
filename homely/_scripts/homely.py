@@ -1,11 +1,14 @@
 import os
 import sys
+import time
 
 from click import echo, group, argument, option, UsageError, ClickException
 
 from homely._errors import RepoError, JsonError
 from homely._utils import (
-    RepoListConfig, saveconfig, RepoInfo, getstatus, STATUSCODES, mkcfgdir
+    RepoListConfig, saveconfig, RepoInfo, mkcfgdir,
+    PAUSEFILE, OUTFILE, FAILFILE,
+    getstatus, UpdateStatus, STATUSCODES,
 )
 from homely._ui import (
     run_update, addfromremote, yesno,
@@ -196,6 +199,7 @@ def update(identifiers, nopull, only, assume):
     if assume:
         setinteractive("ASSUME")
     setallowpull(not nopull)
+
     cfg = RepoListConfig()
     if len(identifiers):
         updatedict = {}
@@ -219,19 +223,94 @@ def update(identifiers, nopull, only, assume):
 
 
 @homely.command()
-@option('--daily', is_flag=True, help="Update interactively daily")
-@option('--weekly', is_flag=True, help="Update interactively weekly")
-@option('--monthly', is_flag=True, help="Update interactively monthly")
-def updatecheck():
-    '''
-    Interactively update all your repos on a regular basis.
-    E.g., add this to your ~/.bashrc:
+@option('--pause', is_flag=True,
+        help="Pause automatic updates. This can be useful while you are"
+        " working on your HOMELY.py script")
+@option('--unpause', is_flag=True, help="Un-pause automatic updates")
+@option('--outfile', is_flag=True,
+        help="Prints the _path_ of the file containing the output of the"
+        " previous 'homely update' run that was initiated by autoupdate.")
+@option('--daemon', is_flag=True,
+        help="Starts a 'homely update' daemon process, as long as it hasn't"
+        " been run too recently")
+@option('--clear', is_flag=True,
+        help="Clear any previous update error so that autoupdate can initiate"
+        " updates again.")
+@_globals
+def autoupdate(**kwargs):
+    options = ('pause', 'unpause', 'outfile', 'daemon', 'clear')
+    action = None
+    for name in options:
+        if kwargs[name]:
+            if action is not None:
+                raise UsageError("--%s and --%s options cannot be combined"
+                                 % (action, name))
+            action = name
 
-        homely updatecheck --weekly
-    '''
-    raise Exception("TODO: check timestamp in ~/.homely/last-check")  # noqa
-    raise Exception("TODO: update all repos if necessary")  # noqa
-    raise Exception("TODO: put new timestamp in ~/.homely/last-check")  # noqa
+    if action is None:
+        raise UsageError("Either %s must be used"
+                         % (" or ".join("--{}".format(o) for o in options)))
+
+    mkcfgdir()
+    if action == "pause":
+        with open(PAUSEFILE, 'w'):
+            pass
+        return
+
+    if action == "unpause":
+        if os.path.exists(PAUSEFILE):
+            os.unlink(PAUSEFILE)
+        return
+
+    if action == "clear":
+        if os.path.exists(FAILFILE):
+            os.unlink(FAILFILE)
+        return
+
+    if action == "outfile":
+        print(OUTFILE)
+        return
+
+    # is an update necessary?
+    assert action == "daemon"
+
+    # check if we're allowed to start an update
+    status, mtime, _ = getstatus()
+    if status == UpdateStatus.FAILED:
+        print("Can't start daemon - previous update failed")
+        sys.exit(1)
+    if status == UpdateStatus.PAUSED:
+        print("Can't start daemon - updates are paused")
+        sys.exit(1)
+    if status == UpdateStatus.RUNNING:
+        print("Can't start daemon - an update is already running")
+        sys.exit(1)
+
+    # abort the update if it hasn't been long enough
+    interval = 20 * 60 * 60
+    if mtime is not None and (time.time() - mtime) < interval:
+        print("Can't start daemon - too soon to start another update")
+        sys.exit(1)
+
+    assert status in (UpdateStatus.OK,
+                      UpdateStatus.NEVER,
+                      UpdateStatus.NOCONN)
+    import daemon
+    setfragile(False)
+    with daemon.DaemonContext():
+        # never run the daemon in fragile mode!
+        with open(OUTFILE, 'w') as f:
+            try:
+                from homely._ui import setstreams
+                setstreams(f, f)
+                cfg = RepoListConfig()
+                run_update(list(cfg.find_all()),
+                           pullfirst=True,
+                           cancleanup=True)
+            except Exception:
+                import traceback
+                f.write(traceback.format_exc())
+                raise
 
 
 @homely.command()
