@@ -214,14 +214,6 @@ def updatecheck():
     raise Exception("TODO: put new timestamp in ~/.homely/last-check")  # noqa
 
 
-@homely.command()
-def repotest():
-    '''
-    Test REPO's HOMELY.py for errors.
-    '''
-    raise Exception("TODO: implement this")  # noqa
-
-
 def main():
     try:
         # FIXME: always ensure git is installed first
