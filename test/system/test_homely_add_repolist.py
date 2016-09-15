@@ -22,7 +22,7 @@ def test_homely_add_repolist(tmpdir, HOME):
              """)
 
     # add the repo and ensure that everything was created as expected
-    system(HOMELY + ['add', repo1.url])
+    system(HOMELY('add') + [repo1.url])
 
     assert repo1.installedin(HOME)
     assert os.path.isdir(homedir1)
@@ -39,7 +39,7 @@ def test_homely_add_repolist(tmpdir, HOME):
              from homely.general import lineinfile
              lineinfile('~/file2.txt', 'Hey There')
              """)
-    system(HOMELY + ['add', repo2.url])
+    system(HOMELY('add') + [repo2.url])
     assert repo2.installedin(HOME)
     assert contents(repo2file, "Hey There\n")
 
@@ -60,12 +60,12 @@ def test_homely_add_repolist(tmpdir, HOME):
 
     # test adding a repo from the local dir
     assert not os.path.exists(HOME + '/r3.txt')
-    system(HOMELY + ['add', localrepo3])
+    system(HOMELY('add') + [localrepo3])
     assert contents(HOME + '/r3.txt') == 'From R3\n'
     checkrepolist(HOME, system, [repo1, repo2, repo3])
 
     # test that you can't add the same repo again
-    system(HOMELY + ['add', repo2.url])
+    system(HOMELY('add') + [repo2.url])
     checkrepolist(HOME, system, [repo1, repo2, repo3])
 
     # test that adding a repo with something like 'homely add .' doesn't record
@@ -80,5 +80,5 @@ def test_homely_add_repolist(tmpdir, HOME):
     # use a Repo instance to clone it into our home dir manually
     from homely._vcs.testhandler import Repo
     Repo.frompath(repo4.url).clonetopath(localrepo4)
-    system(HOMELY + ['add', '.'], cwd=localrepo4)
+    system(HOMELY('add') + ['.'], cwd=localrepo4)
     checkrepolist(HOME, system, [repo1, repo2, repo3, repo4])
