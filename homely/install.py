@@ -22,7 +22,6 @@ class InstallFromSource(Helper):
     _real_clone_to = None
     _branch = None
     _tag = None
-    _symlinks = []
     _compile = None
 
     def __init__(self, source_repo, clone_to):
@@ -31,6 +30,7 @@ class InstallFromSource(Helper):
         self._source_repo = source_repo
         self._clone_to = clone_to
         self._real_clone_to = os.path.expanduser(clone_to)
+        self._symlinks = []
 
     def select_branch(self, branch_name):
         assert self._tag is None
