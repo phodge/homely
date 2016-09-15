@@ -2,6 +2,7 @@ import os
 import io
 from contextlib import contextmanager
 from copy import copy
+from importlib.machinery import SourceFileLoader
 
 from homely._errors import HelperError
 from homely._engine2 import getengine, Helper, Cleaner, Engine, getrepoinfo
@@ -9,7 +10,7 @@ from homely._utils import (
     filereplacer, _repopath2real, _homepath2real, isnecessarypath,
     NoChangesNeeded
 )
-from homely._ui import entersection
+from homely._ui import warning, entersection
 
 # allow importing from outside
 from homely._utils import haveexecutable  # noqa
@@ -17,6 +18,27 @@ from homely._utils import haveexecutable  # noqa
 
 def run(updatehelper):
     getengine().run(updatehelper)
+
+
+_include_num = 0
+
+
+def include(pyscript):
+    path = _repopath2real(pyscript, getrepoinfo().localrepo)
+    if not os.path.exists(path):
+        warning("%s not found at %s" % (pyscript, path))
+        return
+
+    global _include_num
+    _include_num += 1
+
+    source = SourceFileLoader('__imported_by_homely_{}'.format(_include_num),
+                              path)
+    try:
+        with entersection("/" + pyscript):
+            source.load_module()
+    except Exception as err:
+        warning("Error while including {}: {}".format(pyscript, str(err)))
 
 
 def section(func):

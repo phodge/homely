@@ -146,12 +146,15 @@ def run_update(infos, pullfirst, only=None, cancleanup=None):
                 if len(only):
                     engine.onlysections(only)
 
-                source = SourceFileLoader('__imported_by_homely', pyscript)
+                source = SourceFileLoader('HOMELY', pyscript)
                 try:
                     source.load_module()
                 except HelperError as err:
                     warning(str(err))
-                    errors = True
+
+                # remove 'HOMELY' from sys modules so it is ready for the next
+                # run
+                sys.modules['HOMELY'] = None
 
         setrepoinfo(None)
 
