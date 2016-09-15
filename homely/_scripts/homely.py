@@ -20,25 +20,38 @@ class Fatal(Exception):
     pass
 
 
+def _globals(command):
+    def proxy(verbose, fragile, interactive, **kwargs):
+        # handle the --verbose, --fragile and --interactive options
+        setverbose(verbose)
+        setinteractive(interactive)
+        setfragile(fragile)
+        # pass all other arguments on to the command
+        command(**kwargs)
+    proxy.__name__ = command.__name__
+    proxy.__doc__ = command.__doc__
+    proxy = option('--interactive/--no-interactive', default=True,
+                   help="Prompt user for input? Use --no-interactive in"
+                   " scripts where a tty will not be connected")(proxy)
+    proxy = option('--fragile', is_flag=True, help="homely will exit(1)"
+                   " whenever a Warning is generated")(proxy)
+    proxy = option('-v', '--verbose', 'verbose', is_flag=True,
+                   help="Product extra output")(proxy)
+    return proxy
+
+
 @group()
-@option('--interactive/--no-interactive', default=True,
-        help='Prompt user for input? Use --no-interactive in scripts'
-        'where a tty will not be connected')
-@option('-v', '--verbose', 'verbose', is_flag=True)
-@option('--fragile', is_flag=True)
-def homely(interactive, verbose, fragile):
+def homely():
     """
     Single-command dotfile installation.
     """
-    setverbose(verbose)
-    setinteractive(interactive)
-    setfragile(fragile)
 
 
 @homely.command()
 # FIXME: add the ability to install multiple things at once
 @argument('repo_path')
 @argument('dest_path', required=False)
+@_globals
 def add(repo_path, dest_path):
     '''
     Install a new repo on your system
@@ -81,6 +94,7 @@ def add(repo_path, dest_path):
         "\n%(repoid)s"
         "\n%(localpath)s"
         "\n%(canonical)s")
+@_globals
 def repolist(format):
     cfg = RepoListConfig()
     for info in cfg.find_all():
@@ -101,6 +115,7 @@ def repolist(format):
         " --no-interactive.")
 @option('--update', '-u', is_flag=True,
         help="Perform update/cleanup of all repos after removal.")
+@_globals
 def remove(identifier, force, update):
     '''
     Remove repo identified by IDENTIFIER. IDENTIFIER can be a path to a repo or
@@ -166,6 +181,7 @@ def remove(identifier, force, update):
         help="Only process the named sections (whole names only)")
 @option('--assume', '-a', is_flag=True,
         help="Assume that previous answers to yes/no prompts are correct")
+@_globals
 def update(identifiers, nopull, only, assume):
     '''
     Git pull the specified REPOs and then re-run them.
