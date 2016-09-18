@@ -1,10 +1,11 @@
 import contextlib
 import subprocess
-from itertools import chain
 import os
-from os.path import join, exists
 import re
 import tempfile
+from itertools import chain
+from functools import partial
+from os.path import join, exists
 
 import simplejson
 
@@ -78,14 +79,86 @@ def _homepath2real(path, debug=False):
     return path
 
 
-def haveexecutable(name):
+def run(*args, stdout=None, stderr=None, **kwargs):
+    """
+    A blocking wrapper around subprocess.Popen(), but with a simpler interface
+    for the stdout/stderr arguments:
+
+    stdout=False / stderr=False
+        stdout/stderr will be redirected to /dev/null (or discarded in some
+        other suitable manner)
+    stdout=True / stderr=True
+        stdout/stderr will be captured and returned as a list of lines.
+    stdout=None
+        stdout will be redirected to the python process's stdout, which may be
+        a tty (same as using stdout=subprocess.None)
+    stderr=None:
+        stderr will be redirected to the python process's stderr, which may be
+        a tty (same as using stderr=subprocess.None)
+    stderr="STDOUT"
+        Same as using stderr=subprocess.STDOUT
+
+    The return value will be a tuple of (exitcode, stdout, stderr)
+
+    If stdout and/or stderr were not captured, they will be None instead.
+    """
+    devnull = None
     try:
-        subprocess.check_call(['which', name], stdout=None, stderr=None)
+        stdoutfilter = None
+        stderrfilter = None
+
+        wantstdout = False
+        wantstderr = False
+        if stdout is False:
+            devnull = open('/dev/null', 'w')
+            stdout = devnull
+        elif stdout is True:
+            stdout = subprocess.PIPE
+            wantstdout = True
+        elif callable(stdout):
+            stdoutfilter = partial(stdout)
+            stdout = subprocess.PIPE
+        else:
+            assert stdout is None, "Invalid stdout %r" % stdout
+
+        if stderr is False:
+            if devnull is None:
+                devnull = open('/dev/null', 'w')
+            stderr = devnull
+        elif stderr is True:
+            stderr = subprocess.PIPE
+            wantstderr = True
+        elif stderr == "STDOUT":
+            stderr = subprocess.STDOUT
+        elif callable(stderr):
+            stderrfilter = partial(stderr)
+            stderr = subprocess.PIPE
+        else:
+            assert stderr is None, "Invalid stderr %r" % stderr
+
+        proc = subprocess.Popen(*args, stdout=stdout, stderr=stderr)
+        out, err = proc.communicate()
+        if not wantstdout:
+            if stdoutfilter:
+                stdoutfilter(out, True)
+            out = None
+        if not wantstderr:
+            if stderrfilter:
+                stderrfilter(err, True)
+            err = None
+        return proc.returncode, out, err
+    finally:
+        if devnull is not None:
+            devnull.close()
+
+
+def haveexecutable(name):
+    exitcode = run(['which', name], stdout=False, stderr=False)[0]
+    if exitcode == 0:
         return True
-    except subprocess.CalledProcessError as err:
-        if err.returncode == 1:
-            return False
-        raise
+    if exitcode == 1:
+        return False
+    raise SystemError("Unexpected return value from 'which {}'".format(name))
 
 
 class JsonConfig(object):
