@@ -64,7 +64,7 @@ def _repopath2real(path, repo):
     return path
 
 
-def _homepath2real(path, debug=False):
+def _homepath2real(path):
     assert not path.endswith('/')
     # expand ~
     if path.startswith('~'):
