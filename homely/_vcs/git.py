@@ -1,9 +1,9 @@
 import re
 import os
-import subprocess
 
 import homely._vcs
 from homely._utils import _expandpath
+from homely._ui import system
 
 
 class Repo(homely._vcs.Repo):
@@ -40,18 +40,17 @@ class Repo(homely._vcs.Repo):
     def pullchanges(self):
         assert not self.isremote
         cmd = ['git', 'pull']
-        subprocess.check_call(cmd, cwd=self.repo_path)
+        system(cmd, cwd=self.repo_path)
 
     def clonetopath(self, dest):
         origin = self.repo_path
-        subprocess.check_call(['git', 'clone', origin, dest])
+        system(['git', 'clone', origin, dest])
 
     def getrepoid(self):
         assert not self.isremote
         cmd = ['git', 'rev-list', '--max-parents=0', 'HEAD']
-        return (subprocess.check_output(cmd, cwd=self.repo_path)
-                .rstrip()
-                .decode('utf-8'))
+        stdout = system(cmd, cwd=self.repo_path, stdout=True)[1]
+        return stdout.rstrip().decode('utf-8')
 
     @staticmethod
     def shortid(repoid):
@@ -59,9 +58,7 @@ class Repo(homely._vcs.Repo):
 
     def isdirty(self):
         cmd = ['git', 'status', '--porcelain']
-        out = subprocess.check_output(cmd,
-                                      cwd=self.repo_path,
-                                      stderr=subprocess.STDOUT)
+        out = system(cmd, cwd=self.repo_path, stdout=True)[1]
         for line in out.split(b'\n'):
             if len(line) and not line.startswith(b'?? '):
                 return True
