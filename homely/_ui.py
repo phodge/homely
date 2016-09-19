@@ -162,16 +162,16 @@ def run_update(infos, pullfirst, only=None, cancleanup=None):
             assert isinstance(info, RepoInfo)
             _CURRENT_REPO = info
             localrepo = info.localrepo
-            with entersection(os.path.basename(localrepo.repo_path)):
-                heading("Updating from %s [%s]" %
-                        (localrepo.repo_path, info.shortid()))
+            with entersection(os.path.basename(localrepo.repo_path)), \
+                    head("Updating from {} [{}]".format(
+                        localrepo.repo_path, info.shortid())):
                 if pullfirst:
                     if localrepo.isdirty():
                         warning("Can't use %r in %s: uncommitted changes" % (
                             localrepo.pulldesc, localrepo.repo_path))
                     else:
-                        note("Running %r in %s" %
-                             (localrepo.pulldesc, localrepo.repo_path))
+                        with note("Running %r in %s" %
+                                  (localrepo.pulldesc, localrepo.repo_path)):
                         localrepo.pullchanges()
 
                 # make sure the HOMELY.py script exists
@@ -186,12 +186,16 @@ def run_update(infos, pullfirst, only=None, cancleanup=None):
                 source = SourceFileLoader('HOMELY', pyscript)
                 try:
                     source.load_module()
-                except HelperError as err:
-                    warning(str(err))
+                except Exception as err:
+                    import traceback
+                    tb = traceback.format_exc()
+                    for line in tb.split('\n'):
+                        warn(line)
 
-                # remove 'HOMELY' from sys modules so it is ready for the next
-                # run
-                sys.modules['HOMELY'] = None
+                # Remove 'HOMELY' from sys modules so it is ready for the next
+                # run. Note that if the call to load_module() failed then the
+                # HOMELY module might not be present.
+                sys.modules.pop('HOMELY', None)
 
         setrepoinfo(None)
 
@@ -201,9 +205,15 @@ def run_update(infos, pullfirst, only=None, cancleanup=None):
 
         resetengine()
         os.unlink(SECTIONFILE)
-    except (Exception, KeyboardInterrupt) as err:
+    except KeyboardInterrupt:
         errors = True
         raise
+    except Exception as err:
+        import traceback
+        tb = traceback.format_exc()
+        for line in tb.split('\n'):
+            warn(line)
+        errors = True
     finally:
         if isfullupdate:
             if errors or _WARNINGS:
@@ -215,7 +225,7 @@ def run_update(infos, pullfirst, only=None, cancleanup=None):
         if os.path.exists(RUNFILE):
             os.unlink(RUNFILE)
 
-    return not errors
+    return not (errors or _WARNINGS)
 
 
 def isinteractive():
