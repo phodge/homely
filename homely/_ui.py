@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+from datetime import datetime
 from importlib.machinery import SourceFileLoader
 from contextlib import contextmanager
 from functools import partial
@@ -67,27 +68,46 @@ def setallowpull(value):
     _ALLOWPULL = bool(value)
 
 
-def note(message):
-    sys.stdout.write("INFO: ")
-    sys.stdout.write(message)
-    sys.stdout.write("\n")
-    sys.stdout.flush()
+_INDENT = 0
 
 
-def debug(message):
-    if _VERBOSE:
-        sys.stdout.write("DEBUG: ")
-        sys.stdout.write(message)
-        sys.stdout.write("\n")
-        sys.stdout.flush()
+class note(object):
+    sep = '...'
+    dash = '- '
+
+    def __init__(self, message, dash=None):
+        super(note, self).__init__()
+        self._log(self._getstream(), message, dash=dash)
+
+    def _getstream(self):
+        return _OUTSTREAM
+
+    def _log(self, stream, message, dash=None):
+        indent = ('  ' * (_INDENT - 1)) if _INDENT > 0 else ''
+        dash = dash or (self.dash if _INDENT > 0 else '')
+        stream.write('[{}] {} {}{}{}\n'.format(
+            datetime.now().strftime('%c'), self.sep, indent, dash, message))
+        stream.flush()
+
+    def __enter__(self):
+        global _INDENT
+        _INDENT += 1
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        global _INDENT
+        _INDENT -= 1
 
 
-def heading(message):
-    sys.stdout.write(message)
-    sys.stdout.write("\n")
-    sys.stdout.write("=" * len(message))
-    sys.stdout.write("\n")
-    sys.stdout.flush()
+class head(note):
+    sep = ':::'
+
+
+class warn(note):
+    sep = 'ERR'
+    dash = '> '
+
+    def _getstream(self):
+        return _ERRSTREAM
 
 
 def warning(message):
