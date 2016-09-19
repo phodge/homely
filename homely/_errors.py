@@ -15,6 +15,13 @@ class RepoError(Exception):
     """
 
 
+class SystemError(Exception):
+    """
+    Raised by the homely._utils.run() function when a subprocess does not return an expected
+    error code.
+    """
+
+
 # TODO: merge this with CleanupObstruction ... I don't think its worthwhile
 # having them as separate
 class CleanupConflict(Exception):
