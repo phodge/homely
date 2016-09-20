@@ -2,6 +2,7 @@ import re
 import os
 
 import homely._vcs
+from homely._errors import ConnectionError
 from homely._utils import _expandpath
 from homely._ui import system
 
@@ -40,7 +41,19 @@ class Repo(homely._vcs.Repo):
     def pullchanges(self):
         assert not self.isremote
         cmd = ['git', 'pull']
-        system(cmd, cwd=self.repo_path)
+        code, _, err = system(cmd,
+                              cwd=self.repo_path,
+                              stderr=True,
+                              expectexit=(0,1))
+        if code == 0:
+            return
+
+        assert code == 1
+        needle = b'fatal: Could not read from remote repository.'
+        if needle in err:
+            raise ConnectionError()
+
+        raise SystemError("Unexpected output from 'git pull': {}".format(err))
 
     def clonetopath(self, dest):
         origin = self.repo_path

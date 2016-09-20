@@ -22,6 +22,12 @@ class SystemError(Exception):
     """
 
 
+class ConnectionError(Exception):
+    """
+    Raised when a remote resource just as git repo or download URL are not reachable
+    """
+
+
 # TODO: merge this with CleanupObstruction ... I don't think its worthwhile
 # having them as separate
 class CleanupConflict(Exception):
