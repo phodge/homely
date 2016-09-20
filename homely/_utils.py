@@ -546,6 +546,7 @@ class UpdateStatus(object):
     RUNNING = "running"
     FAILED = "failed"
     NOCONN = "noconn"
+    DIRTY = "dirty"
     PAUSED = "paused"
 
 
@@ -555,7 +556,8 @@ STATUSCODES = {
     UpdateStatus.RUNNING: 3,
     UpdateStatus.FAILED: 4,
     UpdateStatus.NOCONN: 5,
-    UpdateStatus.PAUSED: 6,
+    UpdateStatus.DIRTY: 6,
+    UpdateStatus.PAUSED: 7,
 }
 
 
@@ -571,10 +573,25 @@ def getstatus():
         return UpdateStatus.RUNNING, mtime, section
     if exists(PAUSEFILE):
         return UpdateStatus.PAUSED, None, None
-    if exists(FAILFILE):
-        mtime = os.stat(FAILFILE).st_mtime
-        return UpdateStatus.FAILED, mtime, None
+
+    mtime = None
     if exists(TIMEFILE):
         mtime = os.stat(TIMEFILE).st_mtime
-        return UpdateStatus.OK, mtime, None
-    return UpdateStatus.NEVER, None, None
+
+    if exists(FAILFILE):
+        if not mtime:
+            mtime = os.stat(FAILFILE).st_mtime
+        # TODO: return a different error code when the error was inability to
+        # contact one or more remote servers
+        with open(FAILFILE) as f:
+            content = f.read().strip()
+            if content == UpdateStatus.NOCONN:
+                return UpdateStatus.NOCONN, mtime, None
+            elif content == UpdateStatus.DIRTY:
+                return UpdateStatus.DIRTY, mtime, None
+        return UpdateStatus.FAILED, mtime, None
+
+    if mtime is None:
+        return UpdateStatus.NEVER, None, None
+
+    return UpdateStatus.OK, mtime, None
