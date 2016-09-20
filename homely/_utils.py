@@ -13,6 +13,12 @@ from homely._errors import JsonError
 from homely._vcs import Repo, fromdict
 
 
+try:
+    import asyncio
+except ImportError:
+    asyncio = None
+
+
 ROOT = join(os.environ['HOME'], '.homely')
 REPO_CONFIG_PATH = join(ROOT, 'repos.json')
 ENGINE2_CONFIG_PATH = join(ROOT, 'engine2.json')
@@ -79,7 +85,7 @@ def _homepath2real(path):
     return path
 
 
-def run(*args, stdout=None, stderr=None, **kwargs):
+def run(cmd, stdout=None, stderr=None, **kwargs):
     """
     A blocking wrapper around subprocess.Popen(), but with a simpler interface
     for the stdout/stderr arguments:
@@ -136,7 +142,22 @@ def run(*args, stdout=None, stderr=None, **kwargs):
         else:
             assert stderr is None, "Invalid stderr %r" % stderr
 
-        proc = subprocess.Popen(*args, stdout=stdout, stderr=stderr)
+        if (stdoutfilter or stderrfilter) and asyncio:
+            # run background process asynchronously and filter output as
+            # it is running
+            exitcode, out, err, = _runasync(stdoutfilter,
+                                            stderrfilter,
+                                            cmd,
+                                            stdout=stdout,
+                                            stderr=stderr,
+                                            **kwargs)
+            if not wantstdout:
+                out = None
+            if not wantstderr:
+                err = None
+            return exitcode, out, err
+
+        proc = subprocess.Popen(cmd, stdout=stdout, stderr=stderr, **kwargs)
         out, err = proc.communicate()
         if not wantstdout:
             if stdoutfilter:
@@ -150,6 +171,66 @@ def run(*args, stdout=None, stderr=None, **kwargs):
     finally:
         if devnull is not None:
             devnull.close()
+
+
+def _runasync(stdoutfilter, stderrfilter, cmd, **kwargs):
+    assert asyncio is not None
+
+    @asyncio.coroutine
+    def _runandfilter(loop, cmd, **kwargs):
+        def factory():
+            return FilteringProtocol(asyncio.streams._DEFAULT_LIMIT, loop)
+
+        class FilteringProtocol(asyncio.subprocess.SubprocessStreamProtocol):
+            _stdout = b""
+            _stderr = b""
+
+            def pipe_data_received(self, fd, data):
+                if fd == 1:
+                    if stdoutfilter:
+                        self._stdout = stdoutfilter(self._stdout + data, False)
+                    else:
+                        self.stdout.feed_data(data)
+                elif fd == 2:
+                    if stderrfilter:
+                        self._stderr = stderrfilter(self._stderr + data, False)
+                    else:
+                        self.stderr.feed_data(data)
+                else:
+                    raise Exception("Unexpected fd %r" % fd)
+
+            def pipe_connection_lost(self, fd, exc):
+                if fd == 1:
+                    if stdoutfilter and self._stdout:
+                        stdoutfilter(self._stdout, True)
+                elif fd == 2:
+                    if stderrfilter and self._stderr:
+                        stderrfilter(self._stderr, True)
+                return super().pipe_connection_lost(fd, exc)
+
+        transport, protocol = yield from loop.subprocess_exec(factory,
+                                                              *cmd,
+                                                              **kwargs)
+        process = asyncio.subprocess.Process(transport, protocol, loop)
+
+        # now wait for the process to complete
+        out, err = yield from process.communicate()
+        return process.returncode, out, err
+
+    _exception = None
+
+    def handleexception(loop, context):
+        nonlocal _exception
+        if _exception is None:
+            _exception = context["exception"]
+
+    # FIXME: probably shouldn't be using the main loop here
+    loop = asyncio.get_event_loop()
+    loop.set_exception_handler(handleexception)
+    result = loop.run_until_complete(_runandfilter(loop, cmd, **kwargs))
+    if _exception:
+        raise _exception
+    return result
 
 
 def haveexecutable(name):

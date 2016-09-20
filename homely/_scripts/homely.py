@@ -337,3 +337,9 @@ def main():
     except (Fatal, RepoError, JsonError) as err:
         echo("ERROR: %s" % err, err=True)
         sys.exit(1)
+    finally:
+        try:
+            import asyncio
+            asyncio.get_event_loop().close()
+        except ImportError:
+            pass
