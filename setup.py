@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name='homely',
@@ -16,7 +16,8 @@ setup(
         'Topic :: Utilities',
     ],
     keywords='dotfiles environment configuration tools utilities automation',
-    packages=['homely'],
+    packages=['homely'] + ['homely.{}'.format(p)
+                           for p in find_packages('homely')],
     install_requires=['simplejson', 'click', 'requests', 'python-daemon'],
     scripts=['bin/homely'],
     # automatic version number using setuptools_scm
