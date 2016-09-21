@@ -13,4 +13,4 @@ test -n "$(git st -s)" && fail "A clean checkout is required"
 
 git tag "$tag" -m "Tagged $tag" || fail "Couldn't create tag $tag"
 python setup.py sdist bdist_wheel || fail "Build failed"
-twine upload dist/* || "Twine upload failed"
+twine upload dist/homely-$tag{.tar.gz,-py*} || fail "Twine upload failed"
