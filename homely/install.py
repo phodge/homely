@@ -45,7 +45,7 @@ class InstallFromSource(Helper):
 
     def compile_cmd(self, commands):
         assert self._compile is None
-        self._compile = commands
+        self._compile = list(commands)
 
     @property
     def description(self):
@@ -121,11 +121,31 @@ class InstallFromSource(Helper):
 
         # run any compilation commands
         if self._compile is not None:
+            # if we used a tag name, create a 'fact' to prevent us re-compiling
+            # each time we run
+            docompile = True
+            factname = None
+            if self._tag:
+                factname = '{}:compilation:{}:{}'.format(
+                    self.__class__.__name__,
+                    'compilation',
+                    self._real_clone_to,
+                    self._tag)
+                # check if we need to recompile
+                if self._compile == self._getfact(factname, None):
+                    note("Tag {} was compiled last time".format(self._tag))
+                    docompile = False
+                self._clearfact(factname)
+
             # FIXME: we probably need to delete all the symlink targets before
             # compiling, as this is our best way of determining that the
             # compilation has failed ...
-            for cmd in self._compile:
-                system(cmd, cwd=self._real_clone_to)
+            if docompile:
+                for cmd in self._compile:
+                    system(cmd, cwd=self._real_clone_to)
+
+            if factname:
+                self._setfact(factname, self._compile)
 
         # create new symlinks
         for source, dest in self._symlinks:
@@ -134,7 +154,7 @@ class InstallFromSource(Helper):
                     target = os.readlink(dest)
                     if os.path.realpath(target) != os.path.realpath(source):
                         raise HelperError("Symlink %s is not pointing at %s" %
-                                        (dest, source))
+                                          (dest, source))
                     continue
                 if os.path.exists(dest):
                     raise HelperError("%s already exists" % dest)
