@@ -7,9 +7,9 @@ from contextlib import contextmanager
 from functools import partial
 
 import homely._utils
-from homely._errors import HelperError
+from homely._errors import HelperError, ConnectionError
 from homely._utils import (
-    RepoInfo, RepoListConfig, RepoScriptConfig, tmpdir,
+    RepoInfo, RepoListConfig, RepoScriptConfig, tmpdir, UpdateStatus,
     RUNFILE, FAILFILE, TIMEFILE, SECTIONFILE,
 )
 from homely._vcs import Repo
@@ -32,7 +32,6 @@ except ImportError:
 
 _INTERACTIVE = False
 _VERBOSE = False
-_WARNINGS = 0
 _ALLOWPULL = True
 
 
@@ -63,10 +62,11 @@ def setallowpull(value):
 
 
 _INDENT = 0
+_NOTECOUNT = {}
 
 
 class note(object):
-    sep = '...'
+    sep = '   '
     dash = '- '
 
     def __init__(self, message, dash=None):
@@ -82,6 +82,10 @@ class note(object):
         stream.write('[{}] {} {}{}{}\n'.format(
             datetime.now().strftime('%c'), self.sep, indent, dash, message))
         stream.flush()
+        try:
+            _NOTECOUNT[self.__class__.__name__] += 1
+        except KeyError:
+            _NOTECOUNT[self.__class__.__name__] = 1
 
     def __enter__(self):
         global _INDENT
@@ -98,19 +102,18 @@ class head(note):
 
 class warn(note):
     sep = 'ERR'
-    dash = '> '
+    dash = '  '
 
     def _getstream(self):
         return _ERRSTREAM
 
 
-def warning(message):
-    global _WARNINGS
-    _WARNINGS += 1
-    sys.stderr.write("WARNING: ")
-    sys.stderr.write(message)
-    sys.stderr.write("\n")
-    sys.stderr.flush()
+class noconn(warn):
+    sep = 'N/C'
+
+
+class dirty(warn):
+    sep = '!!!'
 
 
 def run_update(infos, pullfirst, only=None, cancleanup=None):
@@ -139,7 +142,8 @@ def run_update(infos, pullfirst, only=None, cancleanup=None):
             and (not len(only))
             and len(infos) == RepoListConfig().repo_count()):
         isfullupdate = True
-        # remove the failfile
+
+        # remove the fail file if it is still hanging around
         if os.path.exists(FAILFILE):
             os.unlink(FAILFILE)
 
@@ -158,13 +162,15 @@ def run_update(infos, pullfirst, only=None, cancleanup=None):
                     head("Updating from {} [{}]".format(
                         localrepo.repo_path, info.shortid())):
                 if pullfirst:
-                    if localrepo.isdirty():
-                        warning("Can't use %r in %s: uncommitted changes" % (
-                            localrepo.pulldesc, localrepo.repo_path))
-                    else:
-                        with note("Running %r in %s" %
-                                  (localrepo.pulldesc, localrepo.repo_path)):
-                        localrepo.pullchanges()
+                    with note("Pulling changes for {}".format(
+                            localrepo.repo_path)):
+                        if localrepo.isdirty():
+                            dirty("Aborting - uncommitted changes")
+                        else:
+                            try:
+                                localrepo.pullchanges()
+                            except ConnectionError:
+                                noconn("Could not connect to remote server")
 
                 # make sure the HOMELY.py script exists
                 pyscript = os.path.join(localrepo.repo_path, 'HOMELY.py')
@@ -181,6 +187,7 @@ def run_update(infos, pullfirst, only=None, cancleanup=None):
                 except Exception as err:
                     import traceback
                     tb = traceback.format_exc()
+                    warn(str(err))
                     for line in tb.split('\n'):
                         warn(line)
 
@@ -191,7 +198,7 @@ def run_update(infos, pullfirst, only=None, cancleanup=None):
 
         setrepoinfo(None)
 
-        if isfullupdate and not errors:
+        if isfullupdate and not _NOTECOUNT.get('warn'):
             _write(SECTIONFILE, "<cleaning up>")
             engine.cleanup(engine.RAISE)
 
@@ -201,23 +208,32 @@ def run_update(infos, pullfirst, only=None, cancleanup=None):
         errors = True
         raise
     except Exception as err:
+        warn(str(err))
         import traceback
         tb = traceback.format_exc()
         for line in tb.split('\n'):
             warn(line)
         errors = True
     finally:
+        warncount = _NOTECOUNT.get('warn')
+        noconncount = _NOTECOUNT.get('noconn')
+        dirtycount = _NOTECOUNT.get('dirty')
         if isfullupdate:
-            if errors or _WARNINGS:
+            if errors or warncount:
                 # touch the FAILFILE if there were errors or warnings
                 with open(FAILFILE, 'w') as f:
                     pass
-            else:
-                _write(TIMEFILE, time.strftime("%H:%M"))
+            elif noconncount:
+                with open(FAILFILE, 'w') as f:
+                    f.write(UpdateStatus.NOCONN)
+            elif dirtycount:
+                with open(FAILFILE, 'w') as f:
+                    f.write(UpdateStatus.DIRTY)
+            _write(TIMEFILE, time.strftime("%H:%M"))
         if os.path.exists(RUNFILE):
             os.unlink(RUNFILE)
 
-    return not (errors or _WARNINGS)
+    return not (errors or warncount or noconncount or dirtycount)
 
 
 def isinteractive():
