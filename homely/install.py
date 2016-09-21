@@ -3,7 +3,7 @@ import os
 from homely._errors import HelperError
 from homely._engine2 import Helper, Cleaner, getengine, Engine
 from homely._utils import haveexecutable, isnecessarypath
-from homely._ui import note, debug, isinteractive, allowpull, system
+from homely._ui import note, isinteractive, allowpull, system
 
 
 def installpkg(name=None, wantcmd=None, **methods):
@@ -129,16 +129,16 @@ class InstallFromSource(Helper):
 
         # create new symlinks
         for source, dest in self._symlinks:
-            debug("Ensure symlink exists: %s -> %s" % (source, dest))
-            if os.path.islink(dest):
-                target = os.readlink(dest)
-                if os.path.realpath(target) != os.path.realpath(source):
-                    raise HelperError("Symlink %s is not pointing at %s" %
-                                      (dest, source))
-                continue
-            if os.path.exists(dest):
-                raise HelperError("%s already exists" % dest)
-            os.symlink(source, dest)
+            with note("Ensure symlink exists: %s -> %s" % (source, dest)):
+                if os.path.islink(dest):
+                    target = os.readlink(dest)
+                    if os.path.realpath(target) != os.path.realpath(source):
+                        raise HelperError("Symlink %s is not pointing at %s" %
+                                        (dest, source))
+                    continue
+                if os.path.exists(dest):
+                    raise HelperError("%s already exists" % dest)
+                os.symlink(source, dest)
 
 
 class InstallPackage(Helper):
