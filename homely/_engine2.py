@@ -8,7 +8,7 @@ from homely._utils import (
     RepoInfo,
     FactConfig,
 )
-from homely._ui import note, debug, warning
+from homely._ui import note, warn
 
 
 _ENGINE = None
@@ -212,7 +212,7 @@ class Engine(object):
                 for item in data.get('cleaners', []):
                     cleaner = cleanerfromdict(item)
                     if cleaner is None:
-                        warning("No cleaner for %s" % repr(item))
+                        warn("No cleaner for %s" % repr(item))
                     else:
                         self._old_cleaners.append(cleaner)
                 self._old_paths_owned = data.get('paths_owned', {})
@@ -299,30 +299,30 @@ class Engine(object):
 
         # if the helper isn't already done, tell it to do its thing now
         if not helper.isdone():
-            note("RUNNING: %s" % helper.description)
-            # take ownership of any paths that don't exist yet!
-            for path, type_ in helper.pathsownable().items():
-                if type_ in (self.TYPE_FILE_ALL, self.TYPE_FOLDER_ALL):
-                    exists = path in self._created
-                elif type_ in (self.TYPE_FILE_PART, self.TYPE_FOLDER_ONLY):
-                    exists = os.path.exists(path)
-                else:
-                    exists = os.path.islink(path)
-                if not exists:
-                    self._created.add(path)
-                    cfg_modified = True
+            with note("{}: Running ...".format(helper.description)):
+                # take ownership of any paths that don't exist yet!
+                for path, type_ in helper.pathsownable().items():
+                    if type_ in (self.TYPE_FILE_ALL, self.TYPE_FOLDER_ALL):
+                        exists = path in self._created
+                    elif type_ in (self.TYPE_FILE_PART, self.TYPE_FOLDER_ONLY):
+                        exists = os.path.exists(path)
+                    else:
+                        exists = os.path.islink(path)
+                    if not exists:
+                        self._created.add(path)
+                        cfg_modified = True
 
-            if cfg_modified:
-                # save the updated config before we try anything
-                self._savecfg()
-                cfg_modified = False
+                if cfg_modified:
+                    # save the updated config before we try anything
+                    self._savecfg()
+                    cfg_modified = False
 
-            try:
-                helper.makechanges()
-            except HelperError as err:
-                warning("  Failed: %s" % err.args[0])
+                try:
+                    helper.makechanges()
+                except HelperError as err:
+                    warn("Failed: %s" % err.args[0])
         else:
-            note("ALREADY DONE: %s" % helper.description)
+            note("{}: Already done".format(helper.description))
         self._helpers.append(helper)
 
         # save the config now if we were successful
@@ -380,34 +380,34 @@ class Engine(object):
         # if the cleaner is not needed, we get rid of it
         # FIXME try/except around the isneeded() call
         if not cleaner.isneeded():
-            note("  Not needed: %s" % cleaner.description)
+            note("{}: Not needed".format(cleaner.description))
             return
 
-        # if there are still helpers with claims over things the cleaner wants
-        # to remove, then the cleaner needs to wait
-        for claim in cleaner.needsclaims():
-            if claim in self._claims:
-                note("  Postponed: Something else claimed %r" % claim)
-                self._addcleaner(cleaner)
-                return
-
         # run the cleaner now
-        note("  Cleaning: %s" % cleaner.description)
-        try:
-            affected.extend(cleaner.makechanges())
-        except CleanupObstruction as err:
-            why = err.args[0]
-            if conflicts == self.RAISE:
-                raise
-            if conflicts == self.POSTPONE:
-                note("    Postponed: %s" % why)
-                # add the cleaner back in
-                self._addcleaner(cleaner)
-                return
-            # NOTE: eventually we'd like to ask the user what to do, but
-            # for now we just issue a warning
-            assert conflicts in (self.WARN, self.ASK)
-            warning("    Aborted: %s" % err.why)
+        with note("Cleaning: {}".format(cleaner.description)):
+            # if there are still helpers with claims over things the cleaner wants
+            # to remove, then the cleaner needs to wait
+            for claim in cleaner.needsclaims():
+                if claim in self._claims:
+                    note("Postponed: Something else claimed %r" % claim)
+                    self._addcleaner(cleaner)
+                    return
+
+            try:
+                affected.extend(cleaner.makechanges())
+            except CleanupObstruction as err:
+                why = err.args[0]
+                if conflicts == self.RAISE:
+                    raise
+                if conflicts == self.POSTPONE:
+                    note("Postponed: %s" % why)
+                    # add the cleaner back in
+                    self._addcleaner(cleaner)
+                    return
+                # NOTE: eventually we'd like to ask the user what to do, but
+                # for now we just issue a warning
+                assert conflicts in (self.WARN, self.ASK)
+                warn("Aborted: %s" % err.why)
 
     def _trycleanpath(self, path, type_, conflicts):
         def _discard():
@@ -421,40 +421,36 @@ class Engine(object):
             # remove the thing
             if type_ == self.TYPE_FOLDER_ONLY:
                 # TODO: what do we do if the folder isn't empty?
-                note("    Removing dir %s" % path)
-                debug("      rmdir %s" % path)
-                try:
-                    os.rmdir(path)
-                except OSError as err:
-                    from errno import ENOTEMPTY
-                    if err.errno == ENOTEMPTY:
-                        warning("      Directory not empty")
-                    else:
-                        raise
+                with note("Removing dir %s" % path):
+                    try:
+                        os.rmdir(path)
+                    except OSError as err:
+                        from errno import ENOTEMPTY
+                        if err.errno == ENOTEMPTY:
+                            warn("Directory not empty: {}".format(path))
+                        else:
+                            raise
             elif type_ == self.TYPE_FILE_ALL:
-                note("  Removing %s" % path)
-                debug("    rm -f %s" % path)
+                note("Removing {}".format(path))
                 os.unlink(path)
             elif type_ == self.TYPE_FILE_PART:
                 if os.stat(path).st_size == 0:
-                    note("  Removing empty %s" % path)
-                    debug("    rm -f %s" % path)
+                    note("Removing empty {}".format(path))
                     os.unlink(path)
                 else:
-                    note("  Refusing to remove non-empty %s" % path)
+                    note("Refusing to remove non-empty {}".format(path))
             else:
-                note("    Removing link %s" % path)
-                debug("      rm -f %s" % path)
+                note("Removing link {}".format(path))
                 os.unlink(path)
             _discard()
 
         def _postpone():
-            note("  Postponing cleanup of path: %s" % path)
-            self._postponed.add(path)
-            assert path not in self._new_paths_owned
-            self._new_paths_owned[path] = type_
-            self._old_paths_owned.pop(path)
-            self._savecfg()
+            with note("Postponing cleanup of path: {}".format(path)):
+                self._postponed.add(path)
+                assert path not in self._new_paths_owned
+                self._new_paths_owned[path] = type_
+                self._old_paths_owned.pop(path)
+                self._savecfg()
 
         # if we didn't create the path, then we don't need to clean it up
         if path not in self._created:
@@ -473,9 +469,9 @@ class Engine(object):
             assert type_ == self.TYPE_LINK
             correcttype = os.path.islink(path)
         if not correcttype:
-            note("  Ignoring: Won't remove %s as it is no longer a %s" % (
-                 path, type_))
-            return _discard()
+            with note("Ignoring: Won't remove {} as it is no longer a {}"
+                      .format(path, type_)):
+                return _discard()
 
         # work out if there is another path we need to remove first
         for otherpath in self._old_paths_owned:
@@ -513,7 +509,7 @@ class Engine(object):
             if conflicts == self.POSTPONE:
                 return _postpone()
             assert conflicts == self.WARN
-            raise Exception("TODO: issue the warning")  # noqa
+            warn("Conflict cleaning up path: {}".format(path))
             return _discard()
 
         # if nothing else wants this path, clean it up now
