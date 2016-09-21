@@ -10,7 +10,7 @@ Installation
 
 To install **homely** on a new machine, use the following command::
 
-    pip3 install git+https://github.com/toomuchphp/homely.git
+    pip3 install git+https://github.com/phodge/homely.git
 
 Getting started
 ---------------
@@ -18,17 +18,19 @@ Getting started
 1. If you don't yet have a Dotfiles repo, create an empty repo now.
 2. Run homely add https://your/public/repo.git
 
+TODO: these instructions are so incomplete
+
 
 Keeping your repos up-to-date
 -----------------------------
 
-To update your dotfiles using the latest versions from online repos, run::
+To manually fetch your latest dotfiles changes and install them locally, run::
 
     homely update
 
-If you would like your shell to remind you when it is time to update dotfiles, add one of the
-following to your **~/.bashrc** (or equivalent)::
+If you want something to put in a cronjob, try::
 
-    homely updatecheck --daily
-    homely updatecheck --weekly
-    homely updatecheck --monthly
+    homely autoupdate --daemon
+
+If you want some visual feedback about what 'homely update' is doing, you might
+want to use the powerline module.
