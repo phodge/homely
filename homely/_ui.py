@@ -139,7 +139,7 @@ def run_update(infos, pullfirst, only=None, cancleanup=None):
     except FileExistsError:
         with open(RUNFILE, 'r') as f:
             pid = f.read().strip()
-        warning("Updating is already running (PID={})".format(pid))
+        warn("Update is already running (PID={})".format(pid))
         return False
 
     isfullupdate = False
@@ -177,7 +177,7 @@ def run_update(infos, pullfirst, only=None, cancleanup=None):
                 # make sure the HOMELY.py script exists
                 pyscript = os.path.join(localrepo.repo_path, 'HOMELY.py')
                 if not os.path.exists(pyscript):
-                    warning("%s does not exist" % pyscript)
+                    warn("{} does not exist".format(pyscript))
                     continue
 
                 if len(only):

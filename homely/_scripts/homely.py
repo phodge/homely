@@ -13,7 +13,7 @@ from homely._utils import (
 from homely._ui import (
     run_update, addfromremote, yesno,
     setverbose, setinteractive, setfragile, setallowpull,
-    isinteractive, warning, note
+    isinteractive, warn, note
 )
 from homely._vcs import getrepohandler
 
@@ -133,7 +133,7 @@ def remove(identifier, force, update):
         cfg = RepoListConfig()
         info = cfg.find_by_any(one, "ilc")
         if not info:
-            warning("No repos matching %r" % one)
+            warn("No repos matching %r" % one)
             errors = True
             continue
 
@@ -141,8 +141,7 @@ def remove(identifier, force, update):
         # hasn't used force mode
         if os.path.isdir(info.localrepo.repo_path) and not force:
             if not isinteractive():
-                warning(
-                    "Use --force to remove a repo that still exists on disk")
+                warn("Use --force to remove a repo that still exists on disk")
                 errors = True
                 continue
 

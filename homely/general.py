@@ -10,7 +10,7 @@ from homely._utils import (
     filereplacer, _repopath2real, _homepath2real, isnecessarypath,
     NoChangesNeeded
 )
-from homely._ui import warning, entersection
+from homely._ui import entersection, warn
 
 # allow importing from outside
 from homely._utils import haveexecutable  # noqa
@@ -26,7 +26,7 @@ _include_num = 0
 def include(pyscript):
     path = _repopath2real(pyscript, getrepoinfo().localrepo)
     if not os.path.exists(path):
-        warning("%s not found at %s" % (pyscript, path))
+        warn("{} not found at {}".format(pyscript, path))
         return
 
     global _include_num
@@ -38,7 +38,7 @@ def include(pyscript):
         with entersection("/" + pyscript):
             source.load_module()
     except Exception as err:
-        warning("Error while including {}: {}".format(pyscript, str(err)))
+        warn("Error while including {}: {}".format(pyscript, str(err)))
 
 
 def section(func):
