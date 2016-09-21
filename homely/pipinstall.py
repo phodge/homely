@@ -1,8 +1,6 @@
-from subprocess import check_output, check_call
-
 from homely._engine2 import Helper, Cleaner, getengine
 from homely._utils import haveexecutable
-from homely._ui import isinteractive
+from homely._ui import isinteractive, system
 
 
 def pipinstall(packagename, which, user=True):
@@ -17,7 +15,8 @@ _known_pips = set()
 
 
 def _haspkg(pipcmd, name):
-    output = check_output([pipcmd, 'list', '--disable-pip-version-check'])
+    output = system([pipcmd, 'list', '--disable-pip-version-check'],
+                    stdout=True)[1]
     find = '%s ' % name
     for line in output.decode('utf-8').split("\n"):
         if line.startswith(find):
@@ -69,7 +68,7 @@ class PIPInstall(Helper):
         ]
         if self._user:
             cmd.append('--user')
-        check_call(cmd)
+        system(cmd)
         factname = 'pipinstall:%s:%s' % (self._pipcmd, self._name)
         self._setfact(factname, True)
 
@@ -114,7 +113,7 @@ class PIPCleaner(Cleaner):
             cmd.append('--yes')
         factname = 'pipinstall:%s:%s' % (self._pipcmd, self._name)
         try:
-            check_call(cmd)
+            system(cmd)
         finally:
             self._clearfact(factname)
         return []
