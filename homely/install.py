@@ -170,6 +170,9 @@ class InstallPackage(Helper):
     def getclaims(self):
         yield "package:%s" % self._name
 
+    def affectspath(self, path):
+        return False
+
     def makechanges(self):
         # try each method
         for method in self.METHODS:
