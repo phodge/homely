@@ -12,7 +12,7 @@ from homely._utils import (
 )
 from homely._ui import (
     run_update, addfromremote, yesno,
-    setverbose, setinteractive, setfragile, setallowpull,
+    setverbose, setinteractive, setallowpull,
     isinteractive, warn, note
 )
 from homely._vcs import getrepohandler
@@ -26,11 +26,10 @@ class Fatal(Exception):
 
 
 def _globals(command):
-    def proxy(verbose, fragile, interactive, **kwargs):
-        # handle the --verbose, --fragile and --interactive options
+    def proxy(verbose, interactive, **kwargs):
+        # handle the --verbose and --interactive options
         setverbose(verbose)
         setinteractive(interactive)
-        setfragile(fragile)
         # pass all other arguments on to the command
         command(**kwargs)
     proxy.__name__ = command.__name__
@@ -38,8 +37,6 @@ def _globals(command):
     proxy = option('--interactive/--no-interactive', default=True,
                    help="Prompt user for input? Use --no-interactive in"
                    " scripts where a tty will not be connected")(proxy)
-    proxy = option('--fragile', is_flag=True, help="homely will exit(1)"
-                   " whenever a Warning is generated")(proxy)
     proxy = option('-v', '--verbose', 'verbose', is_flag=True,
                    help="Product extra output")(proxy)
     return proxy
@@ -295,21 +292,18 @@ def autoupdate(**kwargs):
                       UpdateStatus.NEVER,
                       UpdateStatus.NOCONN)
     import daemon
-    setfragile(False)
-    with daemon.DaemonContext():
-        # never run the daemon in fragile mode!
-        with open(OUTFILE, 'w') as f:
-            try:
-                from homely._ui import setstreams
-                setstreams(f, f)
-                cfg = RepoListConfig()
-                run_update(list(cfg.find_all()),
-                           pullfirst=True,
-                           cancleanup=True)
-            except Exception:
-                import traceback
-                f.write(traceback.format_exc())
-                raise
+    with daemon.DaemonContext(), open(OUTFILE, 'w') as f:
+        try:
+            from homely._ui import setstreams
+            setstreams(f, f)
+            cfg = RepoListConfig()
+            run_update(list(cfg.find_all()),
+                        pullfirst=True,
+                        cancleanup=True)
+        except Exception:
+            import traceback
+            f.write(traceback.format_exc())
+            raise
 
 
 @homely.command()

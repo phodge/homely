@@ -32,7 +32,6 @@ except ImportError:
 
 _INTERACTIVE = False
 _VERBOSE = False
-_FRAGILE = False
 _WARNINGS = 0
 _ALLOWPULL = True
 
@@ -56,11 +55,6 @@ def setinteractive(value):
 def setverbose(value):
     global _VERBOSE
     _VERBOSE = bool(value)
-
-
-def setfragile(value):
-    global _FRAGILE
-    _FRAGILE = bool(value)
 
 
 def setallowpull(value):
@@ -113,8 +107,6 @@ class warn(note):
 def warning(message):
     global _WARNINGS
     _WARNINGS += 1
-    if _FRAGILE:
-        raise Exception(message)
     sys.stderr.write("WARNING: ")
     sys.stderr.write(message)
     sys.stderr.write("\n")

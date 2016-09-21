@@ -12,8 +12,6 @@ def HOMELY(command):
         'python3',
         os.path.join(homelyroot, 'bin', 'homely'),
         command,
-        # use fragile mode so that warnings will raise an exception instead
-        '--fragile',
         '--no-interactive',
         '--verbose',
     ]
