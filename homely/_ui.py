@@ -322,11 +322,11 @@ def addfromremote(repo, dest_path):
     return info, False
 
 
-def yesno(prompt, default, recommended=None):
+def yesno(prompt, default, recommended=None, assume=False):
     assert _INTERACTIVE
 
-    if _INTERACTIVE == "ASSUME" and default is not None:
-        return recommended
+    if _INTERACTIVE == "ASSUME":
+        return assume
 
     if default is True:
         options = "Y/n"
