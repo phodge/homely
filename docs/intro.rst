@@ -4,4 +4,4 @@ Introduction
 Intro
 -----
 
-.. include ../README.rst
+* TODO: intro text

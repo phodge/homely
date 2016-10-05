@@ -1,14 +1,14 @@
-Installing Packages from PIP
-============================
-
-
-Use **homely.pipinstall.pipinstall()** to install packages from pip. The
-primary advantage of using this module is that homely can automatically remove
-the package for you when you no longer want it.
-
-
 homely.pipinstall
------------------
+=================
+
+
+pipinstall()
+------------
+
+
+Use **pipinstall()** to install packages from pip. The primary advantage of
+using this module is that homely can automatically remove the package for you
+when you no longer want it.
 
 
 `pipinstall(package, pips=[], *, trypips=[])`
