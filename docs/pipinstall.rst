@@ -45,11 +45,3 @@ Don't issue a warning if some pip executables aren't found::
 
     from homely.pipinstall import pipinstall
     pipinstall('ipython', trypips=['pip', 'pip2', 'pip3'])
-
-
-Todo
-----
-
-* instead of integer version number, allow specifying which pip executables to
-  use
-* instead of user=True, have system=True to `sudo pip install` the thing.
