@@ -9,10 +9,23 @@ Homely - Dotfile Management
 Contents:
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 3
 
    intro
-   pipinstall
+   installation
+   tutorial
+   advanced-tutorial
+
+.. toctree::
+   :maxdepth: 0
+   :name: reftoc
+   :caption: Module Reference
+
+   ref/general
+   ref/pipinstall
+.. ref/install
+   ref/ui
+   ref/powerline
 
 
 
