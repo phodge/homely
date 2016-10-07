@@ -7,7 +7,7 @@ from homely._ui import isinteractive, system
 __all__ = ["pipinstall"]
 
 
-def pipinstall(packagename, pips=[], *, trypips=[]):
+def pipinstall(packagename, pips=None, *, trypips=[]):
     """
     Install packages from pip.
 
@@ -18,9 +18,11 @@ def pipinstall(packagename, pips=[], *, trypips=[]):
       The name of the pip package to install
 
     pips:
-      A list of `pip` executables to install the package with. You could use
-      `['pip']` to use the OS's default pip. `['pip2.7', 'pip3.4']` would
-      install the package using the `pip2.7` and `pip3.4` executables.
+      A list of `pip` executables to install the package with.
+
+      `['pip2.7', 'pip3.4']` would install the package using both the `pip2.7`
+      and `pip3.4` executables. The default is to use `['pip']` as long as you
+      aren't using `tripips`.
 
     trypips:
       This is a supplementary list of `pip` executables that homely will use to
@@ -30,6 +32,8 @@ def pipinstall(packagename, pips=[], *, trypips=[]):
     Note that the `pip install ...` commands are run with the `--user` option
     so that the packages are installed into your home directory.
     """
+    if pips is None:
+        pips = [] if len(trypips) else ['pip']
     engine = getengine()
     for pip in pips:
         helper = PIPInstall(packagename, pip, mustinstall=True)
