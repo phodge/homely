@@ -12,8 +12,8 @@ from homely._utils import (
 )
 from homely._ui import (
     run_update, addfromremote, yesno,
-    setverbose, setinteractive, setallowpull,
-    isinteractive, warn, note
+    setverbose, setwantprompt, PROMPT_ALWAYS, PROMPT_NEVER, setallowpull,
+    allowinteractive, warn, note
 )
 from homely._vcs import getrepohandler
 
@@ -26,17 +26,28 @@ class Fatal(Exception):
 
 
 def _globals(command):
-    def proxy(verbose, interactive, **kwargs):
-        # handle the --verbose and --interactive options
+    def proxy(verbose, alwaysprompt, neverprompt, **kwargs):
+        # handle these global options
         setverbose(verbose)
-        setinteractive(interactive)
+        if alwaysprompt:
+            if neverprompt:
+                raise UsageError("--alwaysprompt and --neverprompt options"
+                                 " cannot be used together")
+            setwantprompt(PROMPT_ALWAYS)
+        elif neverprompt:
+            setwantprompt(PROMPT_NEVER)
         # pass all other arguments on to the command
         command(**kwargs)
     proxy.__name__ = command.__name__
     proxy.__doc__ = command.__doc__
-    proxy = option('--interactive/--no-interactive', default=True,
-                   help="Prompt user for input? Use --no-interactive in"
-                   " scripts where a tty will not be connected")(proxy)
+    proxy = option('-a', '--alwaysprompt', is_flag=True,
+                   help="Always prompt the user to answer questions, even"
+                   " named questions that they have answered on previous runs"
+                   )(proxy)
+    proxy = option('-n', '--neverprompt', is_flag=True,
+                   help="Never prompt the user to answer questions. Questions"
+                   " will be answered automatically using the user's previous"
+                   " answer or the `noprompt` value.")(proxy)
     proxy = option('-v', '--verbose', 'verbose', is_flag=True,
                    help="Product extra output")(proxy)
     return proxy
@@ -137,7 +148,7 @@ def remove(identifier, force, update):
         # if the local repo still exists, then we need to prompt if the user
         # hasn't used force mode
         if os.path.isdir(info.localrepo.repo_path) and not force:
-            if not isinteractive():
+            if not allowinteractive():
                 warn("Use --force to remove a repo that still exists on disk")
                 errors = True
                 continue
@@ -162,7 +173,7 @@ def remove(identifier, force, update):
         return
 
     # ask the user if they would like to update everything now?
-    if (not update) and isinteractive():
+    if (not update) and allowinteractive():
         prompt = ("Files created by old repos will not be removed until you"
                   " perform an update of all other repos. Would you like to "
                   " do this now?")
@@ -181,10 +192,8 @@ def remove(identifier, force, update):
 @option('--nopull', is_flag=True)
 @option('--only', '-o', multiple=True,
         help="Only process the named sections (whole names only)")
-@option('--assume', '-a', is_flag=True,
-        help="Assume that previous answers to yes/no prompts are correct")
 @_globals
-def update(identifiers, nopull, only, assume):
+def update(identifiers, nopull, only):
     '''
     Git pull the specified REPOs and then re-run them.
 
@@ -192,8 +201,6 @@ def update(identifiers, nopull, only, assume):
     ~/.homely/repos.json.
     '''
     mkcfgdir()
-    if assume:
-        setinteractive("ASSUME")
     setallowpull(not nopull)
 
     cfg = RepoListConfig()

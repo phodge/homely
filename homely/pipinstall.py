@@ -1,7 +1,7 @@
 from homely._errors import HelperError
 from homely._engine2 import Helper, Cleaner, getengine
 from homely._utils import haveexecutable
-from homely._ui import isinteractive, system
+from homely._ui import allowinteractive, system
 
 
 __all__ = ["pipinstall"]
@@ -150,7 +150,7 @@ class PIPCleaner(Cleaner):
             self._name,
             '--disable-pip-version-check',
         ]
-        if not isinteractive():
+        if not allowinteractive():
             cmd.append('--yes')
         factname = 'pipinstall:%s:%s' % (self._pipcmd, self._name)
         try:

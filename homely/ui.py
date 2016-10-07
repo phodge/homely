@@ -1,4 +1,5 @@
-# export only these items from internal _ui module
+# export these items:
 from homely._ui import (  # noqa
-    head, note, warn, yesno, yesnooption, isinteractive, allowpull, system,
+    head, note, warn, yesno, allowpull, allowinteractive, system,
 )
+from homely._errors import InputError  # noqa

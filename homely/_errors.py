@@ -2,6 +2,13 @@ class JsonError(Exception):
     pass
 
 
+class InputError(Exception):
+    """
+    Raised when the user can't or doesn't provide a valid answer to a yesno()
+    question.
+    """
+
+
 class HelperError(Exception):
     """
     Raised when one of the helpers experiences a problem.
@@ -17,14 +24,15 @@ class RepoError(Exception):
 
 class SystemError(Exception):
     """
-    Raised by the homely._utils.run() function when a subprocess does not return an expected
-    error code.
+    Raised by the homely._utils.run() function when a subprocess does not
+    return an expected error code.
     """
 
 
 class ConnectionError(Exception):
     """
-    Raised when a remote resource just as git repo or download URL are not reachable
+    Raised when a remote resource just as git repo or download URL are not
+    reachable
     """
 
 
