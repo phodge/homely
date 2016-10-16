@@ -22,9 +22,9 @@ Contents:
    :caption: Module Reference
 
    ref/general
+   ref/ui
    ref/pipinstall
 .. ref/install
-   ref/ui
    ref/powerline
 
 
