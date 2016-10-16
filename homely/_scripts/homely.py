@@ -126,7 +126,7 @@ def repolist(format):
 @option('--force', '-f', is_flag=True,
         help="Do not ask the user for confirmation before removing a repo that"
         " still exists on disk. You must use --force if you have also used"
-        " --no-interactive.")
+        " --neverprompt.")
 @option('--update', '-u', is_flag=True,
         help="Perform update/cleanup of all repos after removal.")
 @_globals
@@ -155,7 +155,7 @@ def remove(identifier, force, update):
 
             prompt = "Are you sure you want to remove repo [%s] %s?" % (
                 info.localrepo.shortid(info.repoid), info.localrepo.repo_path)
-            if not yesno(prompt, False):
+            if not yesno(None, prompt, False):
                 continue
 
         # update the config ...
@@ -177,7 +177,7 @@ def remove(identifier, force, update):
         prompt = ("Files created by old repos will not be removed until you"
                   " perform an update of all other repos. Would you like to "
                   " do this now?")
-        update = yesno(prompt, None, True)
+        update = yesno(None, prompt, False)
 
     if update:
         # run an update with all remaining repos

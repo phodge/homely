@@ -60,7 +60,7 @@ def shortstatus(pl,
         cmd.extend([
             'homely',
             'update',
-            '--no-interactive'
+            '--neverprompt'
         ])
         SUB = Popen(cmd, stdout=open(OUTFILE, 'a'), stderr=STDOUT)
 

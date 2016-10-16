@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from functools import partial
 
 import homely._utils
-from homely._errors import HelperError, ConnectionError
+from homely._errors import InputError, HelperError, ConnectionError
 from homely._utils import (
     RepoInfo, RepoListConfig, RepoScriptConfig, tmpdir, UpdateStatus,
     RUNFILE, FAILFILE, TIMEFILE, SECTIONFILE,
@@ -30,9 +30,14 @@ except ImportError:
                                  .replace("'", "\\'"))
 
 
-_INTERACTIVE = False
 _VERBOSE = False
 _ALLOWPULL = True
+_WANTPROMPT = None
+PROMPT_NEVER = "NEVER"
+PROMPT_ALWAYS = "ALWAYS"
+
+# cached result of allowinteractive() call
+_ALLOW_INTERACTIVE = None
 
 
 _OUTSTREAM = sys.stdout
@@ -45,10 +50,10 @@ def setstreams(outstream, errstream):
     _ERRSTREAM = errstream
 
 
-def setinteractive(value):
-    global _INTERACTIVE
-    assert value in (True, False, "ASSUME")
-    _INTERACTIVE = value
+def setwantprompt(value):
+    assert value in (PROMPT_NEVER, PROMPT_ALWAYS)
+    global _WANTPROMPT
+    _WANTPROMPT = value
 
 
 def setverbose(value):
@@ -236,16 +241,19 @@ def run_update(infos, pullfirst, only=None, cancleanup=None):
     return not (errors or warncount or noconncount or dirtycount)
 
 
-def isinteractive():
-    '''
-    Returns True if the script is being run in a context where the user can
-    provide input interactively. Otherwise, False is returned.
-    '''
-    return _INTERACTIVE and sys.__stdin__.isatty() and sys.stderr.isatty()
-
-
 def allowpull():
     return _ALLOWPULL
+
+
+def allowinteractive():
+    global _ALLOW_INTERACTIVE
+    if _ALLOW_INTERACTIVE is None:
+        _ALLOW_INTERACTIVE = True
+        if _WANTPROMPT == PROMPT_NEVER:
+            _ALLOW_INTERACTIVE = False
+        elif not (sys.__stdin__.isatty() and sys.stderr.isatty()):
+            _ALLOW_INTERACTIVE = False
+    return _ALLOW_INTERACTIVE
 
 
 def addfromremote(repo, dest_path):
@@ -322,11 +330,29 @@ def addfromremote(repo, dest_path):
     return info, False
 
 
-def yesno(prompt, default, recommended=None, assume=False):
-    assert _INTERACTIVE
+def yesno(name, prompt, default=None, *, recommended=None, noprompt=None):
+    assert default in (None, True, False)
+    assert recommended in (None, True, False)
+    assert noprompt in (None, True, False)
 
-    if _INTERACTIVE == "ASSUME":
-        return assume
+    # can we look up a previous value?
+    previous_value = None
+    if name is not None:
+        cfg = RepoScriptConfig(_CURRENT_REPO)
+        previous_value = cfg.getquestionanswer(name)
+
+    if previous_value is not None:
+        if _WANTPROMPT != PROMPT_ALWAYS:
+            assert previous_value in (True, False)
+            return previous_value
+        default = previous_value
+
+    if not allowinteractive():
+        if noprompt is not None:
+            return noprompt
+
+        raise InputError("Run homely update manually to answer the question"
+                         ": {}".format(prompt))
 
     if default is True:
         options = "Y/n"
@@ -335,23 +361,33 @@ def yesno(prompt, default, recommended=None, assume=False):
     else:
         options = "y/n"
 
+    retval = None
     rec = ""
     if recommended is not None:
-        rec = "[recommended=%s] " % ("Y" if recommended else "N")
+        rec = "[recommended={}] ".format("Y" if recommended else "N")
 
     while True:
-        input_ = input("%s %s[%s]: " % (prompt, rec, options))
-        if input_ == "" and default is not None:
-            return default
-        if input_.lower() in ("y", "yes"):
-            return True
-        if input_.lower() in ("n", "no"):
-            return False
+        answer = input("{} {}[{}]: ".format(prompt, rec, options))
+        if answer == "" and default is not None:
+            retval = default
+            break
+        if answer.lower() in ("y", "yes"):
+            retval = True
+            break
+        if answer.lower() in ("n", "no"):
+            retval = False
+            break
         # if the user's input is invalid, ask them again
-        if input_ == "":
+        if answer == "":
             sys.stderr.write("ERROR: An answer is required\n")
         else:
-            sys.stderr.write("ERROR: Invalid answer: %r\n" % (input_, ))
+            sys.stderr.write("ERROR: Invalid answer: {}\n" % (repr(answer), ))
+
+    if name is not None:
+        cfg.setquestionanswer(name, retval)
+        cfg.writejson()
+
+    return retval
 
 
 # this needs to be set in order for things to work correctly
@@ -362,45 +398,6 @@ def setcurrentrepo(info):
     assert isinstance(info, RepoInfo)
     global _CURRENT_REPO
     _CURRENT_REPO = info
-
-
-def yesnooption(name, prompt, default=None):
-    '''
-    Ask the user for a yes/no answer to question [prompt]. Store the result as
-    option [name].
-
-    If [default] is provided, it will be displayed as the recommended answer.
-    If the user doesn't provide an answer, then [default] will be used.
-
-    If the user has already answered this question, the previous value
-    (retrieved using the [name]) will be used as the default answer.
-    '''
-    if default is not None:
-        assert default in (True, False)
-
-    cfg = RepoScriptConfig(_CURRENT_REPO)
-
-    previous_value = cfg.getquestionanswer(name)
-    if previous_value is not None:
-        if previous_value not in (True, False):
-            # FIXME: issue a warning about the old value of [name] not being
-            # compatible
-            previous_value = None
-        elif _INTERACTIVE == "ASSUME":
-            return previous_value
-
-    if not isinteractive():
-        # non-interactive - return the previous value
-        if previous_value is None:
-            # no value has been provided ... we can't proceed
-            raise HelperError("Run homely update manually"
-                              " to answer the question: '%s'" % prompt)
-        return previous_value
-
-    choice = yesno("[%s] %s" % (name, prompt), previous_value, default)
-    cfg.setquestionanswer(name, choice)
-    cfg.writejson()
-    return choice
 
 
 def _write(path, content):
@@ -466,7 +463,7 @@ def system(cmd, stdout=None, stderr=None, expectexit=0, **kwargs):
             return data
 
     if stdout == "TTY":
-        if not isinteractive():
+        if not allowinteractive():
             raise SystemError("cmd wants interactive mode")
 
         assert stderr is None

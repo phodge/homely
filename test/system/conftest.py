@@ -12,7 +12,7 @@ def HOMELY(command):
         'python3',
         os.path.join(homelyroot, 'bin', 'homely'),
         command,
-        '--no-interactive',
+        '--neverprompt',
         '--verbose',
     ]
 
