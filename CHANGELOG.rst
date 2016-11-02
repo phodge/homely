@@ -3,7 +3,8 @@
 ===========
 
 
-NEW CHANGES
+Version 0.11.1 - 02 Nov 2016
+----------------------------
 
 * Fix broken import in homely.install
 
