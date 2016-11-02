@@ -191,8 +191,8 @@ class Download(Helper):
         if r.status_code != 200:
             raise HelperError("Download of %s failed: %s"
                               % (self._url, r.status_code))
-        with open(self._dest, 'w') as f:
-            f.write(r.text)
+        with open(self._dest, 'wb') as f:
+            f.write(r.content)
 
     def affectspath(self, path):
         return path == self._dest
