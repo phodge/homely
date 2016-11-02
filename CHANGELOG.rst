@@ -3,7 +3,8 @@
 ===========
 
 
-NEW CHANGES
+Version 0.11.3 - 02 Nov 2016
+----------------------------
 
 * Ensure `homely.install.installpkg` uses the correct package name for yum/apt etc
 
