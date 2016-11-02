@@ -168,12 +168,12 @@ class InstallPackage(Helper):
     _INSTALL = {
         'apt': lambda name: ['apt-get', 'install', name,
                              '--quiet', '--assume-yes'],
-        'yum': lambda name: ['yum', 'install', name, '--assume-yes'],
+        'yum': lambda name: ['yum', 'install', name, '--assumeyes'],
     }
     _UNINSTALL = {
         'apt': lambda name: ['apt-get', 'remove', name,
                              '--quiet', '--assume-yes'],
-        'yum': lambda name: ['yum', 'erase', name, '--assume-yes'],
+        'yum': lambda name: ['yum', 'erase', name, '--assumeyes'],
     }
 
     def __init__(self, name, methods, wantcmd):

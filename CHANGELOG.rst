@@ -3,6 +3,11 @@
 ===========
 
 
+NEW CHANGES
+
+* Fix broken `yum ... --assume-yes` in homely.install
+
+
 Version 0.11.1 - 02 Nov 2016
 ----------------------------
 
