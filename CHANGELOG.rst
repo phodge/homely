@@ -3,7 +3,8 @@
 ===========
 
 
-NEW CHANGES
+Version 0.11.4 - 02 Nov 2016
+----------------------------
 
 * Fix binary downloads in `homely.general`
 
