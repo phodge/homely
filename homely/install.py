@@ -3,7 +3,7 @@ import os
 from homely._errors import HelperError
 from homely._engine2 import Helper, Cleaner, getengine, Engine
 from homely._utils import haveexecutable, isnecessarypath
-from homely._ui import note, isinteractive, allowpull, system
+from homely._ui import note, allowinteractive, allowpull, system
 
 
 def installpkg(name=None, wantcmd=None, **methods):
@@ -217,7 +217,7 @@ class InstallPackage(Helper):
 
             cmd = self._INSTALL.get(method, getdefaultcmd)(self._name)
             if method in self._ASROOT:
-                if not isinteractive():
+                if not allowinteractive():
                     raise HelperError("Need to be able to escalate to root")
                 cmd.insert(0, 'sudo')
             system(cmd)
@@ -273,7 +273,7 @@ class PackageCleaner(Cleaner):
 
             cmd = self._UNINSTALL.get(method, defaultuninstall)(self._name)
             if method in InstallPackage._ASROOT:
-                if not isinteractive():
+                if not allowinteractive():
                     raise HelperError("Need to be able to escalate to root")
                 cmd.insert(0, 'sudo')
             try:
