@@ -30,6 +30,12 @@ Examples
 --------
 
 
+Install `isort` using the `pip` executable found in your `$PATH`::
+
+    from homely.pipinstall import pipinstall
+    pipinstall('isort')
+
+
 Install *ipython* package for python2::
 
     from homely.pipinstall import pipinstall
