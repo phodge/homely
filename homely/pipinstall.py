@@ -22,7 +22,7 @@ def pipinstall(packagename, pips=None, *, trypips=[]):
 
       `['pip2.7', 'pip3.4']` would install the package using both the `pip2.7`
       and `pip3.4` executables. The default is to use `['pip']` as long as you
-      aren't using `tripips`.
+      aren't using `trypips`.
 
     trypips:
       This is a supplementary list of `pip` executables that homely will use to
