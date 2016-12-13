@@ -189,7 +189,9 @@ def remove(identifier, force, update):
 
 @homely.command()
 @argument('identifiers', nargs=-1, metavar="REPO")
-@option('--nopull', is_flag=True)
+@option('--nopull', is_flag=True,
+        help="Do not use `git pull` or other things that require internet"
+        " access")
 @option('--only', '-o', multiple=True,
         help="Only process the named sections (whole names only)")
 @_globals
