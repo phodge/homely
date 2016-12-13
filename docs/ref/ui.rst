@@ -2,8 +2,86 @@ homely.ui
 =========
 
 
-yesno()
--------
+homely.ui.head()
+----------------
+
+Use **head("some text")** to display a nice heading in homely's output.
+**head()** should be used as a context manager so that log output is indented
+correctly::
+
+    import os
+    from os.path import join, isdir
+    from homely.ui import head
+
+    with head('Doing git fetches'):
+        src = join(os.environ['HOME'], 'src')
+        for entry in os.listdir(src):
+            path = join(src, entry)
+            if isdir(path):
+                shell(['git', 'fetch', '-p'], cwd=path)
+
+
+homely.ui.warn()
+----------------
+
+Use **warn("some text")** when you want to add an error message to homely's
+output, but don't want to raise an exception which would bail out of the
+`HOMELY.py` script completely. Note that calling **warn()** any time during
+your `HOMELY.py` script will cause **homely update** and **homely add** to exit
+with a non-zero error code when they are finished.
+
+**Example**
+
+Issue a warning when neovim is not installed::
+
+    from homely.ui import warn
+    from homely.system import haveexecutable
+
+    if not haveexecutable('nvim'):
+        warn("You haven't installed neovim or added it to your $PATH yet")
+
+
+homely.ui.note()
+----------------
+
+Use **note("some text")** to display a message in the homely script output.
+
+**Example**
+
+Show a message before doing something::
+
+    from homely.ui import note
+    from homely.pipinstall import pipinstall
+
+
+    for pkg in ('isort', 'flake8', 'ipython', 'jedi'):
+        note("Running pip install of {}".format(pkg))
+        pipinstall(pkg)
+
+
+homely.ui.allowpull()
+---------------------
+
+Returns `False` if `homely` was invoked without the `--nopull` option. You can
+use this function in your `HOMELY.py` script to make that your script doesn't
+attempt to download or pull changes from online when the user has explicitly
+told it not to.
+
+**Example**
+
+Run `git fetch` in a private repo except when `--nopull` is used::
+
+    import os
+    from homely.system import shell
+    from homely.ui import allowpull
+
+    repopath = os.environ['HOME'] + '/src/neovim.git'
+    if allowpull():
+        shell(['git', 'fetch', 'origin', '--tags'], cwd=repopath)
+
+
+homely.ui.yesno()
+-----------------
 
 Use **yesno()** to ask the user a yes/no question. The user will be asked to
 enter "Y" or "N" before proceeding.
@@ -52,9 +130,7 @@ To summarise - the return value will be:
    #. The user is forced to provide a valid answer and this answer will be returned.
 
 
-
-Examples
---------
+**Examples**
 
 Ask the user if they would like to install ipython, and remember their choice
 for next time::
@@ -63,7 +139,6 @@ for next time::
     from homely.pipinstall import pipinstall
     if yesno("install_ipython", "Install ipython?", True, recommended=True)
         pipinstall("ipython")
-
 
 
 Ask the user if they would like to perform an interactive task like edit their
@@ -75,8 +150,8 @@ Ask the user if they would like to perform an interactive task like edit their
         shell(["vim", "~/.bashrc"], stdout="TTY")
 
 
-allowinteractive()
-------------------
+homely.ui.allowinteractive()
+----------------------------
 
 Returns *True* if there is a TTY attached and the *--neverprompt* option was
 not used.
@@ -85,9 +160,7 @@ In some circumstances no TTY is available (for example, autoupdate runs) and it
 is not safe to start up an interactive program like vim from your HOMELY.py
 script. You can use this function to check first.
 
-Example
--------
-
+**Examples**
 
 Edit the user's .bashrc if there is a TTY attached::
 
