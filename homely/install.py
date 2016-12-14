@@ -3,7 +3,7 @@ import os
 from homely._errors import HelperError
 from homely._engine2 import Helper, Cleaner, getengine, Engine
 from homely._utils import haveexecutable, isnecessarypath
-from homely._ui import note, isinteractive, allowpull, system
+from homely._ui import note, allowinteractive, allowpull, system
 
 
 def installpkg(name=None, wantcmd=None, **methods):
@@ -168,12 +168,12 @@ class InstallPackage(Helper):
     _INSTALL = {
         'apt': lambda name: ['apt-get', 'install', name,
                              '--quiet', '--assume-yes'],
-        'yum': lambda name: ['yum', 'install', name, '--assume-yes'],
+        'yum': lambda name: ['yum', 'install', name, '--assumeyes'],
     }
     _UNINSTALL = {
         'apt': lambda name: ['apt-get', 'remove', name,
                              '--quiet', '--assume-yes'],
-        'yum': lambda name: ['yum', 'erase', name, '--assume-yes'],
+        'yum': lambda name: ['yum', 'erase', name, '--assumeyes'],
     }
 
     def __init__(self, name, methods, wantcmd):
@@ -215,9 +215,9 @@ class InstallPackage(Helper):
             def getdefaultcmd(name):
                 return [method, 'install', name]
 
-            cmd = self._INSTALL.get(method, getdefaultcmd)(self._name)
+            cmd = self._INSTALL.get(method, getdefaultcmd)(localname)
             if method in self._ASROOT:
-                if not isinteractive():
+                if not allowinteractive():
                     raise HelperError("Need to be able to escalate to root")
                 cmd.insert(0, 'sudo')
             system(cmd)
@@ -271,9 +271,9 @@ class PackageCleaner(Cleaner):
             def defaultuninstall(name):
                 return [method, 'uninstall', name]
 
-            cmd = self._UNINSTALL.get(method, defaultuninstall)(self._name)
+            cmd = self._UNINSTALL.get(method, defaultuninstall)(localname)
             if method in InstallPackage._ASROOT:
-                if not isinteractive():
+                if not allowinteractive():
                     raise HelperError("Need to be able to escalate to root")
                 cmd.insert(0, 'sudo')
             try:
