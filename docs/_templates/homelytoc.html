@@ -1,0 +1,25 @@
+{#
+headings = {}
+headings['ui'] = 'bing', 'thing'}
+#}
+<ul>
+    {% for item in toppages %}
+    <li><a href="{{ pathto(item[0]+file_suffix, 1)|e }}">{{ item[1] }}</a></li>
+    {% endfor %}
+</ul>
+<h4>Module Reference</h4>
+<ul>
+{% for item in refpagenames|sort %}
+    {% set refurl = pathto('ref/'+item+file_suffix, 1) %}
+    <li>
+        <a href="{{ refurl|e }}">homely.{{ item }}</a>
+        {% if pagename == ('ref/'+item) and refpageheadings[item]|length > 0 %}
+            <ul>
+            {% for sub in refpageheadings[item] %}
+                <li><a href="{{ refurl|e }}{{ sub[0] }}">{{ sub[1]|e }}</a></li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+    </li>
+{% endfor %}
+</ul>

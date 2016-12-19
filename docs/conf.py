@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import os.path
+import re
+from os.path import dirname, join
+
 #
 # homely documentation build configuration file, created by
 # sphinx-quickstart on Wed Oct  5 20:11:11 2016.
@@ -179,8 +183,36 @@ html_static_path = ['_static']
 # Custom sidebar templates, maps document names to template names.
 #
 html_sidebars = {
-    "**": ["globaltoc.html", "searchbox.html"],
+    "**": ["homelytoc.html", "searchbox.html"],
 }
+
+# extra vars required for sidebar
+html_context = {}
+html_context["toppages"] = [
+    ["index", 'Home'],
+    #["tutorial", 'Tutorial'],
+]
+
+# make a list of ref pages
+html_context['refpagenames'] = []
+html_context['refpageheadings'] = {}
+heading_re = re.compile(r"(?m)^(homely(?:\.\w+)+(?:\(\))?)\n---+$")
+docs = dirname(__file__)
+for entry in os.listdir(join(docs, 'ref')):
+    if entry.startswith('.') or not entry.endswith('.rst'):
+        continue
+    name = entry[:-4]
+    html_context['refpagenames'].append(name)
+    html_context['refpageheadings'][name] = []
+    with open(join(docs, 'ref', entry)) as f:
+        for m in heading_re.findall(f.read()):
+            # don't repeat `homely.module.` in the sidebar labels
+            label = m
+            if label.startswith('homely.' + name + '.'):
+                label = label[8+len(name):]
+            anchor = m.replace('.', '-')
+            html_context['refpageheadings'][name].append([anchor, label])
+
 
 # Additional templates that should be rendered to pages, maps page names to
 # template names.
