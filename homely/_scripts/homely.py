@@ -2,21 +2,18 @@ import os
 import sys
 import time
 
-from click import echo, group, argument, option, UsageError, ClickException
+from click import (ClickException, UsageError, argument, echo, group, option,
+                   version_option)
 
-from homely._errors import RepoError, JsonError
-from homely._utils import (
-    RepoListConfig, saveconfig, RepoInfo, mkcfgdir,
-    PAUSEFILE, OUTFILE, FAILFILE,
-    getstatus, UpdateStatus, STATUSCODES,
-)
-from homely._ui import (
-    run_update, addfromremote, yesno,
-    setverbose, setwantprompt, PROMPT_ALWAYS, PROMPT_NEVER, setallowpull,
-    allowinteractive, warn, note
-)
+from homely import version
+from homely._errors import JsonError, RepoError
+from homely._ui import (PROMPT_ALWAYS, PROMPT_NEVER, addfromremote,
+                        allowinteractive, note, run_update, setallowpull,
+                        setverbose, setwantprompt, warn, yesno)
+from homely._utils import (FAILFILE, OUTFILE, PAUSEFILE, STATUSCODES, RepoInfo,
+                           RepoListConfig, UpdateStatus, getstatus, mkcfgdir,
+                           saveconfig)
 from homely._vcs import getrepohandler
-
 
 CMD = os.path.basename(sys.argv[0])
 
@@ -54,6 +51,7 @@ def _globals(command):
 
 
 @group()
+@version_option(version, message="%(prog)s %(version)s")
 def homely():
     """
     Single-command dotfile installation.
