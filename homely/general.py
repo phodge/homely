@@ -1,19 +1,18 @@
-import os
 import io
+import os
 from contextlib import contextmanager
 from copy import copy
 from importlib.machinery import SourceFileLoader
 
+from homely._engine2 import Cleaner, Engine, Helper, getengine, getrepoinfo
 from homely._errors import HelperError
-from homely._engine2 import getengine, Helper, Cleaner, Engine, getrepoinfo
-from homely._utils import (
-    filereplacer, _repopath2real, _homepath2real, isnecessarypath,
-    NoChangesNeeded
-)
 from homely._ui import entersection, warn
-
 # allow importing from outside
 from homely._utils import haveexecutable  # noqa
+from homely._utils import (NoChangesNeeded, _homepath2real, _repopath2real,
+                           filereplacer, isnecessarypath)
+# TODO: remove this deprecated alias which I'm still using in my homely repos
+from homely.files import mkdir  # noqa
 
 
 def run(updatehelper):
@@ -50,11 +49,6 @@ def section(func):
                 func()
     finally:
         engine.popsection(name)
-
-
-def mkdir(path):
-    path = _homepath2real(path)
-    getengine().run(MakeDir(path))
 
 
 def download(url, dest, expiry=None):
@@ -98,36 +92,6 @@ def writefile(filename):
     finally:
         if stream:
             stream.close()
-
-
-class MakeDir(Helper):
-    _path = None
-
-    def __init__(self, path):
-        super(MakeDir, self).__init__()
-        self._path = path
-
-    @property
-    def description(self):
-        return "Create dir %s" % self._path
-
-    def getcleaner(self):
-        return
-
-    def isdone(self):
-        return os.path.exists(self._path) and os.path.isdir(self._path)
-
-    def makechanges(self):
-        os.mkdir(self._path)
-
-    def affectspath(self, path):
-        return path == self._path
-
-    def pathsownable(self):
-        return {self._path: Engine.TYPE_FOLDER_ONLY}
-
-    def getclaims(self):
-        return []
 
 
 class MakeSymlink(Helper):
