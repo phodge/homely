@@ -2,7 +2,20 @@
 # -*- coding: utf-8 -*-
 import os.path
 import re
+import sys
 from os.path import dirname, join
+
+
+def _get_homely_version():
+    # add parent dir to sys.path so that we can import homely.version
+    sys.path.append(dirname(dirname(__file__)))
+    from homely import version
+    return version
+
+
+rst_epilog = """
+.. |homely_version| replace:: {0}
+""".format(_get_homely_version())
 
 #
 # homely documentation build configuration file, created by
@@ -190,6 +203,7 @@ html_sidebars = {
 html_context = {}
 html_context["toppages"] = [
     ["index", 'Home'],
+    ["installation", 'Installation Guide'],
 ]
 
 # make a list of ref pages
