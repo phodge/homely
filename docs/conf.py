@@ -190,7 +190,6 @@ html_sidebars = {
 html_context = {}
 html_context["toppages"] = [
     ["index", 'Home'],
-    #["tutorial", 'Tutorial'],
 ]
 
 # make a list of ref pages
