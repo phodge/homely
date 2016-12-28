@@ -47,3 +47,55 @@ directories you aren't using any more - simply remove the call to ``mkdir()``
 and homely will clean it up for you. Note that the directory *won't* be cleaned
 up if it is still in use.
 
+
+homely.files.symlink()
+----------------------
+
+**symlink()** will create a symlink if it doesn't already exist.
+
+``symlnk(target, linkname=None)``
+
+``target``
+    The file or directory to symlink to. Typically this will be the name of a
+    file in your dotfiles repo. If ``target`` begins with a ``/`` it
+    will be treated as an absolute path, otherwise it is assumed to be relative
+    to the current dotfiles repo. You can also use ``~`` and environment
+    variables like ``$HOME`` directly in the target string.
+``linkname``
+    Where to create the symlink. If this parameter is omitted, it will default
+    to ``$HOME+basename(target)``. E.g., if ``target`` was ``'.bashrc'``, then
+    ``linkname`` would default to ``'~/.bashrc'``. If ``linkname`` begins with
+    a ``/`` it will be treated as an absolute path, otherwise it is assumed to
+    be relative to ``$HOME``. You can also use ``~`` and environment variables
+    like ``$HOME`` directly in the target string.
+
+
+Examples
+^^^^^^^^
+
+Create a symlink to ``~/.bashrc`` to ``[dotfiles]/shell/.bashrc``::
+
+    from homely.files import symlink
+
+    # absolute linkname
+    symlink('shell/.bashrc', '/home/peter/.bashrc')
+
+    # linkname implicitly relative to $HOME
+    symlink('shell/.bashrc', '.bashrc')
+
+    # automatic linkname=$HOME+basename(target)
+    symlink('shell/.bashrc')
+
+
+Automatic Cleanup
+^^^^^^^^^^^^^^^^^
+
+If homely creates the symlink, it will remember this fact so that it can
+[possibly] perform automatic cleanup in the future. Each time you run
+``homely update``
+homely will check to see if ``symlink()`` was called with the same
+target/linkname, and if it wasn't then the symlink will be removed. This means
+that you don't need to remember to delete symlinks you aren't using any more -
+simply remove the call to ``symlink()`` and homely will clean it up for you.
+Note that the symlink *won't* be cleaned up if it has been modified by
+something other than homely, or replaced with a regular file or directory.
