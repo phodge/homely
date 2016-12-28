@@ -1,5 +1,6 @@
 import io
 import os
+import time
 from contextlib import contextmanager
 from copy import copy
 from importlib.machinery import SourceFileLoader
@@ -52,6 +53,12 @@ def section(func):
 
 
 def download(url, dest, expiry=None):
+    # possible values of expiry:
+    # 0:     always download again
+    # -1:    never download again
+    # <int>: download again when file is <int> seconds old
+    if expiry is None:
+        expiry = 60 * 60 * 24 * 14
     getengine().run(Download(url, _homepath2real(dest), expiry))
 
 
@@ -81,8 +88,9 @@ def writefile(filename):
 
 
 class Download(Helper):
-    def __init__(self, url, dest, expiry=None):
+    def __init__(self, url, dest, expiry):
         assert dest.startswith('/')
+        assert type(expiry) is int and expiry >= -1
         self._url = url
         self._dest = dest
         self._expiry = expiry
@@ -94,9 +102,18 @@ class Download(Helper):
         return
 
     def isdone(self):
-        # TODO: make it so that we retry after the file is <self._expiry>
-        # seconds old
-        return os.path.exists(self._dest)
+        if not os.path.exists(self._dest):
+            return False
+
+        if self._expiry == -1:
+            return True  # file never expires
+
+        if self._expiry == 0:
+            return False  # file always expires
+
+        cutoff = time.time() - self.expiry
+        mtime = os.stat(self._dest).st_mtime
+        return mtime >= cutoff
 
     @property
     def description(self):
