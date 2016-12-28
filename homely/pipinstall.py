@@ -1,7 +1,10 @@
+import re
+from distutils.version import StrictVersion
+
 from homely._engine2 import Cleaner, Helper, getengine
 from homely._errors import HelperError
 from homely._ui import allowinteractive, system
-from homely._utils import haveexecutable
+from homely._utils import haveexecutable, run
 
 __all__ = ["pipinstall"]
 
@@ -43,11 +46,38 @@ def pipinstall(packagename, pips=None, *, trypips=[]):
 
 
 _known_pips = {}
+# dict of pip executables and whether they need the --format arg
+_needs_format_cache = {}
+
+
+def _needs_format(pipcmd):
+    """
+    pip >= 9.0.0 needs a --format=legacy argument to avoid a DEPRECATION
+    warning. This function returns True if the nominated pip executable
+    is >= 9.0.0
+    """
+    try:
+        return _needs_format_cache[pipcmd]
+    except KeyError:
+        pass
+
+    # grab the version number
+    output = run([pipcmd, '--version'], stdout=True)[1].decode('utf-8')
+    m = re.match(r'^pip (\S+) from ', output)
+    needs_format = StrictVersion(m.group(1)) >= '9.0.0'
+    _needs_format_cache[pipcmd] = needs_format
+    return needs_format
 
 
 def _haspkg(pipcmd, name):
-    output = system([pipcmd, 'list', '--disable-pip-version-check'],
-                    stdout=True)[1]
+    cmd = [
+        pipcmd,
+        'list',
+        '--disable-pip-version-check',
+    ]
+    if _needs_format(pipcmd):
+        cmd.append('--format=legacy')
+    output = system(cmd, stdout=True)[1]
     find = '%s ' % name
     for line in output.decode('utf-8').split("\n"):
         if line.startswith(find):
