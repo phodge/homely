@@ -15,7 +15,8 @@ def test_homely_add_repolist(tmpdir, HOME):
     assert not os.path.islink(homelink1)
     contents(repo1.remotepath + '/HOMELY.py',
              """
-             from homely.general import mkdir, symlink, lineinfile
+             from homely.files import mkdir, symlink
+             from homely.general import lineinfile
              mkdir('~/dir1')
              symlink('~/dir1', '~/link1')
              lineinfile('~/link1/file.txt', 'Hello World')

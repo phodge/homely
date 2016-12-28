@@ -1,13 +1,12 @@
-from pytest import gettmpfilepath, contents
-
 import os
 
 import simplejson
+from pytest import contents, gettmpfilepath
 
 
 def test_engine_folder_cleanup(tmpdir):
     from homely._engine2 import Engine
-    from homely.general import MakeDir
+    from homely.files import MakeDir
 
     # first thing ... test mkdir cleanup
     # a temporary file where the engine can store its config
@@ -70,7 +69,7 @@ def test_engine_folder_cleanup(tmpdir):
 def test_symlink_cleanup_interaction(tmpdir):
     from homely._engine2 import Engine
     from homely._errors import CleanupConflict
-    from homely.general import MakeDir, MakeSymlink
+    from homely.files import MakeDir, MakeSymlink
     #LineInFile, BlockInFile, WHERE_TOP, WHERE_END,
     #WriteFile, writefile
 
@@ -247,7 +246,8 @@ def test_lineinfile_usage(tmpdir):
 
 def test_lineinfile_cleanup_interaction(tmpdir):
     from homely._engine2 import Engine
-    from homely.general import MakeDir, LineInFile
+    from homely.files import MakeDir
+    from homely.general import LineInFile
 
     # a temporary file where the engine can store its config
     cfgpath = gettmpfilepath(tmpdir, '.json')
@@ -457,7 +457,8 @@ def test_cleanup_everything(tmpdir):
     cleanup() will remove all of things that might be lying around
     '''
     from homely._engine2 import Engine
-    from homely.general import MakeDir, MakeSymlink, LineInFile
+    from homely.files import MakeDir, MakeSymlink
+    from homely.general import LineInFile
 
     cfgpath = gettmpfilepath(tmpdir, '.json')
     d1 = gettmpfilepath(tmpdir, '.d')
@@ -486,7 +487,7 @@ def test_cleanup_everything(tmpdir):
 
 def test_partial_run_cleanup(tmpdir):
     from homely._engine2 import Engine
-    from homely.general import MakeDir
+    from homely.files import MakeDir
 
     cfgpath = gettmpfilepath(tmpdir, '.json')
     d1 = os.path.join(tmpdir, 'dir1')

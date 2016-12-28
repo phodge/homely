@@ -11,8 +11,8 @@ from homely._ui import entersection, warn
 from homely._utils import haveexecutable  # noqa
 from homely._utils import (NoChangesNeeded, _homepath2real, _repopath2real,
                            filereplacer, isnecessarypath)
-# TODO: remove this deprecated alias which I'm still using in my homely repos
-from homely.files import mkdir  # noqa
+# TODO: remove these deprecated aliases which I'm still using in my homely repos
+from homely.files import mkdir, symlink  # noqa
 
 
 def run(updatehelper):
@@ -67,20 +67,6 @@ def blockinfile(filename, lines, prefix, suffix, where=None):
     getengine().run(obj)
 
 
-def symlink(target, linkname=None):
-    # expand <target> to a path relative to the current repo
-    target = _repopath2real(target, getrepoinfo().localrepo)
-
-    # if [linkname] is omited, assume the symlink goes into $HOME/ at the top
-    # level
-    if linkname is None:
-        linkname = os.path.join(os.environ.get('HOME'),
-                                os.path.basename(target))
-    else:
-        linkname = _homepath2real(linkname)
-    getengine().run(MakeSymlink(target, linkname))
-
-
 @contextmanager
 def writefile(filename):
     stream = None
@@ -92,39 +78,6 @@ def writefile(filename):
     finally:
         if stream:
             stream.close()
-
-
-class MakeSymlink(Helper):
-    def __init__(self, target, linkname):
-        assert target.startswith('/')
-        assert linkname.startswith('/')
-        self._target = target
-        self._linkname = linkname
-        assert self._target != self._linkname
-
-    def getclaims(self):
-        return []
-
-    def getcleaner(self):
-        return
-
-    def isdone(self):
-        return (os.path.islink(self._linkname) and
-                os.readlink(self._linkname) == self._target)
-
-    @property
-    def description(self):
-        return "Create symlink %s -> %s" % (self._linkname, self._target)
-
-    def makechanges(self):
-        assert not os.path.exists(self._linkname)
-        os.symlink(self._target, self._linkname)
-
-    def affectspath(self, path):
-        return path == self._linkname
-
-    def pathsownable(self):
-        return {self._linkname: Engine.TYPE_LINK}
 
 
 class Download(Helper):

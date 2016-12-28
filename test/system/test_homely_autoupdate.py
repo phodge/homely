@@ -43,7 +43,7 @@ def test_homely_updatestatus(HOME, tmpdir):
     contents(repo1.remotepath + '/HOMELY.py',
              """
              import os, time, sys
-             from homely.general import mkdir
+             from homely.files import mkdir
              while os.path.exists(%(spinfile)r):
                 time.sleep(0.01)
              assert not os.path.exists(%(diefile)r), "Incredibly bad things in %(diefile)s"

@@ -14,7 +14,7 @@ def test_symlink_recreate(HOME, tmpdir):
             f.write('hello world')
         contents(tr.remotepath + '/HOMELY.py',
                  """
-                 from homely.general import symlink
+                 from homely.files import symlink
                  symlink('%s', '~/%s')
                  """ % (createfile, createfile))
         system(HOMELY('add') + [tr.url])
