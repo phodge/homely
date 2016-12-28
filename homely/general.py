@@ -1,19 +1,18 @@
 import io
 import os
-import time
 from contextlib import contextmanager
 from copy import copy
 from importlib.machinery import SourceFileLoader
 
 from homely._engine2 import Cleaner, Engine, Helper, getengine, getrepoinfo
-from homely._errors import HelperError
 from homely._ui import entersection, warn
 # allow importing from outside
 from homely._utils import haveexecutable  # noqa
 from homely._utils import (NoChangesNeeded, _homepath2real, _repopath2real,
                            filereplacer, isnecessarypath)
-# TODO: remove these deprecated aliases which I'm still using in my homely repos
-from homely.files import mkdir, symlink  # noqa
+# TODO: remove these deprecated aliases which I'm still using in my homely
+# repos
+from homely.files import download, mkdir, symlink  # noqa
 
 
 def run(updatehelper):
@@ -52,16 +51,6 @@ def section(func):
         engine.popsection(name)
 
 
-def download(url, dest, expiry=None):
-    # possible values of expiry:
-    # 0:     always download again
-    # -1:    never download again
-    # <int>: download again when file is <int> seconds old
-    if expiry is None:
-        expiry = 60 * 60 * 24 * 14
-    getengine().run(Download(url, _homepath2real(dest), expiry))
-
-
 def lineinfile(filename, contents, where=None):
     filename = _homepath2real(filename)
     obj = LineInFile(filename, contents, where)
@@ -85,54 +74,6 @@ def writefile(filename):
     finally:
         if stream:
             stream.close()
-
-
-class Download(Helper):
-    def __init__(self, url, dest, expiry):
-        assert dest.startswith('/')
-        assert type(expiry) is int and expiry >= -1
-        self._url = url
-        self._dest = dest
-        self._expiry = expiry
-
-    def getclaims(self):
-        return []
-
-    def getcleaner(self):
-        return
-
-    def isdone(self):
-        if not os.path.exists(self._dest):
-            return False
-
-        if self._expiry == -1:
-            return True  # file never expires
-
-        if self._expiry == 0:
-            return False  # file always expires
-
-        cutoff = time.time() - self.expiry
-        mtime = os.stat(self._dest).st_mtime
-        return mtime >= cutoff
-
-    @property
-    def description(self):
-        return "Download %s to %s" % (self._url, self._dest)
-
-    def makechanges(self):
-        import requests
-        r = requests.get(self._url)
-        if r.status_code != 200:
-            raise HelperError("Download of %s failed: %s"
-                              % (self._url, r.status_code))
-        with open(self._dest, 'wb') as f:
-            f.write(r.content)
-
-    def affectspath(self, path):
-        return path == self._dest
-
-    def pathsownable(self):
-        return {self._dest: Engine.TYPE_FILE_ALL}
 
 
 WHERE_TOP = "__TOP__"
