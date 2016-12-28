@@ -3,6 +3,11 @@
 ===========
 
 
+NEW
+
+* Fixed **homely.files.download()** which was completely broken.
+
+
 Version 0.11.5 - 29 Dec 2016
 ----------------------------
 
