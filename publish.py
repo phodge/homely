@@ -16,17 +16,17 @@ def updatechangelog(tag):
 
     with open(changelog) as f:
         for line in f:
-            if line == 'NEW CHANGES\n':
+            if line == 'NEW\n':
                 break
         else:
-            fail("Heading 'NEW CHANGES' doesn't appear in {}".format(
+            fail("Heading 'NEW' doesn't appear in {}".format(
                 changelog))
 
     # create the new heading - include the current date
     heading = "Version {} - {}".format(tag, date.today().strftime("%d %b %Y"))
     lines = '-' * len(heading)
     cmd = ['vim', '-u', 'NONE', changelog,
-           '+%s/^NEW CHANGES$/{}\r{}/'.format(heading, lines),
+           '+%s/^NEW$/{}\r{}/'.format(heading, lines),
            '+wq',
            ]
     check_call(cmd)
