@@ -1,8 +1,7 @@
+from homely._engine2 import Cleaner, Helper, getengine
 from homely._errors import HelperError
-from homely._engine2 import Helper, Cleaner, getengine
-from homely._utils import haveexecutable
 from homely._ui import allowinteractive, system
-
+from homely._utils import haveexecutable
 
 __all__ = ["pipinstall"]
 
