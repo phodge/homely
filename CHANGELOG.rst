@@ -3,6 +3,12 @@
 ===========
 
 
+NEW
+
+* **homely.files.download()** now respects ``expiry`` arg
+* **homely.pipinstall** uses ``pip --format=legacy`` for newer versions of pip
+
+
 Version 0.11.4 - 02 Nov 2016
 ----------------------------
 
