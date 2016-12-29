@@ -224,6 +224,8 @@ for entry in os.listdir(join(docs, 'ref')):
             if label.startswith('homely.' + name + '.'):
                 label = label[8+len(name):]
             anchor = m.replace('.', '-')
+            if anchor.endswith('()'):
+                anchor = anchor[:-2]
             html_context['refpageheadings'][name].append([anchor, label])
 
 
