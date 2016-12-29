@@ -61,7 +61,7 @@ class Download(Helper):
         if self._expiry == 0:
             return False  # file always expires
 
-        cutoff = time.time() - self.expiry
+        cutoff = time.time() - self._expiry
         mtime = os.stat(self._dest).st_mtime
         return mtime >= cutoff
 

@@ -3,6 +3,19 @@
 ===========
 
 
+Version 0.11.6 - 29 Dec 2016
+----------------------------
+
+* Fixed **homely.files.download()** which was completely broken.
+
+
+Version 0.11.5 - 29 Dec 2016
+----------------------------
+
+* **homely.files.download()** now respects ``expiry`` arg
+* **homely.pipinstall** uses ``pip --format=legacy`` for newer versions of pip
+
+
 Version 0.11.4 - 02 Nov 2016
 ----------------------------
 
