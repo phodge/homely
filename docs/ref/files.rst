@@ -41,6 +41,7 @@ If homely creates the file at ``dest``, it will remember this fact so that it ca
 [possibly] perform automatic cleanup in the future. Each time you run ``homely
 update`` homely will check to see if ``download()`` was called with the same
 ``dest``, and if it wasn't then the file will be removed.
+See :ref:`automatic_cleanup` for more information.
 
 
 homely.files.mkdir()
@@ -86,7 +87,7 @@ wasn't then the directory will be removed. This means that you don't need to
 remember to delete directories you aren't using any more - simply remove the
 call to ``mkdir()`` and homely will clean it up for you. Note that the
 directory *won't* be cleaned up if it is still in use.
-
+See :ref:`automatic_cleanup` for more information.
 
 
 homely.files.symlink()
@@ -139,3 +140,4 @@ means that you don't need to remember to delete symlinks you aren't using any
 more - simply remove the call to ``symlink()`` and homely will clean it up for
 you.  Note that the symlink *won't* be cleaned up if it has been modified by
 something other than homely, or replaced with a regular file or directory.
+See :ref:`automatic_cleanup` for more information.

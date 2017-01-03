@@ -204,6 +204,7 @@ html_context = {}
 html_context["toppages"] = [
     ["index", 'Home'],
     ["installation", 'Installation Guide'],
+    ["automatic-cleanup", 'Automatic Cleanup'],
 ]
 
 # make a list of ref pages
