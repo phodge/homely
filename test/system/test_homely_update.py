@@ -37,7 +37,7 @@ def test_homely_update(HOME, tmpdir):
         tf = os.path.join(HOME, createfile)
         contents(tr.remotepath + '/HOMELY.py',
                  """
-                 from homely.general import lineinfile
+                 from homely.files import lineinfile
                  lineinfile('~/%s', 'Hello from %s')
                  """ % (createfile, name))
         assert not os.path.exists(tf)
@@ -46,7 +46,7 @@ def test_homely_update(HOME, tmpdir):
         return tr
 
     template = ("""
-                from homely.general import lineinfile
+                from homely.files import lineinfile
                 lineinfile(%r, %r)
                 """)
 
@@ -102,7 +102,8 @@ def test_homely_update(HOME, tmpdir):
     # split r1 into multiple sections and just do one of them
     contents(r1.remotepath + '/HOMELY.py',
              """
-             from homely.general import lineinfile, section
+             from homely.files import lineinfile
+             from homely.general import section
              @section
              def partE():
                 lineinfile('~/file1.txt', 'EEE')

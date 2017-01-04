@@ -12,7 +12,7 @@ def test_homely_remove(tmpdir, HOME):
         tf = os.path.join(HOME, createfile)
         contents(tr.remotepath + '/HOMELY.py',
                  """
-                 from homely.general import lineinfile
+                 from homely.files import lineinfile
                  lineinfile('~/%s', 'Hello from %s')
                  """ % (createfile, name))
         assert not os.path.exists(tf)

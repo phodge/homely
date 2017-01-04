@@ -15,8 +15,7 @@ def test_homely_add_repolist(tmpdir, HOME):
     assert not os.path.islink(homelink1)
     contents(repo1.remotepath + '/HOMELY.py',
              """
-             from homely.files import mkdir, symlink
-             from homely.general import lineinfile
+             from homely.files import lineinfile, mkdir, symlink
              mkdir('~/dir1')
              symlink('~/dir1', '~/link1')
              lineinfile('~/link1/file.txt', 'Hello World')
@@ -37,7 +36,7 @@ def test_homely_add_repolist(tmpdir, HOME):
     assert not os.path.exists(repo2file)
     contents(repo2.remotepath + '/HOMELY.py',
              """
-             from homely.general import lineinfile
+             from homely.files import lineinfile
              lineinfile('~/file2.txt', 'Hey There')
              """)
     system(HOMELY('add') + [repo2.url])
@@ -50,7 +49,7 @@ def test_homely_add_repolist(tmpdir, HOME):
     repo3 = TempRepo(tmpdir, 'repo3')
     contents(repo3.remotepath + '/HOMELY.py',
              """
-             from homely.general import lineinfile
+             from homely.files import lineinfile
              lineinfile('~/r3.txt', 'From R3')
              """)
     # where would it go in the home dir?
@@ -74,7 +73,7 @@ def test_homely_add_repolist(tmpdir, HOME):
     repo4 = TempRepo(tmpdir, 'repo4')
     contents(repo4.remotepath + '/HOMELY.py',
              """
-             from homely.general import lineinfile
+             from homely.files import lineinfile
              lineinfile('~/r4.txt', 'From R4')
              """)
     localrepo4 = os.path.join(HOME, 'repo4')

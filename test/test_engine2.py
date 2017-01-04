@@ -70,8 +70,6 @@ def test_symlink_cleanup_interaction(tmpdir):
     from homely._engine2 import Engine
     from homely._errors import CleanupConflict
     from homely.files import MakeDir, MakeSymlink
-    #LineInFile, BlockInFile, WHERE_TOP, WHERE_END,
-    #WriteFile, writefile
 
     cfgpath = gettmpfilepath(tmpdir)
 
@@ -154,7 +152,7 @@ def test_symlink_cleanup_interaction(tmpdir):
 
 def test_lineinfile_usage(tmpdir):
     from homely._engine2 import Engine
-    from homely.general import LineInFile, WHERE_TOP, WHERE_END
+    from homely.files import WHERE_END, WHERE_TOP, LineInFile
 
     cfgpath = gettmpfilepath(tmpdir, '.json')
 
@@ -246,8 +244,7 @@ def test_lineinfile_usage(tmpdir):
 
 def test_lineinfile_cleanup_interaction(tmpdir):
     from homely._engine2 import Engine
-    from homely.files import MakeDir
-    from homely.general import LineInFile
+    from homely.files import MakeDir, LineInFile
 
     # a temporary file where the engine can store its config
     cfgpath = gettmpfilepath(tmpdir, '.json')
@@ -398,7 +395,7 @@ def test_blockinfile_lineinfile_cleanup_interaction(tmpdir):
     reapplied, then they *all* need to be reapplied.
     '''
     from homely._engine2 import Engine
-    from homely.general import LineInFile, BlockInFile
+    from homely.files import LineInFile, BlockInFile
 
     cfgpath = gettmpfilepath(tmpdir, '.json')
     f1 = gettmpfilepath(tmpdir, '.txt')
@@ -457,8 +454,7 @@ def test_cleanup_everything(tmpdir):
     cleanup() will remove all of things that might be lying around
     '''
     from homely._engine2 import Engine
-    from homely.files import MakeDir, MakeSymlink
-    from homely.general import LineInFile
+    from homely.files import MakeDir, MakeSymlink, LineInFile
 
     cfgpath = gettmpfilepath(tmpdir, '.json')
     d1 = gettmpfilepath(tmpdir, '.d')
@@ -516,7 +512,8 @@ def test_partial_run_cleanup(tmpdir):
 
 def test_writefile_usage(tmpdir):
     from homely._engine2 import Engine
-    from homely.general import LineInFile, WriteFile, writefile
+    from homely.files import LineInFile
+    from homely.general import WriteFile, writefile
 
     cfgpath = gettmpfilepath(tmpdir, '.json')
 
