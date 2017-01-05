@@ -109,6 +109,8 @@ Next time you run ``homely update``, **homely** *will not* attempt to cleanup th
 still asking for the symlink to be created.
 
 
+.. _cleaning_modified_files:
+
 Example 4: Cleaning Modified Files
 ----------------------------------
 

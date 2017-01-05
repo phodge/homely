@@ -44,6 +44,71 @@ update`` homely will check to see if ``download()`` was called with the same
 See :ref:`automatic_cleanup` for more information.
 
 
+.. _homely.files.lineinfile:
+
+homely.files.lineinfile()
+-------------------------
+
+``lineinfile()`` will add a single line of text to a target file.
+
+``lineinfile(filename, contents, where=None)``
+
+``filename``
+    The name of the file to modify. If ``filename`` begins with a ``/`` it
+    will be treated as an absolute path, otherwise it is assumed to be relative
+    to ``$HOME``.  You can also use ``~`` and environment variables
+    like ``$HOME`` directly in the filename string.
+``contents``
+    The line of text to add to the file. ``contents`` must not contain ``\n`` or ``\r``.
+``where``
+    One of ``None``, ``homely.files.WHERE_TOP``, ``homely.files.WHERE_BOT`` or
+    ``homely.files.WHERE_ANY``. If set to ``None`` the behaviour of
+    ``homely.files.WHERE_ANY`` will be used.
+
+``lineinfile()`` is idempotent and will also make sure there is only one
+occurrence of the line contents in the file, at the location specified by
+``where``:
+
+``where=homely.files.WHERE_TOP``
+    The line will be added or moved to the top of the file.
+``where=homely.files.WHERE_BOT``
+    The line will be added or moved to the bottom of the file.
+``where=homely.files.WHERE_ANY`` or ``where=None``
+    The line will be added to the bottom of the file, but if it is already
+    present in the file it will be left wherever it is. If there are multiple
+    occurrences of the line already in the file, the first will be kept and
+    subsequent occurrences will be removed.
+
+
+Examples
+^^^^^^^^
+
+Use ``lineinfile()`` to add a line to the end of your ``.bashrc``::
+
+    from homely.files import lineinfile, WHERE_BOT
+    lineinfile('.bashrc', 'PATH=$HOME/dotfiles/bin:$PATH', WHERE_BOT)
+
+Use ``lineinfile()`` to add a line to the top of your ``~/.vimrc`` which
+sources a shared vimrc inside your dotfiles repo::
+
+    from homely.files import lineinfile, WHERE_TOP
+    lineinfile('~/.vimrc', 'source $HOME/dotfiles/vimrc.vim', WHERE_TOP)
+
+
+Automatic Cleanup
+^^^^^^^^^^^^^^^^^
+
+If homely does modify a file using ``lineinfile()``, it will remember this fact
+so that it can [possibly] perform automatic cleanup in the future. Each time
+you run ``homely update`` homely will check to see if ``lineinfile()`` was
+called with the same arguments, and if it wasn't then the line will be removed
+from the file. This means that you don't need to remember to remove the lines
+you aren't using any more -- simply remove the call to ``lineinfile()`` and
+homely will clean it up for you.
+
+**Note:** after cleaning up line added by a ``lineinfile()`` that is no longer present, **homely** will re-run all ``lineinfile()`` and ``blockinfile()`` functions that targetted that file. This ensures that when a line is removed from a file, it won't accidentally remove something that was still wanted by another ``lineinfile()`` or ``blockinfile()``.  See :ref:`cleaning_modified_files` for more information about this feature.
+
+
 homely.files.mkdir()
 --------------------
 
