@@ -316,6 +316,19 @@ class CleanLineInFile(Cleaner):
 
 class BlockInFile(Helper):
     def __init__(self, filename, lines, where, prefix, suffix):
+        if os.path.basename(filename) == '.vimrc' or filename.endswith('.vim'):
+            commentstart = '"'
+        else:
+            commentstart = '#'
+
+        if prefix is None:
+            prefix = '{} start of content added by homely'.format(commentstart)
+        if suffix is None:
+            suffix = '{} end of content added by homely'.format(commentstart)
+
+        # FIXME: make BlockInFile() raise an exception if the same
+        # prefix/suffix are used multiple times
+
         self._filename = filename
         self._lines = lines
         self._prefix = prefix
