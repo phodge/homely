@@ -66,7 +66,7 @@ See :ref:`cleaning_modified_files` for more information about this feature.
 homely.files.download()
 -----------------------
 
-**download()** will download a single file from a target URL.
+``download()`` will download a single file from a target URL.
 
 ``download(url, dest, expiry=None)``
 
@@ -173,7 +173,7 @@ homely will clean it up for you.
 homely.files.mkdir()
 --------------------
 
-**mkdir()** will create the nominated directory if it doesn't already exist.
+``mkdir()`` will create the nominated directory if it doesn't already exist.
 
 ``mkdir(path)``
 
@@ -219,7 +219,7 @@ See :ref:`automatic_cleanup` for more information.
 homely.files.symlink()
 ----------------------
 
-**symlink()** will create a symlink if it doesn't already exist.
+``symlink()`` will create a symlink if it doesn't already exist.
 
 ``symlnk(target, linkname=None)``
 

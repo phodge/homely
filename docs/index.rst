@@ -54,8 +54,7 @@ dotfile managers are:
 1. You want the full power of the python programming language at your disposal
    so that you aren't limited to just the features of your Dotfile Manager or
    things that can be done in a shell script.
-#. **Homely** makes a reasonable attempt at cleaning up things you don't use any
-   more. Removed ``symlink(".screenrc")`` from your repo? **Homely** will notice
+#. **homely** makes a reasonable attempt at cleaning up things you don't use any
+   more. Removed ``symlink(".screenrc")`` from your repo? **homely** will notice
    that it's not being asked for any more and remove the ``.screenrc`` symlink on
    any computer where it was previously installed.
-
