@@ -2,6 +2,67 @@ homely.files
 ============
 
 
+homely.files.blockinfile()
+--------------------------
+
+``blockinfile()`` will add a several line of text to a target file in a single block. The lines of text are surrounded by ``prefix`` and ``suffix`` lines so that the block can be maintained by **homely** over time.
+
+``blockinfile(filename, contents, where=None, *, prefix=None, suffix=None)``
+
+``filename``
+    The name of the file to modify. If ``filename`` begins with a ``/`` it will be treated as an absolute path, otherwise it is assumed to be relative to ``$HOME``.  You can also use ``~`` and environment variables like ``$HOME`` directly in the filename string.
+``contents``
+    A sequence of strings representing the lines of text to add to the file. The individual lines must not contain ``\n`` or ``\r``.
+``where``
+    One of ``None``, ``homely.files.WHERE_TOP``, ``homely.files.WHERE_BOT`` or
+    ``homely.files.WHERE_ANY``. If set to ``None`` the behaviour of
+    ``homely.files.WHERE_ANY`` will be used.
+``prefix=None``
+    A string containing a line of text which is guaranteed to be unique in the file and can be used to determine where the block starts.
+``suffix=None``
+    A string containing a line of text which is guaranteed to be unique in the file and can be used to determine where the block ends.
+
+If ``prefix=None`` or ``suffix=None`` then a prefix or suffix (respectively) will be generated for you automatically. The generated line will start with ``#`` since this represents a comment in most config file languages. If the target file is named ``.vimrc`` or ends in ``.vim``, the vim comment character ``"`` will be used instead.
+
+``block()`` is idempotent and will also make sure there is only one occurrence of the ``prefix...suffix`` block in the file, at the location specified by ``where``:
+
+``where=homely.files.WHERE_TOP``
+    The block will be added or moved to the top of the file.
+``where=homely.files.WHERE_BOT``
+    The block will be added or moved to the bottom of the file.
+``where=homely.files.WHERE_ANY`` or ``where=None``
+    The block will be added to the bottom of the file, but if it is already present in the file it will be left wherever it is. If there are multiple occurrences of the block already in the file, the first will be kept and subsequent occurrences will be removed.
+
+
+Examples
+^^^^^^^^
+
+You want to include `powerline` config in your ``.tmux.conf``, but the powerline config file is in different locations depending on the host operating system. You could find the location of the powerline module programmatically and then use blockinfile() to insert the config into your ``.tmux.conf`` using ``blockinfile()``::
+
+    from os.path import dirname
+    from homely.files import blockinfile, WHERE_TOP
+    from homely.ui import system
+
+    # use python to import powerline and find out where it is installed
+    cmd = ['python', '-c', 'import powerline; print(powerline.__file__)']
+    stdout = system(cmd, stdout=True)[1]
+    powerline_pkg = dirname(stdout.strip().decode('utf-8'))
+    lines = [
+        'run-shell "powerline-daemon --replace -q"',
+        'source "{}/bindings/tmux/powerline.conf"'.format(powerline_pkg),
+    ])
+    blockinfile('.tmux.conf', lines, WHERE_BOT)
+
+
+Automatic Cleanup
+^^^^^^^^^^^^^^^^^
+
+If homely does modify a file using ``blockinfile()``, it will remember this fact so that it can [possibly] perform automatic cleanup in the future. Each time you run ``homely update`` homely will check to see if ``blockinfile()`` was called with the same prefix/suffix combination, and if it wasn't then the block will be removed from the file. This means that you don't need to remember to remove the lines you aren't using any more -- simply remove the call to ``blockinfile()`` and homely will clean it up for you.
+
+**Note:** after cleaning up a ``blockinfile()`` section, **homely** will re-run all ``lineinfile()`` and ``blockinfile()`` functions that targetted that file. This ensures that when a block is removed from a file, it won't accidentally remove something that was still wanted by a ``lineinfile()``.
+See :ref:`cleaning_modified_files` for more information about this feature.
+
+
 homely.files.download()
 -----------------------
 
