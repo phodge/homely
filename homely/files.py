@@ -54,13 +54,25 @@ def symlink(target, linkname=None):
     getengine().run(MakeSymlink(target, linkname))
 
 
-def lineinfile(filename, contents, *, where=None):
+def lineinfile(filename, contents, where=None):
     filename = _homepath2real(filename)
     obj = LineInFile(filename, contents, where)
     getengine().run(obj)
 
 
-def blockinfile(filename, lines, prefix, suffix, *, where=None):
+def blockinfile(filename, lines, *args, **kwargs):
+    if len(args) < 2:
+        # handle the new call signature
+        where = args[0] if len(args) else None
+        prefix = kwargs.pop('prefix', None)
+        suffix = kwargs.pop('suffix', None)
+        assert not len(kwargs)
+    else:
+        # assume the old call signature used by my repos
+        # TODO: remove this deprecated alternate call signature
+        prefix, suffix = args
+        where = kwargs.pop('where', None)
+        assert not len(kwargs)
     filename = _homepath2real(filename)
     obj = BlockInFile(filename, lines, where, prefix, suffix)
     getengine().run(obj)
