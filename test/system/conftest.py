@@ -68,6 +68,13 @@ def _getfakeenv(homedir):
 
 
 def getsystemfn(homedir):
+    """
+    Returns a sytem() function which has some special behaviours:
+    - it sets env's $HOME to the specified dir
+    - it modifies $PYTHONPATH to include this version of the homely source code
+    - it raises an exception if the command takes longer than 1 second to complete
+    - it raises an exception if the command doesn't exit(0) or exit(expecterror)
+    """
     env = _getfakeenv(homedir)
 
     @withtmpdir

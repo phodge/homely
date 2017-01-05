@@ -1,15 +1,10 @@
 import os
+
 import simplejson
-
 from homely._errors import CleanupConflict, CleanupObstruction, HelperError
-from homely._utils import (
-    isnecessarypath,
-    ENGINE2_CONFIG_PATH,
-    RepoInfo,
-    FactConfig,
-)
 from homely._ui import note, warn
-
+from homely._utils import (ENGINE2_CONFIG_PATH, FactConfig, RepoInfo,
+                           isnecessarypath)
 
 _ENGINE = None
 _REPO = None
@@ -72,18 +67,31 @@ class Helper(_AccessibleFacts):
     _facts = None
 
     def getcleaner(self):
+        """
+        Returns an instance of Cleaner that will clean up after this Helper is
+        done.
+        """
         raise NotImplementedError("%s needs to implement .getcleaner()" %
                                   self.__class__.__name__)
 
     def getclaims(self):
+        """
+        Returns a list of arbitrary strings describing things claimed by this
+        helper.
+        """
         raise NotImplementedError("%s needs to implement .getclaims() -> []" %
                                   self.__class__.__name__)
 
     def isdone(self):
+        """Returns True if the Helper doesn't need to do anything."""
         raise NotImplementedError("%s needs to implement .isdone()" %
                                   self.__class__.__name__)
 
     def makechanges(self):
+        """
+        Makes changes locally. Raises a HelperError if there is a
+        human-readable error that can be shown to the user.
+        """
         raise NotImplementedError("%s needs to implement .makechanges()" %
                                   self.__class__.__name__)
 
@@ -245,7 +253,11 @@ class Engine(object):
             f.write(dumped)
 
     def _removecleaner(self, cleaner):
-        # remove the cleaner from the list if it already exists
+        """
+        Remove the cleaner from the list if it already exists. Returns True if
+        the cleaner was removed.
+        """
+        oldlen = len(self._old_cleaners)
         self._old_cleaners = [
             oldc for oldc in self._old_cleaners
             if not oldc.issame(cleaner)
@@ -385,8 +397,8 @@ class Engine(object):
 
         # run the cleaner now
         with note("Cleaning: {}".format(cleaner.description)):
-            # if there are still helpers with claims over things the cleaner wants
-            # to remove, then the cleaner needs to wait
+            # if there are still helpers with claims over things the cleaner
+            # wants to remove, then the cleaner needs to wait
             for claim in cleaner.needsclaims():
                 if claim in self._claims:
                     note("Postponed: Something else claimed %r" % claim)
