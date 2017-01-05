@@ -262,6 +262,7 @@ class Engine(object):
             oldc for oldc in self._old_cleaners
             if not oldc.issame(cleaner)
         ]
+        return len(self._old_cleaners) != oldlen
 
     def _addcleaner(self, cleaner):
         # add a cleaner (it is guaranteed not to exist in the old list)
@@ -293,24 +294,32 @@ class Engine(object):
         # what claims does this helper make?
         self._claims.update(*helper.getclaims())
 
-        # get a cleaner for this helper
-        cleaner = helper.getcleaner()
-        if cleaner is not None:
-            cfg_modified = True
-
-            # remove the cleaner from the list of old cleaners
-            self._removecleaner(cleaner)
-
-            # add the cleaner to the list of new cleaners
-            self._addcleaner(cleaner)
-
+        # take ownership of paths
         for path, type_ in helper.pathsownable().items():
             cfg_modified = True
             self._new_paths_owned[path] = type_
             self._old_paths_owned.pop(path, None)
 
-        # if the helper isn't already done, tell it to do its thing now
-        if not helper.isdone():
+        # get a cleaner for this helper
+        cleaner = helper.getcleaner()
+
+        if helper.isdone():
+            # if there is already a cleaner for this thing, add and remove it
+            # so it hangs around. If there is no cleaner but the thing is
+            # already done, it means we shouldn't be cleaning it up
+            if cleaner is not None:
+                cfg_modified = True
+                if self._removecleaner(cleaner):
+                    self._addcleaner(cleaner)
+                note("{}: Already done".format(helper.description))
+        else:
+            # remove and add the cleaner so that we know it will try to clean
+            # up, since we know we will be making the change
+            if cleaner is not None:
+                cfg_modified = True
+                self._removecleaner(cleaner)
+                self._addcleaner(cleaner)
+            # if the helper isn't already done, tell it to do its thing now
             with note("{}: Running ...".format(helper.description)):
                 # take ownership of any paths that don't exist yet!
                 for path, type_ in helper.pathsownable().items():
@@ -333,8 +342,6 @@ class Engine(object):
                     helper.makechanges()
                 except HelperError as err:
                     warn("Failed: %s" % err.args[0])
-        else:
-            note("{}: Already done".format(helper.description))
         self._helpers.append(helper)
 
         # save the config now if we were successful
