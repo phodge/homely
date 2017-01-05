@@ -400,13 +400,17 @@ def test_blockinfile_lineinfile_cleanup_interaction(tmpdir):
     cfgpath = gettmpfilepath(tmpdir, '.json')
     f1 = gettmpfilepath(tmpdir, '.txt')
 
+    def bif(filename, lines):
+        # shorthand constructor for BlockInFile()
+        return BlockInFile(filename, lines, None, "PRE", "POST")
+
     # check that a LineInFile followed by a BlockInFile that both try to add
     # the same line will result in the file containing both things, even if
     # you rerun it many times
     for i in range(3):
         e = Engine(cfgpath)
         e.run(LineInFile(f1, "AAA"))
-        e.run(BlockInFile(f1, ["AAA"], "PRE", "POST"))
+        e.run(bif(f1, ["AAA"]))
         e.cleanup(e.RAISE)
         del e
         assert contents(f1) == "AAA\nPRE\nAAA\nPOST\n"
@@ -417,7 +421,7 @@ def test_blockinfile_lineinfile_cleanup_interaction(tmpdir):
     os.unlink(f1)
     for i in range(3):
         e = Engine(cfgpath)
-        e.run(BlockInFile(f1, ["AAA"], "PRE", "POST"))
+        e.run(bif(f1, ["AAA"]))
         e.run(LineInFile(f1, "AAA"))
         e.cleanup(e.RAISE)
         del e
@@ -426,14 +430,14 @@ def test_blockinfile_lineinfile_cleanup_interaction(tmpdir):
     # check that removing the LineInFile doesn't destroy the contents added by
     # BlockInFile
     e = Engine(cfgpath)
-    e.run(BlockInFile(f1, ["AAA"], "PRE", "POST"))
+    e.run(bif(f1, ["AAA"]))
     e.cleanup(e.RAISE)
     del e
     assert contents(f1) == "PRE\nAAA\nPOST\n"
 
     # put both things back in ...
     e = Engine(cfgpath)
-    e.run(BlockInFile(f1, ["AAA"], "PRE", "POST"))
+    e.run(bif(f1, ["AAA"]))
     e.run(LineInFile(f1, "AAA"))
     e.cleanup(e.RAISE)
     del e

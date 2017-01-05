@@ -62,7 +62,7 @@ def lineinfile(filename, contents, *, where=None):
 
 def blockinfile(filename, lines, prefix, suffix, *, where=None):
     filename = _homepath2real(filename)
-    obj = BlockInFile(filename, lines, prefix, suffix, where)
+    obj = BlockInFile(filename, lines, where, prefix, suffix)
     getengine().run(obj)
 
 
@@ -315,7 +315,7 @@ class CleanLineInFile(Cleaner):
 
 
 class BlockInFile(Helper):
-    def __init__(self, filename, lines, prefix, suffix, where=None):
+    def __init__(self, filename, lines, where, prefix, suffix):
         self._filename = filename
         self._lines = lines
         self._prefix = prefix
