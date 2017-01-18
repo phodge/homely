@@ -58,3 +58,5 @@ dotfile managers are:
    more. Removed ``symlink(".screenrc")`` from your repo? **homely** will notice
    that it's not being asked for any more and remove the ``.screenrc`` symlink on
    any computer where it was previously installed.
+
+If you would like to learn more, check out the :ref:`tutorial` or the :ref:`installation_guide`.

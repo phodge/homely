@@ -204,6 +204,7 @@ html_context = {}
 html_context["toppages"] = [
     ["index", 'Home'],
     ["installation", 'Installation Guide'],
+    ["tutorial", 'Beginner Tutorial'],
     ["automatic-cleanup", 'Automatic Cleanup'],
 ]
 
