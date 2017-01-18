@@ -116,7 +116,7 @@ Example 4: Cleaning Modified Files
 
 Sometimes **homely** can't take total ownership of files for cleanup purposes.
 For example, if you have a ``HOMELY.py`` script that modifies ``~/.bashrc`` using
-``homely.files.lineinfile()`` like this::
+:any:`homely.files.lineinfile() <homely-files-lineinfile>` like this::
 
     from homely.files import lineinfile
     lineinfile('~/.bashrc', 'PATH=$HOME/dotfiles/bin:$PATH')
