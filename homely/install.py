@@ -6,7 +6,7 @@ from homely._utils import haveexecutable, isnecessarypath
 from homely._ui import note, allowinteractive, allowpull, system
 
 
-def installpkg(name=None, wantcmd=None, **methods):
+def installpkg(name, wantcmd=None, **methods):
     for key in methods:
         assert key in InstallPackage.METHODS
 
