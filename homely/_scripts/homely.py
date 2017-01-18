@@ -46,7 +46,7 @@ def _globals(command):
                    " will be answered automatically using the user's previous"
                    " answer or the `noprompt` value.")(proxy)
     proxy = option('-v', '--verbose', 'verbose', is_flag=True,
-                   help="Product extra output")(proxy)
+                   help="Produce extra output")(proxy)
     return proxy
 
 
@@ -121,20 +121,13 @@ def repolist(format):
 
 @homely.command()
 @argument('identifier', nargs=-1)
-@option('--force', '-f', is_flag=True,
-        help="Do not ask the user for confirmation before removing a repo that"
-        " still exists on disk. You must use --force if you have also used"
-        " --neverprompt.")
-@option('--update', '-u', is_flag=True,
-        help="Perform update/cleanup of all repos after removal.")
 @_globals
-def remove(identifier, force, update):
+def forget(identifier):
     '''
     Remove repo identified by IDENTIFIER. IDENTIFIER can be a path to a repo or
     a commit hash or a canonical url.
     '''
     errors = False
-    removed = False
     for one in identifier:
         cfg = RepoListConfig()
         info = cfg.find_by_any(one, "ilc")
@@ -143,46 +136,15 @@ def remove(identifier, force, update):
             errors = True
             continue
 
-        # if the local repo still exists, then we need to prompt if the user
-        # hasn't used force mode
-        if os.path.isdir(info.localrepo.repo_path) and not force:
-            if not allowinteractive():
-                warn("Use --force to remove a repo that still exists on disk")
-                errors = True
-                continue
-
-            prompt = "Are you sure you want to remove repo [%s] %s?" % (
-                info.localrepo.shortid(info.repoid), info.localrepo.repo_path)
-            if not yesno(None, prompt, False):
-                continue
-
         # update the config ...
         note("Removing record of repo [%s] at %s" % (
             info.shortid(), info.localrepo.repo_path))
         with saveconfig(RepoListConfig()) as cfg:
             cfg.remove_repo(info.repoid)
-        removed = True
 
     # if there were errors, then don't try and do an update
     if errors:
         sys.exit(1)
-
-    if not removed:
-        return
-
-    # ask the user if they would like to update everything now?
-    if (not update) and allowinteractive():
-        prompt = ("Files created by old repos will not be removed until you"
-                  " perform an update of all other repos. Would you like to "
-                  " do this now?")
-        update = yesno(None, prompt, False)
-
-    if update:
-        # run an update with all remaining repos
-        all_repos = cfg.find_all()
-        success = run_update(list(all_repos), pullfirst=True, cancleanup=True)
-        if not success:
-            sys.exit(1)
 
 
 @homely.command()

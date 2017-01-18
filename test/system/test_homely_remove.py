@@ -30,17 +30,15 @@ def test_homely_remove(tmpdir, HOME):
     assert contents(HOME + '/file2.txt', "Hello from repo2\n")
     assert contents(HOME + '/file3.txt', "Hello from repo3\n")
 
-    # check that trying to remove a repo that still exists locally doesn't work
-    system(HOMELY('remove') + [r1.repoid], expecterror=1)
-    checkrepolist(HOME, system, [r1, r2, r3])
-
-    # Check that the repo can be removed without --force once it has
-    # disappeared from local disk. Note that because we use --update here, the
-    # file will be removed from disk
-    import shutil
-    shutil.rmtree(os.path.join(HOME, 'repo1'))
-    system(HOMELY('remove') + [r1.repoid, '--update'])
+    # Check that the repo can be removed.
+    system(HOMELY('forget') + [r1.repoid])
     checkrepolist(HOME, system, [r2, r3])
+    assert contents(HOME + '/file1.txt', "Hello from repo1\n")
+    assert contents(HOME + '/file2.txt', "Hello from repo2\n")
+    assert contents(HOME + '/file3.txt', "Hello from repo3\n")
+
+    # now run an update to make repo1's files go away
+    system(HOMELY('update'))
     assert not os.path.exists(HOME + '/file1.txt')
     assert contents(HOME + '/file2.txt', "Hello from repo2\n")
     assert contents(HOME + '/file3.txt', "Hello from repo3\n")
@@ -48,9 +46,8 @@ def test_homely_remove(tmpdir, HOME):
     # Test removing multiple repos, but using local path this time
     # Note that because we don't use --update, the created files will still be
     # sitting around on disk
-    system(HOMELY('remove') + ['~/repo2', '~/repo3', '--force'])
+    system(HOMELY('forget') + ['~/repo2', '~/repo3'])
     checkrepolist(HOME, system, [])
-    assert not os.path.exists(HOME + '/repo1')
     # repo2 and repo3 are stilling going to hang around on disk
     assert os.path.exists(HOME + '/repo2')
     assert os.path.exists(HOME + '/repo3')

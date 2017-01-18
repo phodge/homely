@@ -22,7 +22,7 @@ def test_lineinfile_knows_about_ownership(HOME, tmpdir):
     assert contents(f1) == "AAA\nBBB\n"
 
     # now remove the repo and do a full update to trigger cleanup
-    system(HOMELY('remove') + [tr.url, '--force'])
+    system(HOMELY('forget') + [tr.url])
     system(HOMELY('update'))
 
     # run homely update a few more times to confuse it

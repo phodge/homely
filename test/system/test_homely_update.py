@@ -127,7 +127,7 @@ def test_homely_update(HOME, tmpdir):
     system(HOMELY('update') + ['~/repo1', '~/repo2', '-o', 'something'], expecterror=1)
 
     # test that cleanup stuff doesn't happen when --only is used
-    system(HOMELY('remove') + ['~/repo2', '~/repo3', '--force'])
+    system(HOMELY('forget') + ['~/repo2', '~/repo3'])
     assert os.path.exists(HOME + '/file2.txt')
     assert os.path.exists(HOME + '/file3.txt')
     # note that this test also proves that you can use --only without naming a
