@@ -3,6 +3,13 @@
 ===========
 
 
+NEW
+
+* CLI: ``homely remove`` renamed to ``homely forget``. Also the ``--force`` and
+  ``--update`` flags were removed.
+* CLI: better docstrings
+* ``homely.install.installpkg()`` now requires a ``name`` argument.
+
 Version 0.11.6 - 29 Dec 2016
 ----------------------------
 
