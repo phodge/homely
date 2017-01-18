@@ -65,7 +65,21 @@ def homely():
 @_globals
 def add(repo_path, dest_path):
     '''
-    Install a new repo on your system
+    Registers a git repository with homely so that it will run its `HOMELY.py`
+    script on each invocation of `homely update`. `homely add` also immediately
+    executes a `homely update` so that the dotfiles are installed straight
+    away. If the git repository is hosted online, a local clone will be created
+    first.
+
+    REPO_PATH
+        A path to a local git repository, or the URL for a git repository
+        hosted online. If REPO_PATH is a URL, then it should be in a format
+        accepted by `git clone`. If REPO_PATH is a URL, you may also specify
+        DEST_PATH.
+    DEST_PATH
+        If REPO_PATH is a URL, then the local clone will be created at
+        DEST_PATH. If DEST_PATH is omitted then the path to the local clone
+        will be automatically derived from REPO_PATH.
     '''
     mkcfgdir()
     repo = getrepohandler(repo_path)
@@ -124,8 +138,14 @@ def repolist(format):
 @_globals
 def forget(identifier):
     '''
-    Remove repo identified by IDENTIFIER. IDENTIFIER can be a path to a repo or
-    a commit hash or a canonical url.
+    Tells homely to forget about a dotfiles repository that was previously
+    added. You can then run `homely update` to have homely perform automatic
+    cleanup of anything that was installed by that dotfiles repo.
+
+    REPO
+        This should be the path to a local dotfiles repository that has already
+        been registered using `homely add`. You may specify multiple REPOs to
+        remove at once.
     '''
     errors = False
     for one in identifier:
@@ -157,10 +177,23 @@ def forget(identifier):
 @_globals
 def update(identifiers, nopull, only):
     '''
-    Git pull the specified REPOs and then re-run them.
+    Performs a `git pull` in each of the repositories registered with
+    `homely add`, runs all of their HOMELY.py scripts, and then performs
+    automatic cleanup as necessary.
 
-    Each REPO must be a repoid or localpath from
-    ~/.homely/repos.json.
+    REPO
+        This should be the path to a local dotfiles repository that has already
+        been registered using `homely add`. If you specify one or more `REPO`s
+        then only the HOMELY.py scripts from those repositories will be run,
+        and automatic cleanup will not be performed (automatic cleanup is only
+        possible when homely has done an update of all repositories in one go).
+        If you do not specify a REPO, all repositories' HOMELY.py scripts will
+        be run.
+
+    The --nopull and --only options are useful when you are working on your
+    HOMELY.py script - the --nopull option stops you from wasting time checking
+    the internet for the same updates on every run, and the --only option
+    allows you to execute only the section you are working on.
     '''
     mkcfgdir()
     setallowpull(not nopull)
