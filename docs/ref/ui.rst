@@ -163,6 +163,8 @@ Ask the user if they would like to perform an interactive task like edit their
         shell(["vim", "~/.bashrc"], stdout="TTY")
 
 
+.. _homely-ui-allowinteractive:
+
 homely.ui.allowinteractive()
 ----------------------------
 

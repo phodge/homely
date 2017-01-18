@@ -210,10 +210,13 @@ html_context["toppages"] = [
 # make a list of ref pages
 html_context['refpagenames'] = []
 html_context['refpageheadings'] = {}
-heading_re = re.compile(r"(?m)^(homely(?:\.\w+)+(?:\(\))?)\n---+$")
+heading_re = re.compile(r"(?m)^(homely(?:\.\w+)+(?:\(\))?|homely \w+)\n---+$")
 docs = dirname(__file__)
 for entry in os.listdir(join(docs, 'ref')):
     if entry.startswith('.') or not entry.endswith('.rst'):
+        continue
+    # cli.rst is linked elsewhere
+    if entry == 'cli.rst':
         continue
     name = entry[:-4]
     html_context['refpagenames'].append(name)
@@ -228,6 +231,14 @@ for entry in os.listdir(join(docs, 'ref')):
             if anchor.endswith('()'):
                 anchor = anchor[:-2]
             html_context['refpageheadings'][name].append([anchor, label])
+
+
+html_context['cliheadings'] = []
+with open(join(docs, 'ref', 'cli.rst')) as f:
+    for m in heading_re.findall(f.read()):
+        label = m
+        anchor = label.replace(' ', '-')
+        html_context['cliheadings'].append([anchor, label])
 
 
 # Additional templates that should be rendered to pages, maps page names to

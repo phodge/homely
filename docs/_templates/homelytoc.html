@@ -3,6 +3,17 @@
     <li><a href="{{ pathto(item[0]+file_suffix, 1)|e }}">{{ item[1] }}</a></li>
     {% endfor %}
 </ul>
+<h4>CLI Reference</h4>
+<ul>
+{% set cliurl = pathto('ref/cli'+file_suffix, 1) %}
+{% if cliurl == "#" %}
+    {% set cliurl = "" %}
+{% endif %}
+{% for sub in cliheadings %}
+    <li><a href="{{ cliurl|e }}#{{ sub[0] }}">{{ sub[1]|e }}</a></li>
+{% endfor %}
+</ul>
+
 <h4>Module Reference</h4>
 <ul>
 {% for item in refpagenames|sort %}
