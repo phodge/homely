@@ -62,6 +62,7 @@ If homely does modify a file using ``blockinfile()``, it will remember this fact
 **Note:** after cleaning up a ``blockinfile()`` section, **homely** will re-run all ``lineinfile()`` and ``blockinfile()`` functions that targetted that file. This ensures that when a block is removed from a file, it won't accidentally remove something that was still wanted by a ``lineinfile()``.
 See :ref:`cleaning_modified_files` for more information about this feature.
 
+.. _homely-files-download:
 
 homely.files.download()
 -----------------------
@@ -105,7 +106,7 @@ update`` homely will check to see if ``download()`` was called with the same
 See :ref:`automatic_cleanup` for more information.
 
 
-.. _homely.files.lineinfile:
+.. _homely-files-lineinfile:
 
 homely.files.lineinfile()
 -------------------------

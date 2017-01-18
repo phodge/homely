@@ -61,6 +61,8 @@ Show a message before doing something::
         pipinstall(pkg)
 
 
+.. _homely-ui-allowpull:
+
 homely.ui.allowpull()
 ---------------------
 
@@ -82,6 +84,8 @@ Run `git fetch` in a private repo except when `--nopull` is used::
     if allowpull():
         shell(['git', 'fetch', 'origin', '--tags'], cwd=repopath)
 
+
+.. _homely-ui-yesno:
 
 homely.ui.yesno()
 -----------------
