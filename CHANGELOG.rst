@@ -3,7 +3,8 @@
 ===========
 
 
-NEW
+Version 0.11.7 - 19 Jan 2017
+----------------------------
 
 * CLI: ``homely remove`` renamed to ``homely forget``. Also the ``--force`` and
   ``--update`` flags were removed.
