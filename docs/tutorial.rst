@@ -62,8 +62,8 @@ cloned to ``~/dotfiles``.). Check the CLI Reference for :any:`homely-add` for
 more information.
 
 
-3. Write and Running a HOMELY.py script
----------------------------------------
+3. Write and Run a HOMELY.py script
+-----------------------------------
 
 **homely** will look for a python script named ``HOMELY.py`` in your dotfiles
 repo and execute it (import it) to install your config files locally. The
