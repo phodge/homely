@@ -6,11 +6,25 @@
 Homely - Dotfile Management
 ===========================
 
+One of the joys of being a software developer is meticulously customising the
+various tools you use such that you maximumise their utility and potential for
+your own personal needs.  These customisations are typically stored in files
+with names that begin with a dot ("."), so developers have creatively named
+them "Dotfiles".
 
-Hello and welcome to the **homely** project. If you're reading this page it's
-probably because you've realised you need a good way to keep your
-every-growing collection of configuration files (usually referred to as
-"dotfiles") syncronised across multiple computers, either real or virtual.
+One of the great frustrations as a software developer is jumping onto a
+different computer and having none of your customisations available.  Many
+developers have taken to storing their Dotfiles in a git repository so that
+changes can be shared across computers easily, and then added shell scripts to
+automate their installation.  However, the lack of programming features
+available in shell scripts soon becomes a dreadful burden as you continue to
+add more and more customisations to your shell script.
+
+**homely** is a small tool which allows you to take a repository full of
+Dotfiles and script their installation using a real programming language
+(Python).  It provides a small library containing the sorts of functions you
+need to programmatically write Dotfiles and install software packages, and a
+simple CLI tool to make running your installation script easy.
 
 If you want to use **homely** to manage your dotfiles, you will need to be
 able to:
