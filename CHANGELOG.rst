@@ -3,6 +3,11 @@
 ===========
 
 
+NEW
+
+* Terrible hack in ``homely.general`` to get my own dotfiles going again
+
+
 Version 0.11.7 - 19 Jan 2017
 ----------------------------
 

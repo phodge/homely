@@ -9,9 +9,11 @@ from homely._ui import entersection, warn
 from homely._utils import haveexecutable  # noqa
 from homely._utils import _homepath2real, _repopath2real
 # TODO: remove these deprecated aliases which I'm still using in my homely
-# repos
+# repos. Note that the cleaners will need some sort of special handling in
+# cleanerfromdict() if ever we want to remove these imports
 from homely.files import (WHERE_ANY, WHERE_BOT, WHERE_END, WHERE_TOP,  # noqa
-                          blockinfile, download, lineinfile, mkdir, symlink)
+                          CleanBlockInFile, CleanLineInFile, blockinfile,
+                          download, lineinfile, mkdir, symlink)
 
 
 def run(updatehelper):
