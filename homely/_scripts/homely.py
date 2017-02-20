@@ -4,12 +4,11 @@ import time
 
 from click import (ClickException, UsageError, argument, echo, group, option,
                    version_option)
-
 from homely import version
 from homely._errors import JsonError, RepoError
-from homely._ui import (PROMPT_ALWAYS, PROMPT_NEVER, addfromremote,
-                        allowinteractive, note, run_update, setallowpull,
-                        setverbose, setwantprompt, warn, yesno)
+from homely._ui import (PROMPT_ALWAYS, PROMPT_NEVER, addfromremote, note,
+                        run_update, setallowpull, setverbose, setwantprompt,
+                        warn)
 from homely._utils import (FAILFILE, OUTFILE, PAUSEFILE, STATUSCODES, RepoInfo,
                            RepoListConfig, UpdateStatus, getstatus, mkcfgdir,
                            saveconfig)
