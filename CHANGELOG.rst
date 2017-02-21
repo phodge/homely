@@ -3,6 +3,11 @@
 ===========
 
 
+NEW
+
+* Improved error messages when git repo isn't quite right
+
+
 Version 0.11.8 - 08 Feb 2017
 ----------------------------
 
