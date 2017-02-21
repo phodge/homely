@@ -1,6 +1,6 @@
 import os
 
-from homely._errors import RepoError
+from homely._errors import NotARepo
 
 
 _handlers = None
@@ -25,7 +25,7 @@ def getrepohandler(repo_path):
         repo = class_.frompath(repo_path)
         if repo is not None:
             return repo
-    raise RepoError("No handler for repo at %s" % repo_path)
+    raise NotARepo(repo_path)
 
 
 def fromdict(row):

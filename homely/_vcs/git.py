@@ -1,10 +1,10 @@
-import re
 import os
+import re
 
 import homely._vcs
-from homely._errors import ConnectionError
-from homely._utils import _expandpath
+from homely._errors import ConnectionError, RepoError, RepoHasNoCommitsError
 from homely._ui import system
+from homely._utils import _expandpath, run
 
 
 class Repo(homely._vcs.Repo):
@@ -44,7 +44,7 @@ class Repo(homely._vcs.Repo):
         code, _, err = system(cmd,
                               cwd=self.repo_path,
                               stderr=True,
-                              expectexit=(0,1))
+                              expectexit=(0, 1))
         if code == 0:
             return
 
@@ -62,8 +62,42 @@ class Repo(homely._vcs.Repo):
     def getrepoid(self):
         assert not self.isremote
         cmd = ['git', 'rev-list', '--max-parents=0', 'HEAD']
-        stdout = system(cmd, cwd=self.repo_path, stdout=True)[1]
-        return stdout.rstrip().decode('utf-8')
+        returncode, stdout = run(cmd,
+                                 cwd=self.repo_path,
+                                 stdout=True,
+                                 stderr="STDOUT")[:2]
+        if returncode == 0:
+            return self._getfirsthash(stdout)
+        if returncode != 128:
+            raise Exception("Unexpected returncode {} from git rev-list"
+                            .format(returncode))
+
+        if b"ambiguous argument 'HEAD'" not in stdout:
+            raise Exception("Unexpected exitcode {}".format(returncode))
+
+        # there's no HEAD revision, so we'll do the command again with
+        # --all instead
+        cmd = ['git', 'rev-list', '--max-parents=0', '--all']
+        # use run() instead of system() so that we don't print script output
+        returncode, stdout = run(cmd,
+                                 cwd=self.repo_path,
+                                 stdout=True,
+                                 stderr="STDOUT")[:2]
+        if returncode == 0:
+            return self._getfirsthash(stdout)
+        if returncode != 129:
+            raise Exception("Unexpected returncode {} from git rev-list"
+                            .format(returncode))
+        if b"usage: git rev-list" in stdout:
+            raise RepoHasNoCommitsError()
+
+        raise SystemError("Unexpected exitcode {}".format(returncode))
+
+    def _getfirsthash(self, stdout):
+        stripped = stdout.rstrip().decode('utf-8')
+        if '\n' in stripped:
+            raise RepoError("Git repo has multiple initial commits")
+        return stripped
 
     @staticmethod
     def shortid(repoid):
