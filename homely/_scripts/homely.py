@@ -2,10 +2,10 @@ import os
 import sys
 import time
 
-from click import (ClickException, UsageError, argument, echo, group, option,
-                   version_option)
+from click import UsageError, argument, echo, group, option, version_option
 from homely import version
-from homely._errors import JsonError, RepoError
+from homely._errors import (ERR_NO_COMMITS, ERR_NOT_A_REPO, JsonError,
+                            NotARepo, RepoHasNoCommitsError)
 from homely._ui import (PROMPT_ALWAYS, PROMPT_NEVER, addfromremote, note,
                         run_update, setallowpull, setverbose, setwantprompt,
                         warn)
@@ -81,9 +81,11 @@ def add(repo_path, dest_path):
         will be automatically derived from REPO_PATH.
     '''
     mkcfgdir()
-    repo = getrepohandler(repo_path)
-    if not repo:
-        raise ClickException("No handler for repo at %s" % repo_path)
+    try:
+        repo = getrepohandler(repo_path)
+    except NotARepo as err:
+        echo("ERROR: {}: {}".format(ERR_NOT_A_REPO, err.repo_path))
+        sys.exit(1)
 
     # if the repo isn't on disk yet, we'll need to make a local clone of it
     if repo.isremote:
@@ -91,12 +93,13 @@ def add(repo_path, dest_path):
     elif dest_path:
         raise UsageError("DEST_PATH is only for repos hosted online")
     else:
+        try:
+            repoid = repo.getrepoid()
+        except RepoHasNoCommitsError as err:
+            echo("ERROR: {}".format(ERR_NO_COMMITS))
+            sys.exit(1)
+        localrepo = RepoInfo(repo, repoid, None)
         needpull = False
-        localrepo = RepoInfo(
-            repo,
-            repo.getrepoid(),
-            None,
-        )
 
     # if we don't have a local repo, then there is nothing more to do
     if not localrepo:
@@ -105,9 +108,7 @@ def add(repo_path, dest_path):
     # remember this new local repo
     with saveconfig(RepoListConfig()) as cfg:
         cfg.add_repo(localrepo)
-    success = run_update([localrepo],
-                         pullfirst=needpull,
-                         cancleanup=True)
+    success = run_update([localrepo], pullfirst=needpull, cancleanup=True)
     if not success:
         sys.exit(1)
 
@@ -299,8 +300,8 @@ def autoupdate(**kwargs):
             setstreams(f, f)
             cfg = RepoListConfig()
             run_update(list(cfg.find_all()),
-                        pullfirst=True,
-                        cancleanup=True)
+                       pullfirst=True,
+                       cancleanup=True)
         except Exception:
             import traceback
             f.write(traceback.format_exc())
@@ -328,7 +329,7 @@ def main():
     try:
         # FIXME: always ensure git is installed first
         homely()
-    except (Fatal, RepoError, JsonError) as err:
+    except (Fatal, JsonError) as err:
         echo("ERROR: %s" % err, err=True)
         sys.exit(1)
     finally:

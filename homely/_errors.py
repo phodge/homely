@@ -3,6 +3,9 @@
 # output.
 ERR_NOT_A_REPO = "Not a git repository"
 ERR_NO_COMMITS = "Repository doesn't have any commits"
+ERR_NO_SCRIPT = "Repository doesn't have a HOMELY.py script"
+
+
 class JsonError(Exception):
     pass
 

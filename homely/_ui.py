@@ -1,19 +1,17 @@
 import os
 import sys
 import time
-from datetime import datetime
-from importlib.machinery import SourceFileLoader
 from contextlib import contextmanager
+from datetime import datetime
 from functools import partial
+from importlib.machinery import SourceFileLoader
 
 import homely._utils
-from homely._errors import InputError, HelperError, ConnectionError
-from homely._utils import (
-    RepoInfo, RepoListConfig, RepoScriptConfig, tmpdir, UpdateStatus,
-    RUNFILE, FAILFILE, TIMEFILE, SECTIONFILE,
-)
+from homely._errors import ERR_NO_SCRIPT, ConnectionError, InputError
+from homely._utils import (FAILFILE, RUNFILE, SECTIONFILE, TIMEFILE, RepoInfo,
+                           RepoListConfig, RepoScriptConfig, UpdateStatus,
+                           tmpdir)
 from homely._vcs import Repo
-
 
 # try and get a function for quoting shell args
 try:
@@ -180,7 +178,7 @@ def run_update(infos, pullfirst, only=None, cancleanup=None):
                 # make sure the HOMELY.py script exists
                 pyscript = os.path.join(localrepo.repo_path, 'HOMELY.py')
                 if not os.path.exists(pyscript):
-                    warn("{} does not exist".format(pyscript))
+                    warn("{}: {}".format(ERR_NO_SCRIPT, localrepo.repo_path))
                     continue
 
                 if len(only):
