@@ -3,7 +3,8 @@
 ===========
 
 
-NEW
+Version 0.11.9 - 22 Feb 2017
+----------------------------
 
 * Improved error messages when git repo isn't quite right
 
