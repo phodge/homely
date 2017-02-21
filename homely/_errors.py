@@ -1,3 +1,8 @@
+# Various error messages that we should to the user. These are in constants so
+# we can import them in the system tests and ensure that they appear in the
+# output.
+ERR_NOT_A_REPO = "Not a git repository"
+ERR_NO_COMMITS = "Repository doesn't have any commits"
 class JsonError(Exception):
     pass
 
@@ -19,6 +24,21 @@ class RepoError(Exception):
     """
     Raised when something tries to use a git (or other VCS) repo and there is a
     problem accessing the repo.
+    """
+
+
+class NotARepo(RepoError):
+    """
+    Raised when a path isn't a real repo
+    """
+    def __init__(self, repo_path):
+        super(NotARepo, self).__init__()
+        self.repo_path = repo_path
+
+
+class RepoHasNoCommitsError(RepoError):
+    """
+    Raised when you try to get the ID of a repo, but it has no commits.
     """
 
 
