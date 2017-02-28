@@ -3,12 +3,12 @@ from setuptools import setup, find_packages
 setup(
     name='homely',
     description=('Automate the installation of your personal config files and'
-                 ' favourite tools'),
-    url='https://github.com/phodge/homely/',
+                 ' favourite tools using Python. https://homely.readthedocs.io/'),
+    url='https://homely.readthedocs.io/',
     author='Peter Hodge',
     license='MIT',
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 4 - Beta',
         'Environment :: Console',
         'Intended Audience :: Developers',
         'Intended Audience :: System Administrators',
