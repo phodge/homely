@@ -4,6 +4,8 @@ import os.path
 import re
 import sys
 from os.path import dirname, join
+# generate the slides under _static now
+from subprocess import check_call
 
 
 def _get_homely_version():
@@ -174,7 +176,24 @@ html_theme = 'alabaster'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = []
+html_static_path = [
+    '_static',
+]
+
+_static = join(dirname(__file__), '_static')
+if not os.path.exists(_static):
+    os.mkdir(_static)
+cmd = [
+    'pandoc',
+    'slides.rst',
+    '-t', 'slidy',
+    '-s',
+    '-o', '_static/slides.html',
+    '--template', 'default.slidy',
+]
+check_call(cmd, cwd=dirname(__file__))
+del cmd
+
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
