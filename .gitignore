@@ -90,3 +90,5 @@ ENV/
 
 # contains version information
 homely/__init__.py
+# generated slides
+docs/_static/slides.html
