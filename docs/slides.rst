@@ -367,11 +367,11 @@ THANK YOU FOR LISTENING
 
 * Tutorial & Docs: https://homely.readthedocs.io/
 * GitHub: https://github.com/phodge/homely/
-
+* My Dotfiles: https://github.com/phodge/dotfiles/
 
 **Get Involved**
 
-1. Use homely for your dotfiles repo!
-2. Submit feature requests & bug reports to github.com/phodge/homely/
-3. Email me if you get stuck: peter.hodge84@gmail.com
+* Use homely for your dotfiles repo!
+* Submit feature requests & bug reports to https://github.com/phodge/homely/
+* Email me if you get stuck: peter.hodge84@gmail.com
 
