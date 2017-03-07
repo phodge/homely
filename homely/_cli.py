@@ -3,6 +3,7 @@ import sys
 import time
 
 from click import UsageError, argument, echo, group, option, version_option
+
 from homely import version
 from homely._errors import (ERR_NO_COMMITS, ERR_NOT_A_REPO, JsonError,
                             NotARepo, RepoHasNoCommitsError)
@@ -338,3 +339,7 @@ def main():
             asyncio.get_event_loop().close()
         except ImportError:
             pass
+
+
+if __name__ == '__main__':
+    main()

@@ -111,11 +111,9 @@ def waitfor(desc, maxtime=1, interval=0.05):
 
 def pytest_namespace():
     # path to the bin dir
-    homelyroot = os.path.dirname(os.path.dirname(__file__))
     return dict(
         contents=contents,
         gettmpfilepath=gettmpfilepath,
-        homelyroot=homelyroot,
         waitfor=waitfor,
         withtmpdir=withtmpdir,
     )

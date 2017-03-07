@@ -4,13 +4,14 @@ import sys
 from subprocess import Popen, STDOUT, TimeoutExpired
 from contextlib import contextmanager
 
-from pytest import homelyroot, withtmpdir
+from pytest import withtmpdir
 
 
 def HOMELY(command):
     return [
         'python3',
-        os.path.join(homelyroot, 'bin', 'homely'),
+        '-m',
+        'homely._cli',
         command,
         '--neverprompt',
         '--verbose',
