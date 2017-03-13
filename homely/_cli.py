@@ -294,11 +294,19 @@ def autoupdate(**kwargs):
     assert status in (UpdateStatus.OK,
                       UpdateStatus.NEVER,
                       UpdateStatus.NOCONN)
+
+    oldcwd = os.getcwd()
     import daemon
     with daemon.DaemonContext(), open(OUTFILE, 'w') as f:
         try:
             from homely._ui import setstreams
             setstreams(f, f)
+
+            # we need to chdir back to the old working directory or  imports
+            # will be broken!
+            if sys.version_info[0] < 3:
+                os.chdir(oldcwd)
+
             cfg = RepoListConfig()
             run_update(list(cfg.find_all()),
                        pullfirst=True,
