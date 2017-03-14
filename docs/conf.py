@@ -206,6 +206,7 @@ html_context["toppages"] = [
     ["installation", 'Installation Guide'],
     ["tutorial", 'Beginner Tutorial'],
     ["automatic-cleanup", 'Automatic Cleanup'],
+    ["python2", 'Python 2 Compatibility'],
 ]
 
 # make a list of ref pages
