@@ -247,15 +247,18 @@ class JsonConfig(object):
     jsondata = None
 
     def __init__(self):
+        # load up the default json until we know that we can load something from the file
+        self.jsondata = self.defaultjson()
+
+        if not os.path.exists(self.jsonpath):
+            return
         try:
             with open(self.jsonpath, 'r') as f:
                 data = f.read()
                 if not len(data):
-                    raise FileNotFoundError(None)
+                    return
                 self.jsondata = simplejson.loads(data)
                 self.checkjson()
-        except FileNotFoundError:
-            self.jsondata = self.defaultjson()
         except simplejson.JSONDecodeError:
             raise JsonError("%s does not contain valid JSON" % self.jsonpath)
 
@@ -532,7 +535,7 @@ def filereplacer(filepath):
         if exists(filepath):
             shutil.copy2(filepath, tmpname)
         with open(tmpname, 'w', newline="") as tmp:
-            try:
+            if os.path.exists(filepath):
                 with open(filepath, 'r', newline="") as orig:
                     NL = "\n"
                     origlines = []
@@ -546,16 +549,16 @@ def filereplacer(filepath):
                         origlines = chain([stripped],
                                           (l.rstrip('\r\n') for l in orig))
                     yield tmp, origlines, NL
-            except FileNotFoundError:
+            else:
                 yield tmp, None, "\n"
     except NoChangesNeeded:
-        with contextlib.suppress(FileNotFoundError):
+        if os.path.exists(tmpname):
             os.unlink(tmpname)
     except:
-        with contextlib.suppress(FileNotFoundError):
+        if os.path.exists(tmpname):
             os.unlink(tmpname)
         raise
-    with contextlib.suppress(FileNotFoundError):
+    if os.path.exists(filepath):
         os.unlink(filepath)
     os.rename(tmpname, filepath)
 
