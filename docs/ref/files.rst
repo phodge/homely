@@ -2,6 +2,8 @@ homely.files
 ============
 
 
+.. _homely-files-blockinfile:
+
 homely.files.blockinfile()
 --------------------------
 
