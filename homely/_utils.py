@@ -613,11 +613,11 @@ def tmpdir(name):
     assert '/' not in name, "Invalid name %r" % name
     tmp = None
     try:
-        tmp = tempfile.TemporaryDirectory()
-        yield join(tmp.name, name)
+        tmp = tempfile.mkdtemp()
+        yield join(tmp, name)
     finally:
-        if tmp and exists(tmp.name):
-            tmp.cleanup()
+        if tmp and exists(tmp):
+            shutil.rmtree(tmp)
 
 
 class UpdateStatus(object):
