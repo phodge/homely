@@ -1,17 +1,17 @@
 import contextlib
-import subprocess
 import os
 import re
+import shutil
+import subprocess
 import tempfile
-from itertools import chain
 from functools import partial
-from os.path import join, exists
+from itertools import chain
+from os.path import exists, join
 
 import simplejson
 
 from homely._errors import JsonError
 from homely._vcs import Repo, fromdict
-
 
 try:
     import asyncio
@@ -524,7 +524,6 @@ def filereplacer(filepath):
     If the context block raises a NoChangesNeeded exception, then any changes
     to tmpfile are discarded.
     """
-    import shutil
     # create the tmp dir if it doesn't exist yet
     tmpdir = join(ROOT, 'tmp')
     os.makedirs(tmpdir, mode=0o700, exist_ok=True)

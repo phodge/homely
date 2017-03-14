@@ -1,6 +1,7 @@
 import os
 
 import simplejson
+
 from homely._errors import CleanupConflict, CleanupObstruction, HelperError
 from homely._ui import note, warn
 from homely._utils import (ENGINE2_CONFIG_PATH, FactConfig, RepoInfo,
