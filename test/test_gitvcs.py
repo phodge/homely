@@ -1,9 +1,8 @@
-import re
 import os
+import re
 from subprocess import check_call
 
 from pytest import contents
-
 
 GIT = [
     'git',

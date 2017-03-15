@@ -1,10 +1,13 @@
-import pytest
-import sys
-import time
 import functools
 import os
 import shutil
+import sys
 import tempfile
+import time
+
+import pytest
+
+from homely._utils import opentext
 
 
 def withtmpdir(func):

@@ -1,8 +1,8 @@
 import os
 import re
 import sys
-from subprocess import Popen, STDOUT, TimeoutExpired
 from contextlib import contextmanager
+from subprocess import STDOUT, Popen, TimeoutExpired
 
 from pytest import withtmpdir
 
