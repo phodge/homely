@@ -31,7 +31,8 @@ def withtmpdir(func):
         tmpdir = None
         try:
             tmpdir = tempfile.mkdtemp()
-            yield from func(*args, tmpdir=tmpdir, **kwargs)
+            for item in func(*args, tmpdir=tmpdir, **kwargs):
+                yield item
         finally:
             if tmpdir and os.path.exists(tmpdir):
                 shutil.rmtree(tmpdir)
