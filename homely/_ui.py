@@ -119,6 +119,32 @@ class dirty(warn):
     sep = '!!!'
 
 
+def _writepidfile():
+    if sys.version_info[0] < 3:
+        # Note: python2 doesn't have a way to open a file in 'x' mode so we just have to accept
+        # that a race condition is possible, although unlikely.
+        if not os.path.exists(RUNFILE):
+            with open(RUNFILE, 'w') as f:
+                f.write(str(os.getpid()))
+            return True
+        with open(RUNFILE) as f:
+            warn("Update is already running (PID={})".format(f.read().strip()))
+        return False
+
+    # python3 allows us to create the pid file without race conditions
+    try:
+        with open(RUNFILE, 'x') as f:
+            f.write(str(os.getpid()))
+        return True
+    except FileExistsError:
+        with open(RUNFILE, 'r') as f:
+            pid = f.read().strip()
+        warn("Update is already running (PID={})".format(pid))
+        return False
+
+
+
+
 def run_update(infos, pullfirst, only=None, cancleanup=None):
     from homely._engine2 import initengine, resetengine, setrepoinfo
 
@@ -130,14 +156,7 @@ def run_update(infos, pullfirst, only=None, cancleanup=None):
     global _CURRENT_REPO
     errors = False
 
-    # create the runfile now
-    try:
-        with open(RUNFILE, 'x') as f:
-            f.write(str(os.getpid()))
-    except FileExistsError:
-        with open(RUNFILE, 'r') as f:
-            pid = f.read().strip()
-        warn("Update is already running (PID={})".format(pid))
+    if not _writepidfile():
         return False
 
     isfullupdate = False
