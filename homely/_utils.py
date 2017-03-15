@@ -3,6 +3,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 from functools import partial
 from itertools import chain
@@ -17,6 +18,19 @@ try:
     import asyncio
 except ImportError:
     asyncio = None
+
+try:
+    # python3.3+
+    from importlib.machinery import SourceFileLoader
+
+    def _loadmodule(name, path):
+        return SourceFileLoader(name, path).load_module()
+except ImportError:
+    # python2
+    import imp
+
+    def _loadmodule(name, path):
+        return imp.load_source(name, path)
 
 
 ROOT = join(os.environ['HOME'], '.homely')
