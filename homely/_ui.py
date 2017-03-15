@@ -141,9 +141,9 @@ def run_update(infos, pullfirst, only=None, cancleanup=None):
         return False
 
     isfullupdate = False
-    if (cancleanup
-            and (not len(only))
-            and len(infos) == RepoListConfig().repo_count()):
+    if (cancleanup and
+            (not len(only)) and
+            len(infos) == RepoListConfig().repo_count()):
         isfullupdate = True
 
         # remove the fail file if it is still hanging around

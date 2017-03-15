@@ -58,9 +58,9 @@ def tmpdir(request):
 def HOME(tmpdir):
     home = os.path.join(tmpdir, 'john')
     os.mkdir(home)
-    # NOTE: homely._utils makes use of os.environ['HOME'], so we need to destroy any homely modules
-    # that may have imported things based on this ... essentially we blast away the entire module
-    # and reload it from scratch
+    # NOTE: homely._utils makes use of os.environ['HOME'], so we need to
+    # destroy any homely modules that may have imported things based on this.
+    # Essentially we blast away the entire module and reload it from scratch.
     for name in list(sys.modules.keys()):
         if name.startswith('homely.'):
             sys.modules.pop(name, None)
