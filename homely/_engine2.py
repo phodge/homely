@@ -212,7 +212,7 @@ class Engine(object):
         # another way of keeping track of things we've claimed
         self._claims = set()
 
-        try:
+        if os.path.isfile(cfgpath):
             with open(cfgpath, 'r') as f:
                 raw = f.read()
                 data = simplejson.loads(raw)
@@ -231,8 +231,6 @@ class Engine(object):
                 for path in data.get('paths_created', []):
                     if path in self._old_paths_owned:
                         self._created.add(path)
-        except FileNotFoundError:
-            pass
 
     def _savecfg(self):
         # start with the old cleaners
