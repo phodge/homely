@@ -292,7 +292,9 @@ class JsonConfig(object):
 
     def writejson(self):
         # make dirs needed for config file
-        os.makedirs(os.path.dirname(self.jsonpath), mode=0o755, exist_ok=True)
+        parentdir = os.path.dirname(self.jsonpath)
+        if not os.path.exists(parentdir):
+            os.makedirs(parentdir, mode=0o755)
         # write the config file now
         dumped = simplejson.dumps(self.jsondata, indent=' ' * 4)
         with open(self.jsonpath, 'w') as f:
@@ -543,7 +545,8 @@ def filereplacer(filepath):
     """
     # create the tmp dir if it doesn't exist yet
     tmpdir = join(ROOT, 'tmp')
-    os.makedirs(tmpdir, mode=0o700, exist_ok=True)
+    if not os.path.exists(tmpdir):
+        os.makedirs(tmpdir, mode=0o700)
     tmpname = join(tmpdir, os.path.basename(filepath))
     try:
         if exists(filepath):
