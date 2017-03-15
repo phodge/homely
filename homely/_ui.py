@@ -420,7 +420,11 @@ def setcurrentrepo(info):
 def _write(path, content):
     with open(path + ".new", 'w') as f:
         f.write(content)
-    os.replace(path + ".new", path)
+    if sys.version_info[0] < 3:
+        # use the less-reliable os.rename() on python2
+        os.rename(path + ".new", path)
+    else:
+        os.replace(path + ".new", path)
 
 
 _PREV_SECTION = []
