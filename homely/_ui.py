@@ -4,7 +4,6 @@ import time
 from contextlib import contextmanager
 from datetime import datetime
 from functools import partial
-from importlib.machinery import SourceFileLoader
 
 import homely._utils
 from homely._errors import ERR_NO_SCRIPT, ConnectionError, InputError
@@ -203,9 +202,8 @@ def run_update(infos, pullfirst, only=None, cancleanup=None):
                 if len(only):
                     engine.onlysections(only)
 
-                source = SourceFileLoader('HOMELY', pyscript)
                 try:
-                    source.load_module()
+                    homely._utils._loadmodule('HOMELY', pyscript)
                 except Exception as err:
                     import traceback
                     tb = traceback.format_exc()
