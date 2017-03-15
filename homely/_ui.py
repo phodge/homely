@@ -347,7 +347,7 @@ def addfromremote(repo, dest_path):
     return info, False
 
 
-def yesno(name, prompt, default=None, *, recommended=None, noprompt=None):
+def yesno(name, prompt, default=None, recommended=None, noprompt=None):
     assert default in (None, True, False)
     assert recommended in (None, True, False)
     assert noprompt in (None, True, False)
