@@ -82,10 +82,10 @@ def contents(path, new_content=None, strip=True):
             assert stripped[-1] == ''
             new_content = '\n'.join(stripped)
 
-        with open(path, 'w', newline="") as f:
+        with opentext(path, 'w') as f:
             f.write(new_content)
     assert os.path.exists(path)
-    with open(path, 'r', newline="") as f:
+    with opentext(path, 'r') as f:
         return f.read()
 
 
