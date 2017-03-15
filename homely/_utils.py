@@ -32,6 +32,15 @@ except ImportError:
     def _loadmodule(name, path):
         return imp.load_source(name, path)
 
+if sys.version_info[0] < 3:
+    def opentext(path, mode, *args, **kwargs):
+        if 'r' in mode:
+            mode = "U" + mode
+        return open(path, mode, *args, **kwargs)
+else:
+    # for python3, we open text files with universal newline support
+    opentext = partial(open, newline="")
+
 
 ROOT = join(os.environ['HOME'], '.homely')
 REPO_CONFIG_PATH = join(ROOT, 'repos.json')
@@ -551,9 +560,9 @@ def filereplacer(filepath):
     try:
         if exists(filepath):
             shutil.copy2(filepath, tmpname)
-        with open(tmpname, 'w', newline="") as tmp:
+        with opentext(tmpname, 'w') as tmp:
             if os.path.exists(filepath):
-                with open(filepath, 'r', newline="") as orig:
+                with opentext(filepath, 'r') as orig:
                     NL = "\n"
                     origlines = []
                     firstline = None
