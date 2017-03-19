@@ -1,4 +1,5 @@
 import os
+import sys
 
 import simplejson
 from pytest import contents, gettmpfilepath
@@ -577,7 +578,10 @@ def test_writefile_usage(tmpdir):
     homely._engine2._ENGINE = e
     data = {"z": [3, 4, 5, True], "y": "Hello world", "x": None}
     with writefile(f3) as f:
-        f.write(simplejson.dumps(data))
+        if sys.version_info[0] < 3:
+            f.write(simplejson.dumps(data, ensure_ascii=False))
+        else:
+            f.write(simplejson.dumps(data))
     e.cleanup(e.RAISE)
     del e
     assert os.path.exists(f3)
