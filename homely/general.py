@@ -56,7 +56,7 @@ def section(func):
 def writefile(filename):
     stream = None
     try:
-        stream = io.StringIO('foo')
+        stream = io.StringIO()
         yield stream
         stream.seek(0)
         getengine().run(WriteFile(_homepath2real(filename), stream.read()))
