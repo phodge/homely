@@ -80,12 +80,10 @@ class WriteFile(Helper):
     def isdone(self):
         if os.path.islink(self._filename):
             return False
-        try:
+        if os.path.exists(self._filename):
             with open(self._filename, 'r') as f:
                 if f.read() == self._contents:
                     return True
-        except FileNotFoundError:
-            pass
         return False
 
     def makechanges(self):
