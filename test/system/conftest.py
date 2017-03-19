@@ -24,7 +24,7 @@ def _waitfor(process, timeout):
 
 def HOMELY(command):
     return [
-        'python3',
+        'python',
         '-m',
         'homely._cli',
         command,
