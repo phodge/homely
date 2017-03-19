@@ -2,9 +2,24 @@ import os
 import re
 import sys
 from contextlib import contextmanager
-from subprocess import STDOUT, Popen, TimeoutExpired
+from subprocess import STDOUT, Popen
 
 from pytest import withtmpdir
+
+try:
+    from subprocess import TimeoutExpired
+except ImportError:
+    class TimeoutExpired(Exception):
+        # nothing will raise this exception, we just define it here to prevent
+        # a NameError in python2
+        pass
+
+
+def _waitfor(process, timeout):
+    # this function exists to provide python2/3 compatibility. Python2 doesn't
+    # allow passing a timeout to process.wait() and also doesn't have the
+    # TimeoutExpired exception
+    return process.wait() if sys.version_info[0] < 3 else process.wait(timeout)
 
 
 def HOMELY(command):
@@ -74,7 +89,7 @@ def getsystemfn(homedir):
     - it sets env's $HOME to the specified dir
     - it modifies $PYTHONPATH to include this version of the homely source code
     - it raises an exception if the command takes longer than 1 second to
-      complete
+      complete (python3 only)
     - it raises an exception if the command doesn't exit(0) or
       exit(expecterror)
     """
@@ -92,7 +107,7 @@ def getsystemfn(homedir):
                             stdout=stdout,
                             stderr=STDOUT)
                 try:
-                    returncode = sub.wait(1)
+                    returncode = _waitfor(sub, 1)
                 except TimeoutExpired:
                     returncode = '<KILLED>'
                     sub.kill()
@@ -161,8 +176,8 @@ def getjobstartfn(homedir):
                 retval = proc.poll()
                 if retval is None:
                     try:
-                        # give the process up to 2 seconds to finish
-                        retval = proc.wait(1)
+                        # give the process a tiny bit of time to finish
+                        retval = _waitfor(proc, 1)
                     except TimeoutExpired:
                         # kill the background process if it didn't finish
                         retval = '<KILLED>'
