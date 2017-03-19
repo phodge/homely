@@ -3,6 +3,7 @@ import sys
 import time
 
 from click import UsageError, argument, echo, group, option, version_option
+
 from homely import version
 from homely._errors import (ERR_NO_COMMITS, ERR_NOT_A_REPO, JsonError,
                             NotARepo, RepoHasNoCommitsError)
@@ -293,11 +294,19 @@ def autoupdate(**kwargs):
     assert status in (UpdateStatus.OK,
                       UpdateStatus.NEVER,
                       UpdateStatus.NOCONN)
+
+    oldcwd = os.getcwd()
     import daemon
     with daemon.DaemonContext(), open(OUTFILE, 'w') as f:
         try:
             from homely._ui import setstreams
             setstreams(f, f)
+
+            # we need to chdir back to the old working directory or  imports
+            # will be broken!
+            if sys.version_info[0] < 3:
+                os.chdir(oldcwd)
+
             cfg = RepoListConfig()
             run_update(list(cfg.find_all()),
                        pullfirst=True,
@@ -338,3 +347,7 @@ def main():
             asyncio.get_event_loop().close()
         except ImportError:
             pass
+
+
+if __name__ == '__main__':
+    main()

@@ -2,9 +2,8 @@ import os
 import shutil
 
 import homely._vcs
-from homely._utils import _expandpath
 from homely._ui import note
-
+from homely._utils import _expandpath
 
 PREFIX = 'homely.test.repo://'
 MARKERFILE = 'homely.test.repo'

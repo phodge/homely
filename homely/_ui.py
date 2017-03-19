@@ -4,7 +4,6 @@ import time
 from contextlib import contextmanager
 from datetime import datetime
 from functools import partial
-from importlib.machinery import SourceFileLoader
 
 import homely._utils
 from homely._errors import ERR_NO_SCRIPT, ConnectionError, InputError
@@ -119,6 +118,32 @@ class dirty(warn):
     sep = '!!!'
 
 
+def _writepidfile():
+    if sys.version_info[0] < 3:
+        # Note: python2 doesn't have a way to open a file in 'x' mode so we just have to accept
+        # that a race condition is possible, although unlikely.
+        if not os.path.exists(RUNFILE):
+            with open(RUNFILE, 'w') as f:
+                f.write(str(os.getpid()))
+            return True
+        with open(RUNFILE) as f:
+            warn("Update is already running (PID={})".format(f.read().strip()))
+        return False
+
+    # python3 allows us to create the pid file without race conditions
+    try:
+        with open(RUNFILE, 'x') as f:
+            f.write(str(os.getpid()))
+        return True
+    except FileExistsError:
+        with open(RUNFILE, 'r') as f:
+            pid = f.read().strip()
+        warn("Update is already running (PID={})".format(pid))
+        return False
+
+
+
+
 def run_update(infos, pullfirst, only=None, cancleanup=None):
     from homely._engine2 import initengine, resetengine, setrepoinfo
 
@@ -130,20 +155,13 @@ def run_update(infos, pullfirst, only=None, cancleanup=None):
     global _CURRENT_REPO
     errors = False
 
-    # create the runfile now
-    try:
-        with open(RUNFILE, 'x') as f:
-            f.write(str(os.getpid()))
-    except FileExistsError:
-        with open(RUNFILE, 'r') as f:
-            pid = f.read().strip()
-        warn("Update is already running (PID={})".format(pid))
+    if not _writepidfile():
         return False
 
     isfullupdate = False
-    if (cancleanup
-            and (not len(only))
-            and len(infos) == RepoListConfig().repo_count()):
+    if (cancleanup and
+            (not len(only)) and
+            len(infos) == RepoListConfig().repo_count()):
         isfullupdate = True
 
         # remove the fail file if it is still hanging around
@@ -184,9 +202,8 @@ def run_update(infos, pullfirst, only=None, cancleanup=None):
                 if len(only):
                     engine.onlysections(only)
 
-                source = SourceFileLoader('HOMELY', pyscript)
                 try:
-                    source.load_module()
+                    homely._utils._loadmodule('HOMELY', pyscript)
                 except Exception as err:
                     import traceback
                     tb = traceback.format_exc()
@@ -328,7 +345,7 @@ def addfromremote(repo, dest_path):
     return info, False
 
 
-def yesno(name, prompt, default=None, *, recommended=None, noprompt=None):
+def yesno(name, prompt, default=None, recommended=None, noprompt=None):
     assert default in (None, True, False)
     assert recommended in (None, True, False)
     assert noprompt in (None, True, False)
@@ -401,7 +418,11 @@ def setcurrentrepo(info):
 def _write(path, content):
     with open(path + ".new", 'w') as f:
         f.write(content)
-    os.replace(path + ".new", path)
+    if sys.version_info[0] < 3:
+        # use the less-reliable os.rename() on python2
+        os.rename(path + ".new", path)
+    else:
+        os.replace(path + ".new", path)
 
 
 _PREV_SECTION = []

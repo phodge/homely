@@ -1,22 +1,46 @@
 import contextlib
-import subprocess
 import os
 import re
+import shutil
+import subprocess
+import sys
 import tempfile
-from itertools import chain
 from functools import partial
-from os.path import join, exists
+from itertools import chain
+from os.path import exists, join
 
 import simplejson
 
 from homely._errors import JsonError
 from homely._vcs import Repo, fromdict
 
-
 try:
     import asyncio
+    from homely._asyncioutils import _runasync
 except ImportError:
     asyncio = None
+
+try:
+    # python3.3+
+    from importlib.machinery import SourceFileLoader
+
+    def _loadmodule(name, path):
+        return SourceFileLoader(name, path).load_module()
+except ImportError:
+    # python2
+    import imp
+
+    def _loadmodule(name, path):
+        return imp.load_source(name, path)
+
+if sys.version_info[0] < 3:
+    def opentext(path, mode, *args, **kwargs):
+        if 'r' in mode:
+            mode = "U" + mode
+        return open(path, mode, *args, **kwargs)
+else:
+    # for python3, we open text files with universal newline support
+    opentext = partial(open, newline="")
 
 
 ROOT = join(os.environ['HOME'], '.homely')
@@ -173,66 +197,6 @@ def run(cmd, stdout=None, stderr=None, **kwargs):
             devnull.close()
 
 
-def _runasync(stdoutfilter, stderrfilter, cmd, **kwargs):
-    assert asyncio is not None
-
-    @asyncio.coroutine
-    def _runandfilter(loop, cmd, **kwargs):
-        def factory():
-            return FilteringProtocol(asyncio.streams._DEFAULT_LIMIT, loop)
-
-        class FilteringProtocol(asyncio.subprocess.SubprocessStreamProtocol):
-            _stdout = b""
-            _stderr = b""
-
-            def pipe_data_received(self, fd, data):
-                if fd == 1:
-                    if stdoutfilter:
-                        self._stdout = stdoutfilter(self._stdout + data, False)
-                    else:
-                        self.stdout.feed_data(data)
-                elif fd == 2:
-                    if stderrfilter:
-                        self._stderr = stderrfilter(self._stderr + data, False)
-                    else:
-                        self.stderr.feed_data(data)
-                else:
-                    raise Exception("Unexpected fd %r" % fd)
-
-            def pipe_connection_lost(self, fd, exc):
-                if fd == 1:
-                    if stdoutfilter and self._stdout:
-                        stdoutfilter(self._stdout, True)
-                elif fd == 2:
-                    if stderrfilter and self._stderr:
-                        stderrfilter(self._stderr, True)
-                return super().pipe_connection_lost(fd, exc)
-
-        transport, protocol = yield from loop.subprocess_exec(factory,
-                                                              *cmd,
-                                                              **kwargs)
-        process = asyncio.subprocess.Process(transport, protocol, loop)
-
-        # now wait for the process to complete
-        out, err = yield from process.communicate()
-        return process.returncode, out, err
-
-    _exception = None
-
-    def handleexception(loop, context):
-        nonlocal _exception
-        if _exception is None:
-            _exception = context["exception"]
-
-    # FIXME: probably shouldn't be using the main loop here
-    loop = asyncio.get_event_loop()
-    loop.set_exception_handler(handleexception)
-    result = loop.run_until_complete(_runandfilter(loop, cmd, **kwargs))
-    if _exception:
-        raise _exception
-    return result
-
-
 def haveexecutable(name):
     exitcode = run(['which', name], stdout=False, stderr=False)[0]
     if exitcode == 0:
@@ -247,15 +211,18 @@ class JsonConfig(object):
     jsondata = None
 
     def __init__(self):
+        # load up the default json until we know that we can load something from the file
+        self.jsondata = self.defaultjson()
+
+        if not os.path.exists(self.jsonpath):
+            return
         try:
             with open(self.jsonpath, 'r') as f:
                 data = f.read()
                 if not len(data):
-                    raise FileNotFoundError(None)
+                    return
                 self.jsondata = simplejson.loads(data)
                 self.checkjson()
-        except FileNotFoundError:
-            self.jsondata = self.defaultjson()
         except simplejson.JSONDecodeError:
             raise JsonError("%s does not contain valid JSON" % self.jsonpath)
 
@@ -275,7 +242,9 @@ class JsonConfig(object):
 
     def writejson(self):
         # make dirs needed for config file
-        os.makedirs(os.path.dirname(self.jsonpath), mode=0o755, exist_ok=True)
+        parentdir = os.path.dirname(self.jsonpath)
+        if not os.path.exists(parentdir):
+            os.makedirs(parentdir, mode=0o755)
         # write the config file now
         dumped = simplejson.dumps(self.jsondata, indent=' ' * 4)
         with open(self.jsonpath, 'w') as f:
@@ -524,17 +493,17 @@ def filereplacer(filepath):
     If the context block raises a NoChangesNeeded exception, then any changes
     to tmpfile are discarded.
     """
-    import shutil
     # create the tmp dir if it doesn't exist yet
     tmpdir = join(ROOT, 'tmp')
-    os.makedirs(tmpdir, mode=0o700, exist_ok=True)
+    if not os.path.exists(tmpdir):
+        os.makedirs(tmpdir, mode=0o700)
     tmpname = join(tmpdir, os.path.basename(filepath))
     try:
         if exists(filepath):
             shutil.copy2(filepath, tmpname)
-        with open(tmpname, 'w', newline="") as tmp:
-            try:
-                with open(filepath, 'r', newline="") as orig:
+        with opentext(tmpname, 'w') as tmp:
+            if os.path.exists(filepath):
+                with opentext(filepath, 'r') as orig:
                     NL = "\n"
                     origlines = []
                     firstline = None
@@ -547,16 +516,16 @@ def filereplacer(filepath):
                         origlines = chain([stripped],
                                           (l.rstrip('\r\n') for l in orig))
                     yield tmp, origlines, NL
-            except FileNotFoundError:
+            else:
                 yield tmp, None, "\n"
     except NoChangesNeeded:
-        with contextlib.suppress(FileNotFoundError):
+        if os.path.exists(tmpname):
             os.unlink(tmpname)
     except:
-        with contextlib.suppress(FileNotFoundError):
+        if os.path.exists(tmpname):
             os.unlink(tmpname)
         raise
-    with contextlib.suppress(FileNotFoundError):
+    if os.path.exists(filepath):
         os.unlink(filepath)
     os.rename(tmpname, filepath)
 
@@ -614,11 +583,11 @@ def tmpdir(name):
     assert '/' not in name, "Invalid name %r" % name
     tmp = None
     try:
-        tmp = tempfile.TemporaryDirectory()
-        yield join(tmp.name, name)
+        tmp = tempfile.mkdtemp()
+        yield join(tmp, name)
     finally:
-        if tmp and exists(tmp.name):
-            tmp.cleanup()
+        if tmp and exists(tmp):
+            shutil.rmtree(tmp)
 
 
 class UpdateStatus(object):

@@ -1,9 +1,8 @@
 import time
 from datetime import datetime
-from subprocess import Popen, STDOUT
+from subprocess import STDOUT, Popen
 
-from homely._utils import OUTFILE, getstatus, UpdateStatus
-
+from homely._utils import OUTFILE, UpdateStatus, getstatus
 
 _defaultcolors = {
     UpdateStatus.PAUSED: "information:priority",

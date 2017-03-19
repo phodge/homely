@@ -1,4 +1,5 @@
 import os
+import sys
 
 import simplejson
 from pytest import contents, gettmpfilepath
@@ -221,16 +222,19 @@ def test_lineinfile_usage(tmpdir):
     assert contents(f1) == "\n\nAAA\n\n\n"
 
     # make sure LineInFile() respects existing line endings
-    # - windows
-    contents(f1, "AAA\r\nBBB\r\n")
-    e = Engine(cfgpath)
-    e.run(LineInFile(f1, "CCC"))
-    assert contents(f1) == "AAA\r\nBBB\r\nCCC\r\n"
-    # - mac
-    contents(f1, "AAA\rBBB\r")
-    e = Engine(cfgpath)
-    e.run(LineInFile(f1, "BBB", WHERE_TOP))
-    assert contents(f1) == "BBB\rAAA\r"
+    # NOTE: in python2 we always use Universal Newlines when reading the file,
+    # which tricks us into using "\n" when writing the file
+    if sys.version_info[0] > 2:
+        # - windows
+        contents(f1, "AAA\r\nBBB\r\n")
+        e = Engine(cfgpath)
+        e.run(LineInFile(f1, "CCC"))
+        assert contents(f1) == "AAA\r\nBBB\r\nCCC\r\n"
+        # - mac
+        contents(f1, "AAA\rBBB\r")
+        e = Engine(cfgpath)
+        e.run(LineInFile(f1, "BBB", WHERE_TOP))
+        assert contents(f1) == "BBB\rAAA\r"
 
     # make sure a file that starts empty is left empty after cleanup
     contents(f1, "")
@@ -577,7 +581,10 @@ def test_writefile_usage(tmpdir):
     homely._engine2._ENGINE = e
     data = {"z": [3, 4, 5, True], "y": "Hello world", "x": None}
     with writefile(f3) as f:
-        f.write(simplejson.dumps(data))
+        if sys.version_info[0] < 3:
+            f.write(simplejson.dumps(data, ensure_ascii=False))
+        else:
+            f.write(simplejson.dumps(data))
     e.cleanup(e.RAISE)
     del e
     assert os.path.exists(f3)
