@@ -384,8 +384,10 @@ def yesno(name, prompt, default=None, recommended=None, noprompt=None):
     if recommended is not None:
         rec = "[recommended={}] ".format("Y" if recommended else "N")
 
+    input_ = raw_input if sys.version_info[0] < 3 else input
+
     while True:
-        answer = input("{} {}[{}]: ".format(prompt, rec, options))
+        answer = input_("{} {} {} : ".format(prompt, rec, options))
         if answer == "" and default is not None:
             retval = default
             break
