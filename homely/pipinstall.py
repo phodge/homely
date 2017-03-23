@@ -9,7 +9,7 @@ from homely._utils import haveexecutable, run
 __all__ = ["pipinstall"]
 
 
-def pipinstall(packagename, pips=None, *, trypips=[]):
+def pipinstall(packagename, pips=None, trypips=[]):
     """
     Install packages from pip.
 
