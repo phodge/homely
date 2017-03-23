@@ -78,7 +78,7 @@ class note(object):
     def _getstream(self):
         return _OUTSTREAM
 
-    def _log(self, stream, message, dash=None):
+    def _unicodelog(self, stream, message, dash=None):
         indent = ('  ' * (_INDENT - 1)) if _INDENT > 0 else ''
         dash = dash or (self.dash if _INDENT > 0 else '')
         stream.write('[{}] {} {}{}{}\n'.format(
@@ -88,6 +88,13 @@ class note(object):
             _NOTECOUNT[self.__class__.__name__] += 1
         except KeyError:
             _NOTECOUNT[self.__class__.__name__] = 1
+
+    def _asciilog(self, stream, message, dash=None):
+        if isinstance(message, unicode):
+            message = message.encode('utf-8')
+        return self._unicodelog(stream, message, dash)
+
+    _log = _asciilog if sys.version_info[0] < 3 else _unicodelog
 
     def __enter__(self):
         global _INDENT
