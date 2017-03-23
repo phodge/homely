@@ -218,9 +218,12 @@ def run_update(infos, pullfirst, only=None, cancleanup=None):
 
         setrepoinfo(None)
 
-        if isfullupdate and not _NOTECOUNT.get('warn'):
-            _write(SECTIONFILE, "<cleaning up>")
-            engine.cleanup(engine.WARN)
+        if isfullupdate:
+            if _NOTECOUNT.get('warn'):
+                note("Automatic Cleanup not possible due to previous warnings")
+            else:
+                _write(SECTIONFILE, "<cleaning up>")
+                engine.cleanup(engine.WARN)
 
         resetengine()
         os.unlink(SECTIONFILE)
