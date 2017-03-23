@@ -88,7 +88,8 @@ class WriteFile(Helper):
         return False
 
     def makechanges(self):
-        assert not os.path.islink(self._filename)
+        if os.path.islink(self._filename):
+            raise Exception("Path is already a symlink")
         with open(self._filename, 'w') as f:
             f.write(self._contents)
 
