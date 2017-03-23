@@ -120,9 +120,7 @@ class PIPInstall(Helper):
 
     def isdone(self):
         if self._pipcmd is None:
-            if not self._mustinstall:
-                return True
-            raise HelperError("%s executable not found" % self._pipcmd)
+            return not self._mustinstall
         return _haspkg(self._pipcmd, self._name)
 
     @property
@@ -131,7 +129,7 @@ class PIPInstall(Helper):
 
     def makechanges(self):
         if self._pipcmd is None:
-            raise HelperError("%s executable not found" % self._pipcmd)
+            raise HelperError("%s executable not found" % self._pip)
         cmd = [
             self._pipcmd,
             'install',
