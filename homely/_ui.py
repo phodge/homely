@@ -220,7 +220,7 @@ def run_update(infos, pullfirst, only=None, cancleanup=None):
 
         if isfullupdate and not _NOTECOUNT.get('warn'):
             _write(SECTIONFILE, "<cleaning up>")
-            engine.cleanup(engine.RAISE)
+            engine.cleanup(engine.WARN)
 
         resetengine()
         os.unlink(SECTIONFILE)

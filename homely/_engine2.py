@@ -527,7 +527,8 @@ class Engine(object):
             if conflicts == self.POSTPONE:
                 return _postpone()
             assert conflicts == self.WARN
-            warn("Conflict cleaning up path: {}".format(path))
+            warn("Couldn't clean up path {}; it is still needed for {}"
+                 .format(path, wantedby))
             return _discard()
 
         # if nothing else wants this path, clean it up now
