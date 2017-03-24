@@ -206,6 +206,9 @@ class InstallPackage(Helper):
         for method in _METHODS:
             localname = self._methods.get(method, self._name)
 
+            if localname is False:
+                continue
+
             def getdefaultcmd(name):
                 return [method, 'install', name]
 
