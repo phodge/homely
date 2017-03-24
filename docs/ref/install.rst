@@ -25,12 +25,16 @@ offers the following advantages:
     the alias used by your favourite package manager.
 ``apt=None``
     The alias to use when install using ``apt-get install``. Defaults to ``name``.
+    Use ``False`` to stop ``installpkg()`` trying to install with ``apt-get`` altogether.
 ``brew=None``
     The alias to use when install using ``brew install``. Defaults to ``name``.
+    Use ``False`` to stop ``installpkg()`` trying to install with ``brew`` altogether.
 ``yum=None``
     The alias to use when install using ``yum install``. Defaults to ``name``.
+    Use ``False`` to stop ``installpkg()`` trying to install with ``yum`` altogether.
 ``port=None``
     The alias to use when install using ``port install``. Defaults to ``name``.
+    Use ``False`` to stop ``installpkg()`` trying to install with ``port`` altogether.
 
 When the ``yum``, ``apt-get`` or ``port`` package managers are being used, they
 will be run as root using ``sudo``. This means the call to ``installpkg()``
