@@ -11,12 +11,12 @@ also include a few calls to e.g. ``brew install ...`` to install your favourite
 software packages. The ``installpkg()`` function can do this for you, and also
 offers the following advantages:
 
-* Automaticaly chooses between ``brew``, ``yum`` or ``apt`` depending which on
-  what's available on your operating system.
+* Automaticaly chooses between ``brew``, ``yum``, ``port`` or ``apt``
+  depending on what's available in your $PATH.
 * Won't hang on a ``sudo`` password prompt when there's no TTY available.
 * :any:`automatic_cleanup`!
   
-``installpkg(name=None, *, apt=None, brew=None, yum=None)``
+``installpkg(name=None, *, apt=None, brew=None, yum=None, port=None)``
 
 ``name``
     The name of the package you want to install. If the package goes by
@@ -29,11 +29,13 @@ offers the following advantages:
     The alias to use when install using ``brew install``. Defaults to ``name``.
 ``yum=None``
     The alias to use when install using ``yum install``. Defaults to ``name``.
+``port=None``
+    The alias to use when install using ``port install``. Defaults to ``name``.
 
-When the ``yum`` or ``apt-get`` package managers are being used, they will be
-run as root using ``sudo``. This means the call to ``installpkg()`` will fail
-if you don't have ``sudo`` privileges, or when :any:`homely-update` is run
-without a TTY or with the ``--neverprompt`` flag.
+When the ``yum``, ``apt-get`` or ``port`` package managers are being used, they
+will be run as root using ``sudo``. This means the call to ``installpkg()``
+will fail if you don't have ``sudo`` privileges, or when :any:`homely-update`
+is run without a TTY or with the ``--neverprompt`` flag.
 
 Note that ``installpkg()`` is lazy and doesn't actually check with the package
 manager to see if a particular package is installed - it just checks to see if
