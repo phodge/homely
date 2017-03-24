@@ -1,5 +1,5 @@
-import io
 import os
+import sys
 from contextlib import contextmanager
 
 from homely._engine2 import Engine, Helper, getengine, getrepoinfo
@@ -13,6 +13,11 @@ from homely._utils import _homepath2real, _loadmodule, _repopath2real
 from homely.files import (WHERE_ANY, WHERE_BOT, WHERE_END, WHERE_TOP,  # noqa
                           CleanBlockInFile, CleanLineInFile, blockinfile,
                           download, lineinfile, mkdir, symlink)
+
+if sys.version_info[0] < 3:
+    from StringIO import StringIO
+else:
+    from io import StringIO
 
 
 def run(updatehelper):
@@ -55,7 +60,7 @@ def section(func):
 def writefile(filename):
     stream = None
     try:
-        stream = io.StringIO()
+        stream = StringIO()
         yield stream
         stream.seek(0)
         getengine().run(WriteFile(_homepath2real(filename), stream.read()))
