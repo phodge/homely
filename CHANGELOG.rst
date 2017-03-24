@@ -3,6 +3,11 @@
 ===========
 
 
+NEW
+
+* Fixed `#22 <https://github.com/phodge/homely/issues/22>`: pipinstall cleanup tries to wait for user prompt
+
+
 Version 0.13.0 - 25 Mar 2017
 ----------------------------
 
