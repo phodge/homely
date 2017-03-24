@@ -50,8 +50,13 @@ def _globals(command):
     return proxy
 
 
+version_message = (
+    "%(prog)s {}, running on python {}.{}.{}"
+    .format(version, *sys.version_info[0:3])
+)
+
 @group()
-@version_option(version, message="%(prog)s %(version)s")
+@version_option(message=version_message)
 def homely():
     """
     Single-command dotfile installation.
