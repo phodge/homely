@@ -55,7 +55,9 @@ def main():
     files = ['dist/homely-{}.tar.gz'.format(tag)]
     files.extend(glob.glob('dist/homely-{}-py*.whl'.format(tag)))
     check_call(['twine', 'upload'] + files)
-    print("New version published - don't forget to 'git push --tags'")
+    print("NEW VERSION PUBLISHED!")
+    check_call(['git', 'push'])
+    check_call(['git', 'push', '--tags'])
 
 
 if __name__ == '__main__':
