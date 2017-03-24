@@ -3,6 +3,12 @@
 ===========
 
 
+NEW
+
+* Option to skip some package managers when using ``installpkg()`` (`#18 <https://github.com/phodge/homely/issues/18`)
+* Fixed `#21 <https://github.com/phodge/homely/issues/21>`: Traceback when cleaning up installpkg()
+
+
 Version 0.12.0 - 24 Mar 2017
 ----------------------------
 ---
