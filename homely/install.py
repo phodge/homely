@@ -8,7 +8,7 @@ from homely._utils import haveexecutable, isnecessarypath
 
 def installpkg(name, wantcmd=None, **methods):
     for key in methods:
-        assert key in InstallPackage.METHODS
+        assert key in _METHODS
 
     # FIXME: make sure the user specifies at least one way to install the thing
     getengine().run(InstallPackage(name, methods, wantcmd))
@@ -161,21 +161,20 @@ class InstallFromSource(Helper):
                 os.symlink(source, dest)
 
 
-class InstallPackage(Helper):
-    METHODS = ('brew', 'yum', 'port', 'apt')
-    _ASROOT = ('yum', 'port', 'apt')
-    _EXECUTABLES = {'apt': 'apt-get'}
-    _INSTALL = {
-        'apt': lambda name: ['apt-get', 'install', name,
-                             '--quiet', '--assume-yes'],
-        'yum': lambda name: ['yum', 'install', name, '--assumeyes'],
-    }
-    _UNINSTALL = {
-        'apt': lambda name: ['apt-get', 'remove', name,
-                             '--quiet', '--assume-yes'],
-        'yum': lambda name: ['yum', 'erase', name, '--assumeyes'],
-    }
+_METHODS = ('brew', 'yum', 'apt', 'port')
+_ASROOT = ('yum', 'port', 'apt')
+_INSTALL = {
+    'apt': lambda name: ['apt-get', 'install', name, '--quiet',
+                         '--assume-yes'],
+    'yum': lambda name: ['yum', 'install', name, '--assumeyes'],
+}
+_UNINSTALL = {
+    'apt': lambda name: ['apt-get', 'remove', name, '--quiet', '--assume-yes'],
+    'yum': lambda name: ['yum', 'erase', name, '--assumeyes'],
+}
 
+
+class InstallPackage(Helper):
     def __init__(self, name, methods, wantcmd):
         super(InstallPackage, self).__init__()
         self._name = name
@@ -193,7 +192,7 @@ class InstallPackage(Helper):
 
     @property
     def description(self):
-        how = [m for m in self.METHODS if self._methods.get(m, True)]
+        how = [m for m in _METHODS if self._methods.get(m, True)]
         return "Install package %s using %s" % (self._name, how)
 
     def getclaims(self):
@@ -204,19 +203,19 @@ class InstallPackage(Helper):
 
     def makechanges(self):
         # try each method
-        for method in self.METHODS:
-            cmdname = self._EXECUTABLES.get(method, method)
+        for method in _METHODS:
             localname = self._methods.get(method, self._name)
-
-            # see if the required executable is installed
-            if not haveexecutable(cmdname):
-                continue
 
             def getdefaultcmd(name):
                 return [method, 'install', name]
 
-            cmd = self._INSTALL.get(method, getdefaultcmd)(localname)
-            if method in self._ASROOT:
+            cmd = _INSTALL.get(method, getdefaultcmd)(localname)
+
+            # see if the required executable is installed
+            if not haveexecutable(cmd[0]):
+                continue
+
+            if method in _ASROOT:
                 if not allowinteractive():
                     raise HelperError("Need to be able to escalate to root")
                 cmd.insert(0, 'sudo')
@@ -253,7 +252,7 @@ class PackageCleaner(Cleaner):
 
     def isneeded(self):
         # look for any of the facts saying we installed these things
-        for method in InstallPackage.METHODS:
+        for method in _METHODS:
             localname = self._methods.get(method, self._name)
             factname = 'InstalledPackage:%s:%s' % (method, localname)
             if self._getfact(factname, False):
@@ -262,7 +261,7 @@ class PackageCleaner(Cleaner):
 
     def makechanges(self):
         # look for any of the facts saying we installed these things
-        for method in InstallPackage.METHODS:
+        for method in _METHODS:
             localname = self._methods.get(method, self._name)
             factname = 'InstalledPackage:%s:%s' % (method, localname)
             if not self._getfact(factname, False):
@@ -271,8 +270,8 @@ class PackageCleaner(Cleaner):
             def defaultuninstall(name):
                 return [method, 'uninstall', name]
 
-            cmd = self._UNINSTALL.get(method, defaultuninstall)(localname)
-            if method in InstallPackage._ASROOT:
+            cmd = _UNINSTALL.get(method, defaultuninstall)(localname)
+            if method in _ASROOT:
                 if not allowinteractive():
                     raise HelperError("Need to be able to escalate to root")
                 cmd.insert(0, 'sudo')
