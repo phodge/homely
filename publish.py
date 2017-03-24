@@ -49,7 +49,8 @@ def main():
     # create the new tag
     check_call(['git', 'tag', tag, '-m', 'Tagged {}'.format(tag)])
     # build
-    check_call(['python3', 'setup.py', 'sdist', 'bdist_wheel'])
+    check_call(['python3', 'setup.py', 'sdist'])
+    check_call(['python3', 'setup.py', 'bdist_wheel', '--universal'])
     # upload
     files = ['dist/homely-{}.tar.gz'.format(tag)]
     files.extend(glob.glob('dist/homely-{}-py*.whl'.format(tag)))
