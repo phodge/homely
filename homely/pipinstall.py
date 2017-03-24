@@ -176,9 +176,8 @@ class PIPCleaner(Cleaner):
             'uninstall',
             self._name,
             '--disable-pip-version-check',
+            '--yes',
         ]
-        if not allowinteractive():
-            cmd.append('--yes')
         factname = 'pipinstall:%s:%s' % (self._pipcmd, self._name)
         try:
             system(cmd)
