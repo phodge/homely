@@ -1,0 +1,3 @@
+--exclude=build
+--exclude=_build
+--exclude=*.rst
