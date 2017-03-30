@@ -2,14 +2,14 @@ import os
 import sys
 import time
 
-from click import (ClickException, UsageError, argument, echo, group, option,
-                   version_option)
+from click import UsageError, argument, echo, group, option, version_option
 
 from homely import version
-from homely._errors import JsonError, RepoError
-from homely._ui import (PROMPT_ALWAYS, PROMPT_NEVER, addfromremote,
-                        allowinteractive, note, run_update, setallowpull,
-                        setverbose, setwantprompt, warn, yesno)
+from homely._errors import (ERR_NO_COMMITS, ERR_NOT_A_REPO, JsonError,
+                            NotARepo, RepoHasNoCommitsError)
+from homely._ui import (PROMPT_ALWAYS, PROMPT_NEVER, addfromremote, note,
+                        run_update, setallowpull, setverbose, setwantprompt,
+                        warn)
 from homely._utils import (FAILFILE, OUTFILE, PAUSEFILE, STATUSCODES, RepoInfo,
                            RepoListConfig, UpdateStatus, getstatus, mkcfgdir,
                            saveconfig)
@@ -50,8 +50,13 @@ def _globals(command):
     return proxy
 
 
+version_message = (
+    "%(prog)s {}, running on python {}.{}.{}"
+    .format(version, *sys.version_info[0:3])
+)
+
 @group()
-@version_option(version, message="%(prog)s %(version)s")
+@version_option(message=version_message)
 def homely():
     """
     Single-command dotfile installation.
@@ -82,9 +87,11 @@ def add(repo_path, dest_path):
         will be automatically derived from REPO_PATH.
     '''
     mkcfgdir()
-    repo = getrepohandler(repo_path)
-    if not repo:
-        raise ClickException("No handler for repo at %s" % repo_path)
+    try:
+        repo = getrepohandler(repo_path)
+    except NotARepo as err:
+        echo("ERROR: {}: {}".format(ERR_NOT_A_REPO, err.repo_path))
+        sys.exit(1)
 
     # if the repo isn't on disk yet, we'll need to make a local clone of it
     if repo.isremote:
@@ -92,12 +99,13 @@ def add(repo_path, dest_path):
     elif dest_path:
         raise UsageError("DEST_PATH is only for repos hosted online")
     else:
+        try:
+            repoid = repo.getrepoid()
+        except RepoHasNoCommitsError as err:
+            echo("ERROR: {}".format(ERR_NO_COMMITS))
+            sys.exit(1)
+        localrepo = RepoInfo(repo, repoid, None)
         needpull = False
-        localrepo = RepoInfo(
-            repo,
-            repo.getrepoid(),
-            None,
-        )
 
     # if we don't have a local repo, then there is nothing more to do
     if not localrepo:
@@ -106,9 +114,7 @@ def add(repo_path, dest_path):
     # remember this new local repo
     with saveconfig(RepoListConfig()) as cfg:
         cfg.add_repo(localrepo)
-    success = run_update([localrepo],
-                         pullfirst=needpull,
-                         cancleanup=True)
+    success = run_update([localrepo], pullfirst=needpull, cancleanup=True)
     if not success:
         sys.exit(1)
 
@@ -293,15 +299,23 @@ def autoupdate(**kwargs):
     assert status in (UpdateStatus.OK,
                       UpdateStatus.NEVER,
                       UpdateStatus.NOCONN)
+
+    oldcwd = os.getcwd()
     import daemon
     with daemon.DaemonContext(), open(OUTFILE, 'w') as f:
         try:
             from homely._ui import setstreams
             setstreams(f, f)
+
+            # we need to chdir back to the old working directory or  imports
+            # will be broken!
+            if sys.version_info[0] < 3:
+                os.chdir(oldcwd)
+
             cfg = RepoListConfig()
             run_update(list(cfg.find_all()),
-                        pullfirst=True,
-                        cancleanup=True)
+                       pullfirst=True,
+                       cancleanup=True)
         except Exception:
             import traceback
             f.write(traceback.format_exc())
@@ -329,7 +343,7 @@ def main():
     try:
         # FIXME: always ensure git is installed first
         homely()
-    except (Fatal, RepoError, JsonError) as err:
+    except (Fatal, JsonError) as err:
         echo("ERROR: %s" % err, err=True)
         sys.exit(1)
     finally:
@@ -338,3 +352,7 @@ def main():
             asyncio.get_event_loop().close()
         except ImportError:
             pass
+
+
+if __name__ == '__main__':
+    main()

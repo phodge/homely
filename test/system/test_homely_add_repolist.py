@@ -1,6 +1,59 @@
 import os
 
-from pytest import getsystemfn, TempRepo, contents, HOMELY, checkrepolist
+from pytest import HOMELY, TempRepo, checkrepolist, contents, getsystemfn
+
+
+def test_add_greenfield_repos(tmpdir, HOME):
+    """
+    Work or at least die with a helpful error message when ...
+    """
+    from homely._errors import ERR_NO_COMMITS, ERR_NOT_A_REPO, ERR_NO_SCRIPT
+
+    system = getsystemfn(HOME)
+
+    def _repolist():
+        cmd = HOMELY('repolist') + ['--format', '%(localpath)s']
+        return list(filter(None, system(cmd).strip().split("\n")))
+
+    # Target dir is not a git repo
+    notarepo = HOME + '/not_a_repo'
+    os.mkdir(notarepo)
+    contents(notarepo + '/HOMELY.py', "print('YES')\n")
+    output = system(HOMELY('add') + [notarepo], expecterror=1)
+    assert ERR_NOT_A_REPO in output
+    del notarepo, output
+    # this should have resulted in nothing being added to homely
+    assert not len(_repolist())
+
+    # Target dir doesn't have any commits
+    nocommits = HOME + '/nocommits'
+    os.mkdir(nocommits)
+    contents(nocommits + '/HOMELY.py', "print('YES')\n")
+    system(['git', 'init'], cwd=nocommits)
+    assert os.path.exists(nocommits + '/.git')
+    output = system(HOMELY('add') + [nocommits], expecterror=1)
+    assert ERR_NO_COMMITS in output
+    del nocommits, output
+    # this should have resulted in nothing being added to homely
+    assert not len(_repolist())
+
+    # Target dir doesn't have a HOMELY.py script - when we add a repo that
+    # doesn't have a HOMELY.py script we should raise an error and provide
+    # instructions on how to write a HOMELY.py script (and not try to do the
+    # homely update).
+    noscript = HOME + '/noscript'
+    os.mkdir(noscript)
+    readme = noscript + '/README.md'
+    contents(readme, "Hello world!\n")
+    system(['git', 'init'], cwd=noscript)
+    system(['git', 'config', 'user.name', "fred"], cwd=noscript)
+    system(['git', 'config', 'user.email', "fred@example"], cwd=noscript)
+    system(['git', 'add', 'README.md'], cwd=noscript)
+    system(['git', 'commit', '-m', "Added readme"], cwd=noscript)
+    output = system(HOMELY('add') + [noscript], expecterror=1)
+    assert ERR_NO_SCRIPT in output
+    # the repo should have added to homely
+    assert [noscript] == _repolist()
 
 
 def test_homely_add_repolist(tmpdir, HOME):

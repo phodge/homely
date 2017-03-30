@@ -1,19 +1,16 @@
 import os
 import sys
 import time
-from datetime import datetime
-from importlib.machinery import SourceFileLoader
 from contextlib import contextmanager
+from datetime import datetime
 from functools import partial
 
 import homely._utils
-from homely._errors import InputError, HelperError, ConnectionError
-from homely._utils import (
-    RepoInfo, RepoListConfig, RepoScriptConfig, tmpdir, UpdateStatus,
-    RUNFILE, FAILFILE, TIMEFILE, SECTIONFILE,
-)
+from homely._errors import ERR_NO_SCRIPT, ConnectionError, InputError
+from homely._utils import (FAILFILE, RUNFILE, SECTIONFILE, TIMEFILE, RepoInfo,
+                           RepoListConfig, RepoScriptConfig, UpdateStatus,
+                           tmpdir)
 from homely._vcs import Repo
-
 
 # try and get a function for quoting shell args
 try:
@@ -81,7 +78,7 @@ class note(object):
     def _getstream(self):
         return _OUTSTREAM
 
-    def _log(self, stream, message, dash=None):
+    def _unicodelog(self, stream, message, dash=None):
         indent = ('  ' * (_INDENT - 1)) if _INDENT > 0 else ''
         dash = dash or (self.dash if _INDENT > 0 else '')
         stream.write('[{}] {} {}{}{}\n'.format(
@@ -91,6 +88,13 @@ class note(object):
             _NOTECOUNT[self.__class__.__name__] += 1
         except KeyError:
             _NOTECOUNT[self.__class__.__name__] = 1
+
+    def _asciilog(self, stream, message, dash=None):
+        if isinstance(message, unicode):
+            message = message.encode('utf-8')
+        return self._unicodelog(stream, message, dash)
+
+    _log = _asciilog if sys.version_info[0] < 3 else _unicodelog
 
     def __enter__(self):
         global _INDENT
@@ -121,6 +125,32 @@ class dirty(warn):
     sep = '!!!'
 
 
+def _writepidfile():
+    if sys.version_info[0] < 3:
+        # Note: python2 doesn't have a way to open a file in 'x' mode so we just have to accept
+        # that a race condition is possible, although unlikely.
+        if not os.path.exists(RUNFILE):
+            with open(RUNFILE, 'w') as f:
+                f.write(str(os.getpid()))
+            return True
+        with open(RUNFILE) as f:
+            warn("Update is already running (PID={})".format(f.read().strip()))
+        return False
+
+    # python3 allows us to create the pid file without race conditions
+    try:
+        with open(RUNFILE, 'x') as f:
+            f.write(str(os.getpid()))
+        return True
+    except FileExistsError:
+        with open(RUNFILE, 'r') as f:
+            pid = f.read().strip()
+        warn("Update is already running (PID={})".format(pid))
+        return False
+
+
+
+
 def run_update(infos, pullfirst, only=None, cancleanup=None):
     from homely._engine2 import initengine, resetengine, setrepoinfo
 
@@ -132,20 +162,13 @@ def run_update(infos, pullfirst, only=None, cancleanup=None):
     global _CURRENT_REPO
     errors = False
 
-    # create the runfile now
-    try:
-        with open(RUNFILE, 'x') as f:
-            f.write(str(os.getpid()))
-    except FileExistsError:
-        with open(RUNFILE, 'r') as f:
-            pid = f.read().strip()
-        warn("Update is already running (PID={})".format(pid))
+    if not _writepidfile():
         return False
 
     isfullupdate = False
-    if (cancleanup
-            and (not len(only))
-            and len(infos) == RepoListConfig().repo_count()):
+    if (cancleanup and
+            (not len(only)) and
+            len(infos) == RepoListConfig().repo_count()):
         isfullupdate = True
 
         # remove the fail file if it is still hanging around
@@ -180,15 +203,14 @@ def run_update(infos, pullfirst, only=None, cancleanup=None):
                 # make sure the HOMELY.py script exists
                 pyscript = os.path.join(localrepo.repo_path, 'HOMELY.py')
                 if not os.path.exists(pyscript):
-                    warn("{} does not exist".format(pyscript))
+                    warn("{}: {}".format(ERR_NO_SCRIPT, localrepo.repo_path))
                     continue
 
                 if len(only):
                     engine.onlysections(only)
 
-                source = SourceFileLoader('HOMELY', pyscript)
                 try:
-                    source.load_module()
+                    homely._utils._loadmodule('HOMELY', pyscript)
                 except Exception as err:
                     import traceback
                     tb = traceback.format_exc()
@@ -203,9 +225,12 @@ def run_update(infos, pullfirst, only=None, cancleanup=None):
 
         setrepoinfo(None)
 
-        if isfullupdate and not _NOTECOUNT.get('warn'):
-            _write(SECTIONFILE, "<cleaning up>")
-            engine.cleanup(engine.RAISE)
+        if isfullupdate:
+            if _NOTECOUNT.get('warn'):
+                note("Automatic Cleanup not possible due to previous warnings")
+            else:
+                _write(SECTIONFILE, "<cleaning up>")
+                engine.cleanup(engine.WARN)
 
         resetengine()
         os.unlink(SECTIONFILE)
@@ -330,7 +355,7 @@ def addfromremote(repo, dest_path):
     return info, False
 
 
-def yesno(name, prompt, default=None, *, recommended=None, noprompt=None):
+def yesno(name, prompt, default=None, recommended=None, noprompt=None):
     assert default in (None, True, False)
     assert recommended in (None, True, False)
     assert noprompt in (None, True, False)
@@ -366,8 +391,10 @@ def yesno(name, prompt, default=None, *, recommended=None, noprompt=None):
     if recommended is not None:
         rec = "[recommended={}] ".format("Y" if recommended else "N")
 
+    input_ = raw_input if sys.version_info[0] < 3 else input
+
     while True:
-        answer = input("{} {}[{}]: ".format(prompt, rec, options))
+        answer = input_("{} {} {} : ".format(prompt, rec, options))
         if answer == "" and default is not None:
             retval = default
             break
@@ -403,7 +430,11 @@ def setcurrentrepo(info):
 def _write(path, content):
     with open(path + ".new", 'w') as f:
         f.write(content)
-    os.replace(path + ".new", path)
+    if sys.version_info[0] < 3:
+        # use the less-reliable os.rename() on python2
+        os.rename(path + ".new", path)
+    else:
+        os.replace(path + ".new", path)
 
 
 _PREV_SECTION = []

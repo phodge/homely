@@ -1,6 +1,7 @@
 import os
 
 import simplejson
+
 from homely._errors import CleanupConflict, CleanupObstruction, HelperError
 from homely._ui import note, warn
 from homely._utils import (ENGINE2_CONFIG_PATH, FactConfig, RepoInfo,
@@ -211,7 +212,7 @@ class Engine(object):
         # another way of keeping track of things we've claimed
         self._claims = set()
 
-        try:
+        if os.path.isfile(cfgpath):
             with open(cfgpath, 'r') as f:
                 raw = f.read()
                 data = simplejson.loads(raw)
@@ -230,8 +231,6 @@ class Engine(object):
                 for path in data.get('paths_created', []):
                     if path in self._old_paths_owned:
                         self._created.add(path)
-        except FileNotFoundError:
-            pass
 
     def _savecfg(self):
         # start with the old cleaners
@@ -528,7 +527,8 @@ class Engine(object):
             if conflicts == self.POSTPONE:
                 return _postpone()
             assert conflicts == self.WARN
-            warn("Conflict cleaning up path: {}".format(path))
+            warn("Couldn't clean up path {}; it is still needed for {}"
+                 .format(path, wantedby))
             return _discard()
 
         # if nothing else wants this path, clean it up now

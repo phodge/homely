@@ -1,10 +1,13 @@
-import pytest
-import sys
-import time
 import functools
 import os
 import shutil
+import sys
 import tempfile
+import time
+
+import pytest
+
+from homely._utils import opentext
 
 
 def withtmpdir(func):
@@ -28,7 +31,8 @@ def withtmpdir(func):
         tmpdir = None
         try:
             tmpdir = tempfile.mkdtemp()
-            yield from func(*args, tmpdir=tmpdir, **kwargs)
+            for item in func(*args, tmpdir=tmpdir, **kwargs):
+                yield item
         finally:
             if tmpdir and os.path.exists(tmpdir):
                 shutil.rmtree(tmpdir)
@@ -55,9 +59,9 @@ def tmpdir(request):
 def HOME(tmpdir):
     home = os.path.join(tmpdir, 'john')
     os.mkdir(home)
-    # NOTE: homely._utils makes use of os.environ['HOME'], so we need to destroy any homely modules
-    # that may have imported things based on this ... essentially we blast away the entire module
-    # and reload it from scratch
+    # NOTE: homely._utils makes use of os.environ['HOME'], so we need to
+    # destroy any homely modules that may have imported things based on this.
+    # Essentially we blast away the entire module and reload it from scratch.
     for name in list(sys.modules.keys()):
         if name.startswith('homely.'):
             sys.modules.pop(name, None)
@@ -78,10 +82,10 @@ def contents(path, new_content=None, strip=True):
             assert stripped[-1] == ''
             new_content = '\n'.join(stripped)
 
-        with open(path, 'w', newline="") as f:
+        with opentext(path, 'w') as f:
             f.write(new_content)
     assert os.path.exists(path)
-    with open(path, 'r', newline="") as f:
+    with opentext(path, 'r') as f:
         return f.read()
 
 
@@ -111,11 +115,9 @@ def waitfor(desc, maxtime=1, interval=0.05):
 
 def pytest_namespace():
     # path to the bin dir
-    homelyroot = os.path.dirname(os.path.dirname(__file__))
     return dict(
         contents=contents,
         gettmpfilepath=gettmpfilepath,
-        homelyroot=homelyroot,
         waitfor=waitfor,
         withtmpdir=withtmpdir,
     )

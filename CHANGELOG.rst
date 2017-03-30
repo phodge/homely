@@ -3,6 +3,38 @@
 ===========
 
 
+Version 0.13.1 - 25 Mar 2017
+----------------------------
+
+* Fixed `#22 <https://github.com/phodge/homely/issues/22>`: pipinstall cleanup tries to wait for user prompt
+
+
+Version 0.13.0 - 25 Mar 2017
+----------------------------
+
+* Option to skip some package managers when using ``installpkg()`` (`#18 <https://github.com/phodge/homely/issues/18`)
+* Fixed `#21 <https://github.com/phodge/homely/issues/21>`: Traceback when cleaning up installpkg()
+
+
+Version 0.12.0 - 24 Mar 2017
+----------------------------
+---
+
+* Runs on python2.7
+
+
+Version 0.11.9 - 22 Feb 2017
+----------------------------
+
+* Improved error messages when git repo isn't quite right
+
+
+Version 0.11.8 - 08 Feb 2017
+----------------------------
+
+* Terrible hack in ``homely.general`` to get my own dotfiles going again
+
+
 Version 0.11.7 - 19 Jan 2017
 ----------------------------
 

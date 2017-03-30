@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import os.path
 import re
@@ -225,6 +225,7 @@ html_context["toppages"] = [
     ["installation", 'Installation Guide'],
     ["tutorial", 'Beginner Tutorial'],
     ["automatic-cleanup", 'Automatic Cleanup'],
+    ["python2", 'Python 2 Compatibility'],
 ]
 
 # make a list of ref pages

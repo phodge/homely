@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 setup(
     name='homely',
@@ -19,7 +19,9 @@ setup(
     packages=['homely'] + ['homely.{}'.format(p)
                            for p in find_packages('homely')],
     install_requires=['simplejson', 'click', 'requests', 'python-daemon'],
-    scripts=['bin/homely'],
+    entry_points={
+        'console_scripts': ['homely=homely._cli:main'],
+    },
     # automatic version number using setuptools_scm
     setup_requires=['setuptools_scm'],
     use_scm_version={

@@ -1,6 +1,6 @@
 import os
 
-from pytest import getsystemfn, TempRepo, contents, HOMELY, checkrepolist
+from pytest import HOMELY, TempRepo, checkrepolist, contents, getsystemfn
 
 
 def test_homely_remove(tmpdir, HOME):

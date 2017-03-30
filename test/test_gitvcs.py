@@ -1,9 +1,8 @@
-import re
 import os
+import re
 from subprocess import check_call
 
 from pytest import contents
-
 
 GIT = [
     'git',
@@ -80,7 +79,10 @@ def test_git(tmpdir):
     clone1repo.pullchanges()
     assert os.path.exists(os.path.join(clone1path, 'file.txt'))
 
-    # FIXME: not sure why I have to close the main loop here when I didn't attach anything to it
-    # ... :-(
-    import asyncio
-    asyncio.get_event_loop().close()
+    try:
+        # FIXME: not sure why I have to close the main loop here when I didn't
+        # attach anything to it ... :-(
+        import asyncio
+        asyncio.get_event_loop().close()
+    except ImportError:
+        pass

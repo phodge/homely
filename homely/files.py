@@ -403,8 +403,6 @@ class BlockInFile(Helper):
             found = False
 
             def _writeall():
-                nonlocal found
-                found = True
                 tmp.write(self._prefix)
                 tmp.write(NL)
                 for line in self._lines:
@@ -415,6 +413,7 @@ class BlockInFile(Helper):
 
             if self._where == WHERE_TOP:
                 _writeall()
+                found = True
             if origlines is not None:
                 for line in origlines:
                     if findsuffix:
@@ -429,6 +428,7 @@ class BlockInFile(Helper):
                         # yet write it out here, now
                         if self._where == WHERE_ANY and not found:
                             _writeall()
+                            found = True
                         findsuffix = False
                         continue
 
