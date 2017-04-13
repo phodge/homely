@@ -3,13 +3,13 @@ from distutils.version import StrictVersion
 
 from homely._engine2 import Cleaner, Helper, getengine
 from homely._errors import HelperError
-from homely._ui import allowinteractive, system
+from homely._ui import system
 from homely._utils import haveexecutable, run
 
 __all__ = ["pipinstall"]
 
 
-def pipinstall(packagename, pips=None, trypips=[]):
+def pipinstall(packagename, pips=None, trypips=[], scripts=None):
     """
     Install packages from pip.
 
@@ -34,14 +34,29 @@ def pipinstall(packagename, pips=None, trypips=[]):
     Note that the `pip install ...` commands are run with the `--user` option
     so that the packages are installed into your home directory.
     """
+    # `scripts` is an alternate location for bin scripts. Useful for bad
+    # platforms that put pip2/pip3 scripts in the same bin dir such that they
+    # clobber each other.
+    # FIXME: `scripts` still has the following issues
+    # - useless if you're specifying multiple pips at once
+    # - won't do the uninstall/reinstall dance to reinstall something that was
+    #   installed with a different `scripts` path
+    if scripts is None:
+        scripts = {}
     if pips is None:
         pips = [] if len(trypips) else ['pip']
     engine = getengine()
     for pip in pips:
-        helper = PIPInstall(packagename, pip, mustinstall=True)
+        helper = PIPInstall(packagename,
+                            pip,
+                            mustinstall=True,
+                            scripts=scripts.get(pip))
         engine.run(helper)
     for pip in trypips:
-        helper = PIPInstall(packagename, pip, mustinstall=False)
+        helper = PIPInstall(packagename,
+                            pip,
+                            mustinstall=False,
+                            scripts=scripts.get(pip))
         engine.run(helper)
 
 
@@ -93,11 +108,12 @@ class PIPInstall(Helper):
     # TODO: get rid of this option
     _user = False
 
-    def __init__(self, name, pip, mustinstall):
+    def __init__(self, name, pip, mustinstall, scripts=None):
         super(PIPInstall, self).__init__()
         self._name = name
         self._mustinstall = mustinstall
         self._pip = pip
+        self._scripts = scripts
 
         try:
             haveexec = _known_pips[pip]
@@ -137,6 +153,8 @@ class PIPInstall(Helper):
             '--user',
             '--disable-pip-version-check',
         ]
+        if self._scripts is not None:
+            cmd.append('--install-option=--install-scripts=%s' % self._scripts)
         system(cmd)
         factname = 'pipinstall:%s:%s' % (self._pipcmd, self._name)
         self._setfact(factname, True)

@@ -3,6 +3,11 @@
 ===========
 
 
+NEW
+
+* Experimental ``scripts`` option for ``pipinstall()``
+
+
 Version 0.13.1 - 25 Mar 2017
 ----------------------------
 
