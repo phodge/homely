@@ -41,9 +41,10 @@ def include(pyscript):
     try:
         with entersection("/" + pyscript):
             _loadmodule(name, path)
-    except Exception as err:
+    except Exception:
         import traceback
-        warn("Error while including {}: {}".format(pyscript, traceback.format_exc()))
+        warn("Error while including {}: {}".format(pyscript,
+                                                   traceback.format_exc()))
 
 
 def section(func):

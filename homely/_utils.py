@@ -211,7 +211,8 @@ class JsonConfig(object):
     jsondata = None
 
     def __init__(self):
-        # load up the default json until we know that we can load something from the file
+        # load up the default json until we know that we can load something
+        # from the file
         self.jsondata = self.defaultjson()
 
         if not os.path.exists(self.jsonpath):
