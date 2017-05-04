@@ -214,7 +214,7 @@ INVOKE SUBPROCESS
 
 Run shell commands when you need to::
 
-    from homley.system import execute, haveexecutable
+    from homely.system import execute, haveexecutable
     if haveexecutable('brew'):
         execute(['brew', 'tap', 'universal-ctags/universal-ctags'])
         execute(['brew', 'install', '--HEAD', 'universal-ctags'])

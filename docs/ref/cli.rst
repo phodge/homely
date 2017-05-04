@@ -142,4 +142,4 @@ Tell **homely** to forget about the dotfiles repo at ``~/work-dotfiles``, and
 then use `homely update`_ to ensure that automatic cleanup happens::
 
     $ homely forget ~/work-dotfiles
-    $ homley update
+    $ homely update
