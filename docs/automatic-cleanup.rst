@@ -64,7 +64,7 @@ on your system::
     if haveexecutable('isort'):
         symlink('.isort.cfg')
 
-If you run ``homley update`` with an ``isort`` executable in your ``$PATH``,
+If you run ``homely update`` with an ``isort`` executable in your ``$PATH``,
 the ``.isort.cfg`` symlink will be created. If you uninstall ``isort`` and
 re-run ``homely update``, the call to ``symlink('.isort.cfg')`` will no longer
 be run and **homely** will automatically remove the symlink for you.
