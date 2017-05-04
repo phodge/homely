@@ -110,8 +110,8 @@ files::
 
     # NOTE that we use homely's symlink() not os.symlink()
     from homely.files import symlink
-    symlink('~/.coonfig/nvim/init.vim')
-    symlink('~/.coonfig/pip/pip.conf')
+    symlink('init.vim', '~/.coonfig/nvim')
+    symlink('pip.conf', '~/.coonfig/pip')
 
 **homely**'s functions are idempotent, so it is safe to run them again and
 again. Run :any:`homely-update` again now to install your symlinks::
@@ -131,8 +131,8 @@ while we're at it::
     mkdir('~/.config/nvim')
     mkdir('~/.config/pip')
 
-    symlink('~/.config/nvim/init.vim')
-    symlink('~/.config/pip/pip.conf')
+    symlink('init.vim', '~/.config/nvim/')
+    symlink('pip.conf', '~/.config/pip/')
 
 Now re-run update::
 
@@ -142,7 +142,7 @@ So what exactly did :any:`homely update` do here?
 * First, ``homely update`` re-ran the corrected ``HOMELY.py`` script which
   created the symlinks in ``~/.config`` instead of ``~/.coonfig``.
 * After finishing with the ``HOMELY.py`` script, ``homely update`` noticed that
-  the calls to ``mkdir('~/.coonfig...')`` and ``symlink('~/.coonfig...')``
+  the calls to ``mkdir('~/.coonfig...')`` and ``symlink(..., '~/.coonfig...')``
   weren't executed, so it performed :any:`automatic-cleanup` of each of the
   things under ``~/.coonfig`` that it had created previously.
 
