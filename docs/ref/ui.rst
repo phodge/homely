@@ -12,13 +12,14 @@ correctly::
     import os
     from os.path import join, isdir
     from homely.ui import head
+    from homely.system import execute
 
     with head('Doing git fetches'):
         src = join(os.environ['HOME'], 'src')
         for entry in os.listdir(src):
             path = join(src, entry)
             if isdir(path):
-                shell(['git', 'fetch', '-p'], cwd=path)
+                execute(['git', 'fetch', '-p'], cwd=path)
 
 
 homely.ui.warn()
@@ -77,12 +78,12 @@ Example
 Run `git fetch` in a private repo except when `--nopull` is used::
 
     import os
-    from homely.system import shell
+    from homely.system import execute
     from homely.ui import allowpull
 
     repopath = os.environ['HOME'] + '/src/neovim.git'
     if allowpull():
-        shell(['git', 'fetch', 'origin', '--tags'], cwd=repopath)
+        execute(['git', 'fetch', 'origin', '--tags'], cwd=repopath)
 
 
 .. _homely-ui-yesno:
@@ -158,9 +159,9 @@ Ask the user if they would like to perform an interactive task like edit their
 .bashrc::
 
     from homely.ui import yesno
-    from homely.system import shell
+    from homely.system import execute
     if yesno(None, "Edit .bashrc?", True, noprompt=False):
-        shell(["vim", "~/.bashrc"], stdout="TTY")
+        execute(["vim", "~/.bashrc"], stdout="TTY")
 
 
 .. _homely-ui-allowinteractive:
@@ -181,7 +182,7 @@ Example
 Edit the user's .bashrc if there is a TTY attached::
 
     from homely.ui import allowinteractive
-    from homely.system import shell
+    from homely.system import execute
     if allowinteractive():
-        shell(["vim", "~/.bashrc"], stdout="TTY")
+        execute(["vim", "~/.bashrc"], stdout="TTY")
 
