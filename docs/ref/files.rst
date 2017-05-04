@@ -43,11 +43,11 @@ You want to include `powerline` config in your ``.tmux.conf``, but the powerline
 
     from os.path import dirname
     from homely.files import blockinfile, WHERE_TOP
-    from homely.ui import system
+    from homely.system import execute
 
     # use python to import powerline and find out where it is installed
     cmd = ['python', '-c', 'import powerline; print(powerline.__file__)']
-    stdout = system(cmd, stdout=True)[1]
+    stdout = execute(cmd, stdout=True)[1]
     powerline_pkg = dirname(stdout.strip().decode('utf-8'))
     lines = [
         'run-shell "powerline-daemon --replace -q"',
