@@ -1,5 +1,7 @@
-from homely._utils import haveexecutable
+from functools import partial
 
+from homely._ui import allowinteractive, note, shellquote, warn
+from homely._utils import haveexecutable, run
 
 __all__ = ["haveexecutable", "execute"]
 
@@ -16,9 +18,9 @@ def execute(cmd, stdout=None, stderr=None, expectexit=0, **kwargs):
     # the timing of the two streams is recorded more accurately.
     #
     # If the process absolutely _must_ talk to a TTY, you can use stdout="TTY",
-    # and a SystemError will be raised if homely is being run in non-interactive
-    # mode. When using stdout="TTY", you should omit the stderr argument.
-    #
+    # and a SystemError will be raised if homely is being run in
+    # non-interactive mode. When using stdout="TTY", you should omit the stderr
+    # argument.
     def outputhandler(data, isend, prefix):
         # FIXME: if we only get part of a stream, then we have a potential bug
         # where we only get part of a multi-byte utf-8 character.
@@ -65,10 +67,7 @@ def execute(cmd, stdout=None, stderr=None, expectexit=0, **kwargs):
                                   ' '.join(map(shellquote, cmd)),
                                   outredir,
                                   errredir)):
-        returncode, out, err = homely._utils.run(cmd,
-                                                 stdout=stdout,
-                                                 stderr=stderr,
-                                                 **kwargs)
+        returncode, out, err = run(cmd, stdout=stdout, stderr=stderr, **kwargs)
         if type(expectexit) is int:
             exitok = returncode == expectexit
         else:

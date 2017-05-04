@@ -3,7 +3,6 @@ import sys
 import time
 from contextlib import contextmanager
 from datetime import datetime
-from functools import partial
 
 import homely._utils
 from homely._errors import ERR_NO_SCRIPT, ConnectionError, InputError
@@ -90,7 +89,7 @@ class note(object):
             _NOTECOUNT[self.__class__.__name__] = 1
 
     def _asciilog(self, stream, message, dash=None):
-        if isinstance(message, unicode):
+        if isinstance(message, unicode):  # noqa: F821
             message = message.encode('utf-8')
         return self._unicodelog(stream, message, dash)
 
@@ -127,8 +126,8 @@ class dirty(warn):
 
 def _writepidfile():
     if sys.version_info[0] < 3:
-        # Note: python2 doesn't have a way to open a file in 'x' mode so we just have to accept
-        # that a race condition is possible, although unlikely.
+        # Note: py2 doesn't have a way to open a file in 'x' mode so we just
+        # have to accept that a race condition is possible, although unlikely.
         if not os.path.exists(RUNFILE):
             with open(RUNFILE, 'w') as f:
                 f.write(str(os.getpid()))
@@ -142,13 +141,11 @@ def _writepidfile():
         with open(RUNFILE, 'x') as f:
             f.write(str(os.getpid()))
         return True
-    except FileExistsError:
+    except FileExistsError:  # noqa: F821
         with open(RUNFILE, 'r') as f:
             pid = f.read().strip()
         warn("Update is already running (PID={})".format(pid))
         return False
-
-
 
 
 def run_update(infos, pullfirst, only=None, cancleanup=None):
@@ -391,7 +388,7 @@ def yesno(name, prompt, default=None, recommended=None, noprompt=None):
     if recommended is not None:
         rec = "[recommended={}] ".format("Y" if recommended else "N")
 
-    input_ = raw_input if sys.version_info[0] < 3 else input
+    input_ = raw_input if sys.version_info[0] < 3 else input  # noqa: F821
 
     while True:
         answer = input_("{} {} {} : ".format(prompt, rec, options))

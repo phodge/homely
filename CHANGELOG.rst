@@ -3,6 +3,19 @@
 ===========
 
 
+Version 0.15.0 - 05 May 2017
+----------------------------
+---
+
+* ``homely.system.execute()`` is now officially supported.
+
+
+Version 0.14.0 - 14 Apr 2017
+----------------------------
+
+* Experimental ``scripts`` option for ``pipinstall()``
+
+
 Version 0.13.1 - 25 Mar 2017
 ----------------------------
 

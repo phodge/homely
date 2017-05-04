@@ -2,8 +2,9 @@ import os
 
 from homely._engine2 import Cleaner, Engine, Helper, getengine
 from homely._errors import HelperError
-from homely._ui import allowinteractive, allowpull, note, system
+from homely._ui import allowinteractive, allowpull, note
 from homely._utils import haveexecutable, isnecessarypath
+from homely.system import execute
 
 
 def installpkg(name, wantcmd=None, **methods):
@@ -76,9 +77,9 @@ class InstallFromSource(Helper):
 
         # has the correct branch or tag been checked out?
         assert self._tag is not None
-        current = system(['git', 'tag', '--points-at', 'HEAD'],
-                         cwd=self._real_clone_to,
-                         stdout=True)[1]
+        current = execute(['git', 'tag', '--points-at', 'HEAD'],
+                          cwd=self._real_clone_to,
+                          stdout=True)[1]
         if self._tag not in map(str, current.splitlines()):
             return False
 
@@ -98,7 +99,7 @@ class InstallFromSource(Helper):
         if not os.path.exists(self._real_clone_to):
             note("Cloning %s" % self._source_repo)
             pull_needed = False
-            system(['git', 'clone', self._source_repo, self._real_clone_to])
+            execute(['git', 'clone', self._source_repo, self._real_clone_to])
         else:
             pull_needed = True
             if not os.path.exists(os.path.join(self._real_clone_to, '.git')):
@@ -106,18 +107,18 @@ class InstallFromSource(Helper):
 
         # do we want a particular branch?
         if self._branch:
-            system(['git', 'checkout', self._branch], cwd=self._real_clone_to)
+            execute(['git', 'checkout', self._branch], cwd=self._real_clone_to)
             if pull_needed and allowpull():
                 note("Updating %s from %s" %
                      (self._clone_to, self._source_repo))
-                system(['git', 'pull'], cwd=self._real_clone_to)
+                execute(['git', 'pull'], cwd=self._real_clone_to)
         else:
             assert self._tag is not None
             if pull_needed and allowpull():
                 note("Updating %s from %s" %
                      (self._clone_to, self._source_repo))
-                system(['git', 'fetch', '--tags'], cwd=self._real_clone_to)
-            system(['git', 'checkout', self._tag], cwd=self._real_clone_to)
+                execute(['git', 'fetch', '--tags'], cwd=self._real_clone_to)
+            execute(['git', 'checkout', self._tag], cwd=self._real_clone_to)
 
         # run any compilation commands
         if self._compile is not None:
@@ -142,7 +143,7 @@ class InstallFromSource(Helper):
             # compilation has failed ...
             if docompile:
                 for cmd in self._compile:
-                    system(cmd, cwd=self._real_clone_to)
+                    execute(cmd, cwd=self._real_clone_to)
 
             if factname:
                 self._setfact(factname, self._compile)
@@ -222,7 +223,7 @@ class InstallPackage(Helper):
                 if not allowinteractive():
                     raise HelperError("Need to be able to escalate to root")
                 cmd.insert(0, 'sudo')
-            system(cmd)
+            execute(cmd)
             # record the fact that we installed this thing ourselves
             factname = 'InstalledPackage:%s:%s' % (method, localname)
             self._setfact(factname, True)
@@ -279,7 +280,7 @@ class PackageCleaner(Cleaner):
                     raise HelperError("Need to be able to escalate to root")
                 cmd.insert(0, 'sudo')
             try:
-                system(cmd)
+                execute(cmd)
             finally:
                 # always clear the fact
                 self._clearfact(factname)

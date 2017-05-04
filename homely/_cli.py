@@ -55,6 +55,7 @@ version_message = (
     .format(version, *sys.version_info[0:3])
 )
 
+
 @group()
 @version_option(message=version_message)
 def homely():
