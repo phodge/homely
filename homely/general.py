@@ -3,6 +3,7 @@ import sys
 from contextlib import contextmanager
 
 from homely._engine2 import Engine, Helper, getengine, getrepoinfo
+from homely._errors import HelperError
 from homely._ui import entersection, warn
 # allow importing from outside
 from homely._utils import haveexecutable  # noqa

@@ -1,5 +1,7 @@
-from homely._utils import haveexecutable
+from functools import partial
 
+from homely._ui import allowinteractive, note, shellquote, warn
+from homely._utils import haveexecutable, run
 
 __all__ = ["haveexecutable", "execute"]
 
@@ -65,10 +67,7 @@ def execute(cmd, stdout=None, stderr=None, expectexit=0, **kwargs):
                                   ' '.join(map(shellquote, cmd)),
                                   outredir,
                                   errredir)):
-        returncode, out, err = homely._utils.run(cmd,
-                                                 stdout=stdout,
-                                                 stderr=stderr,
-                                                 **kwargs)
+        returncode, out, err = run(cmd, stdout=stdout, stderr=stderr, **kwargs)
         if type(expectexit) is int:
             exitok = returncode == expectexit
         else:
