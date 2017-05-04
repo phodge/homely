@@ -3,8 +3,8 @@ from distutils.version import StrictVersion
 
 from homely._engine2 import Cleaner, Helper, getengine
 from homely._errors import HelperError
-from homely._ui import system
 from homely._utils import haveexecutable, run
+from homely.system import execute
 
 __all__ = ["pipinstall"]
 
@@ -92,7 +92,7 @@ def _haspkg(pipcmd, name):
     ]
     if _needs_format(pipcmd):
         cmd.append('--format=legacy')
-    output = system(cmd, stdout=True)[1]
+    output = execute(cmd, stdout=True)[1]
     find = '%s ' % name
     for line in output.decode('utf-8').split("\n"):
         if line.startswith(find):
@@ -155,7 +155,7 @@ class PIPInstall(Helper):
         ]
         if self._scripts is not None:
             cmd.append('--install-option=--install-scripts=%s' % self._scripts)
-        system(cmd)
+        execute(cmd)
         factname = 'pipinstall:%s:%s' % (self._pipcmd, self._name)
         self._setfact(factname, True)
 
@@ -198,7 +198,7 @@ class PIPCleaner(Cleaner):
         ]
         factname = 'pipinstall:%s:%s' % (self._pipcmd, self._name)
         try:
-            system(cmd)
+            execute(cmd)
         finally:
             self._clearfact(factname)
         return []

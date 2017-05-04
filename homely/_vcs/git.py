@@ -3,8 +3,8 @@ import re
 
 import homely._vcs
 from homely._errors import ConnectionError, RepoError, RepoHasNoCommitsError
-from homely._ui import system
 from homely._utils import _expandpath, run
+from homely.system import execute
 
 
 class Repo(homely._vcs.Repo):
@@ -41,10 +41,10 @@ class Repo(homely._vcs.Repo):
     def pullchanges(self):
         assert not self.isremote
         cmd = ['git', 'pull']
-        code, _, err = system(cmd,
-                              cwd=self.repo_path,
-                              stderr=True,
-                              expectexit=(0, 1))
+        code, _, err = execute(cmd,
+                               cwd=self.repo_path,
+                               stderr=True,
+                               expectexit=(0, 1))
         if code == 0:
             return
 
@@ -57,7 +57,7 @@ class Repo(homely._vcs.Repo):
 
     def clonetopath(self, dest):
         origin = self.repo_path
-        system(['git', 'clone', origin, dest])
+        execute(['git', 'clone', origin, dest])
 
     def getrepoid(self):
         assert not self.isremote
@@ -78,7 +78,7 @@ class Repo(homely._vcs.Repo):
         # there's no HEAD revision, so we'll do the command again with
         # --all instead
         cmd = ['git', 'rev-list', '--max-parents=0', '--all']
-        # use run() instead of system() so that we don't print script output
+        # use run() instead of execute() so that we don't print script output
         returncode, stdout = run(cmd,
                                  cwd=self.repo_path,
                                  stdout=True,
@@ -105,7 +105,7 @@ class Repo(homely._vcs.Repo):
 
     def isdirty(self):
         cmd = ['git', 'status', '--porcelain']
-        out = system(cmd, cwd=self.repo_path, stdout=True)[1]
+        out = execute(cmd, cwd=self.repo_path, stdout=True)[1]
         for line in out.split(b'\n'):
             if len(line) and not line.startswith(b'?? '):
                 return True
