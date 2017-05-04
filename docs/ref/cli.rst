@@ -94,7 +94,8 @@ add`_, runs all of their ``HOMELY.py`` scripts, and then performs
 ``-n/--neverprompt``
     Never prompt the user to answer questions. Questions will be answered
     automatically using the user's previous answer or the `noprompt` value.
-    Any calls to :any:`homely-install-installpkg`
+    Any calls to :any:`homely-install-installpkg` or
+    :any:`homely-system-execute`
     which want a TTY for user input will raise an error instead. (You can wrap
     these calls in a conditional check for :any:`homely-ui-allowinteractive` to
     avoid unnecessary errors).
