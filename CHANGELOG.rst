@@ -3,6 +3,12 @@
 ===========
 
 
+NEW
+---
+
+* ``homely.system.execute()`` is now officially supported.
+
+
 Version 0.14.0 - 14 Apr 2017
 ----------------------------
 
