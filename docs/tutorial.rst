@@ -75,7 +75,6 @@ For example, if you wanted to make sure that the ``~/.config/nvim`` and
 could create a ``HOMELY.py`` script that looks like this::
 
     # ~/dotfiles/HOMELY.py
-
     # NOTE that we use homely's mkdir() not os.mkdir()
     from homely.files import mkdir
     # create ~/.config first - mkdir() is not recursive
@@ -137,12 +136,12 @@ while we're at it::
 Now re-run update::
 
     $ homely update
-So what exactly did :any:`homely update` do here?
+So what exactly did :any:`homely-update` do here?
 
-* First, ``homely update`` re-ran the corrected ``HOMELY.py`` script which
+* First, :any:`homely-update` re-ran the corrected ``HOMELY.py`` script which
   created the symlinks in ``~/.config`` instead of ``~/.coonfig``.
-* After finishing with the ``HOMELY.py`` script, ``homely update`` noticed that
-  the calls to ``mkdir('~/.coonfig...')`` and ``symlink(..., '~/.coonfig...')``
+* After finishing with the ``HOMELY.py`` script, :any:`homely-update` noticed
+  that the calls to ``mkdir('~/.coonfig...')`` and ``symlink(..., '~/.coonfig...')``
   weren't executed, so it performed :any:`automatic-cleanup` of each of the
   things under ``~/.coonfig`` that it had created previously.
 

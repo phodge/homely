@@ -28,8 +28,8 @@ homely.ui.warn()
 Use ``warn("some text")`` when you want to add an error message to homely's
 output, but don't want to raise an exception which would bail out of the
 `HOMELY.py` script completely. Note that calling ``warn()`` any time during
-your `HOMELY.py` script will cause ``homely update`` and ``homely add`` to exit
-with a non-zero error code when they are finished.
+your `HOMELY.py` script will cause :any:`homely-update` and :any:`homely-add`
+to exit with a non-zero error code when they are finished.
 
 Example
 ^^^^^^^

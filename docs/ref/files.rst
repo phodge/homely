@@ -59,7 +59,13 @@ You want to include `powerline` config in your ``.tmux.conf``, but the powerline
 Automatic Cleanup
 ^^^^^^^^^^^^^^^^^
 
-If homely does modify a file using ``blockinfile()``, it will remember this fact so that it can [possibly] perform automatic cleanup in the future. Each time you run ``homely update`` homely will check to see if ``blockinfile()`` was called with the same prefix/suffix combination, and if it wasn't then the block will be removed from the file. This means that you don't need to remember to remove the lines you aren't using any more -- simply remove the call to ``blockinfile()`` and homely will clean it up for you.
+If homely does modify a file using ``blockinfile()``, it will remember this
+fact so that it can [possibly] perform automatic cleanup in the future. Each
+time you run :any:`homely-update` homely will check to see if ``blockinfile()``
+was called with the same prefix/suffix combination, and if it wasn't then the
+block will be removed from the file. This means that you don't need to remember
+to remove the lines you aren't using any more -- simply remove the call to
+``blockinfile()`` and homely will clean it up for you.
 
 **Note:** after cleaning up a ``blockinfile()`` section, **homely** will re-run all ``lineinfile()`` and ``blockinfile()`` functions that targetted that file. This ensures that when a block is removed from a file, it won't accidentally remove something that was still wanted by a ``lineinfile()``.
 See :ref:`cleaning_modified_files` for more information about this feature.
@@ -83,8 +89,9 @@ homely.files.download()
 ``expiry``
     The file will be downloaded again when the local copy is ``<expiry>``
     seconds old. When ``expiry=0`` the file will be downloaded every time you
-    run ``homely update``. When ``expiry=-1`` the file will never be downloaded
-    again. When ``expiry=None`` it will default to ``60*60*24*14`` (2 weeks).
+    run :any:`homely-update`. When ``expiry=-1`` the file will never be
+    downloaded again. When ``expiry=None`` it will default to ``60*60*24*14``
+    (2 weeks).
 
 
 Examples
@@ -164,7 +171,7 @@ Automatic Cleanup
 
 If homely does modify a file using ``lineinfile()``, it will remember this fact
 so that it can [possibly] perform automatic cleanup in the future. Each time
-you run ``homely update`` homely will check to see if ``lineinfile()`` was
+you run :any:`homely-update` homely will check to see if ``lineinfile()`` was
 called with the same arguments, and if it wasn't then the line will be removed
 from the file. This means that you don't need to remember to remove the lines
 you aren't using any more -- simply remove the call to ``lineinfile()`` and
@@ -211,12 +218,12 @@ Automatic Cleanup
 
 If homely does create the directory, it will remember this fact so that it can
 [possibly] perform automatic cleanup in the future. Each time you run
-``homely update`` homely will check to see if ``mkdir()`` was called, and if it
-wasn't then the directory will be removed. This means that you don't need to
+:any:`homely-update` homely will check to see if ``mkdir()`` was called, and if
+it wasn't then the directory will be removed. This means that you don't need to
 remember to delete directories you aren't using any more - simply remove the
 call to ``mkdir()`` and homely will clean it up for you. Note that the
-directory *won't* be cleaned up if it is still in use.
-See :ref:`automatic_cleanup` for more information.
+directory *won't* be cleaned up if it is still in use.  See
+:ref:`automatic_cleanup` for more information.
 
 
 homely.files.symlink()
@@ -263,10 +270,10 @@ Automatic Cleanup
 
 If homely creates the symlink, it will remember this fact so that it can
 [possibly] perform automatic cleanup in the future. Each time you run
-``homely update`` homely will check to see if ``symlink()`` was called with the
-same target/linkname, and if it wasn't then the symlink will be removed. This
-means that you don't need to remember to delete symlinks you aren't using any
-more - simply remove the call to ``symlink()`` and homely will clean it up for
-you.  Note that the symlink *won't* be cleaned up if it has been modified by
-something other than homely, or replaced with a regular file or directory.
+:any:`homely-update` homely will check to see if ``symlink()`` was called with
+the same target/linkname, and if it wasn't then the symlink will be removed.
+This means that you don't need to remember to delete symlinks you aren't using
+any more - simply remove the call to ``symlink()`` and homely will clean it up
+for you.  Note that the symlink *won't* be cleaned up if it has been modified
+by something other than homely, or replaced with a regular file or directory.
 See :ref:`automatic_cleanup` for more information.
