@@ -7,10 +7,10 @@ homely add
 ----------
 
 Registers a git repository with **homely** so that it will run its
-``HOMELY.py`` script on each invocation of `homely update`_. ``homely add``
-also immediately executes a `homely update`_ so that the dotfiles are
-installed straight away. If the git repository is hosted online, a local clone
-will be created first.
+``HOMELY.py`` script on each invocation of `homely update`_. `homely add`_ also
+immediately executes a `homely update`_ so that the dotfiles are installed
+straight away. If the git repository is hosted online, a local clone will be
+created first.
 
 ``homely add [OPTIONS] REPO_PATH [DEST_PATH]``
 
