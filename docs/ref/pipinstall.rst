@@ -54,3 +54,18 @@ Don't issue a warning if some pip executables aren't found::
 
     from homely.pipinstall import pipinstall
     pipinstall('ipython', trypips=['pip', 'pip2', 'pip3'])
+
+
+Automatic Cleanup
+^^^^^^^^^^^^^^^^^
+
+If **homely** installs a package with ``pip install``, it records this fact along
+with which pip executable was used. When you run :any:`homely-update`, if the
+call to ``pipinstall()`` is no longer used, **homely** will ``pip uninstall``
+the package.
+
+See :ref:`automatic_cleanup` for more information.
+
+*Note:* Currently homely *will not* remove any additional packages that were
+installed because of dependencies. See also
+`Issue #13 <https://github.com/phodge/homely/issues/13>`_.
