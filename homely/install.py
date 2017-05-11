@@ -129,7 +129,6 @@ class InstallFromSource(Helper):
             if self._tag:
                 factname = '{}:compilation:{}:{}'.format(
                     self.__class__.__name__,
-                    'compilation',
                     self._real_clone_to,
                     self._tag)
                 # check if we need to recompile
