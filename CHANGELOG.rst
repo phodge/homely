@@ -2,6 +2,9 @@
  CHANGELOG
 ===========
 
+NEW
+
+* Improvements for undocumented experimental InstallFromSource feature
 
 Version 0.15.1 - 11 May 2017
 ----------------------------
