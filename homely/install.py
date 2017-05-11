@@ -24,6 +24,9 @@ class InstallFromSource(Helper):
     _tag = None
     _compile = None
 
+    # FIXME: we need a better way to specify whether or not a TTY is needed
+    _needs_tty = False
+
     def __init__(self, source_repo, clone_to):
         super(InstallFromSource, self).__init__()
         self._title = 'Install %s into %s' % (source_repo, clone_to)
@@ -47,6 +50,9 @@ class InstallFromSource(Helper):
     def compile_cmd(self, commands):
         assert self._compile is None
         self._compile = list(commands)
+        for cmd in self._compile:
+            if cmd[0] == "sudo":
+                self._needs_tty = True
 
     @property
     def description(self):
@@ -140,9 +146,10 @@ class InstallFromSource(Helper):
             # FIXME: we probably need to delete all the symlink targets before
             # compiling, as this is our best way of determining that the
             # compilation has failed ...
+            stdout = "TTY" if self._needs_tty else None
             if docompile:
                 for cmd in self._compile:
-                    execute(cmd, cwd=self._real_clone_to)
+                    execute(cmd, cwd=self._real_clone_to, stdout=stdout)
 
             if factname:
                 self._setfact(factname, self._compile)
