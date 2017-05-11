@@ -1,4 +1,5 @@
 import os
+import time
 
 from homely._engine2 import Cleaner, Engine, Helper, getengine
 from homely._errors import HelperError
@@ -35,13 +36,26 @@ class InstallFromSource(Helper):
         self._real_clone_to = os.path.expanduser(clone_to)
         self._symlinks = []
 
-    def select_branch(self, branch_name):
+    def select_branch(self, branch_name, expiry=None):
+        # possible values of expiry:
+        # 0:     always pull and compile
+        # -1:    never pull or compile again
+        # <int>: pull and compile again after <int> seconds
+        if expiry is None:
+            expiry = 60 * 60 * 24 * 14
         assert self._tag is None
+        assert type(expiry) is int and expiry >= -1
         self._branch = branch_name
+        self._expiry = expiry
+        self._branchfact = '{}:compile-branch:{}:{}'.format(
+            self.__class__.__name__,
+            self._real_clone_to,
+            branch_name)
 
     def select_tag(self, tag_name):
         assert self._branch is None
         self._tag = tag_name
+        self._expiry = None
 
     def symlink(self, target, linkname):
         self._symlinks.append((os.path.join(self._real_clone_to, target),
@@ -77,17 +91,13 @@ class InstallFromSource(Helper):
         if not os.path.exists(self._real_clone_to):
             return False
 
-        # if a branch is requested, then we always need to check again ...
-        if self._branch is not None:
-            return False
-
-        # has the correct branch or tag been checked out?
-        assert self._tag is not None
-        current = execute(['git', 'tag', '--points-at', 'HEAD'],
-                          cwd=self._real_clone_to,
-                          stdout=True)[1]
-        if self._tag not in map(str, current.splitlines()):
-            return False
+        if self._tag:
+            # has the correct branch or tag been checked out?
+            current = execute(['git', 'tag', '--points-at', 'HEAD'],
+                              cwd=self._real_clone_to,
+                              stdout=True)[1]
+            if self._tag not in map(str, current.splitlines()):
+                return False
 
         # do the symlinks exist?
         for target, linkname in self._symlinks:
@@ -118,6 +128,9 @@ class InstallFromSource(Helper):
                 note("Updating %s from %s" %
                      (self._clone_to, self._source_repo))
                 execute(['git', 'pull'], cwd=self._real_clone_to)
+
+            # check the branch fact to see if we need to compile again
+            factname = self._branchfact
         else:
             assert self._tag is not None
             if pull_needed and allowpull():
@@ -126,33 +139,40 @@ class InstallFromSource(Helper):
                 execute(['git', 'fetch', '--tags'], cwd=self._real_clone_to)
             execute(['git', 'checkout', self._tag], cwd=self._real_clone_to)
 
-        # run any compilation commands
-        if self._compile is not None:
             # if we used a tag name, create a 'fact' to prevent us re-compiling
             # each time we run
-            docompile = True
-            factname = None
-            if self._tag:
-                factname = '{}:compilation:{}:{}'.format(
-                    self.__class__.__name__,
-                    self._real_clone_to,
-                    self._tag)
-                # check if we need to recompile
-                if self._compile == self._getfact(factname, None):
-                    note("Tag {} was compiled last time".format(self._tag))
-                    docompile = False
-                self._clearfact(factname)
+            factname = '{}:compile-tag:{}:{}'.format(
+                self.__class__.__name__,
+                self._real_clone_to,
+                self._tag)
 
+        docompile = False
+        if self._compile:
+            last_compile, prev_cmds = self._getfact(factname, (0, None))
+            what = ("Branch {}".format(self._branch) if self._branch
+                    else "Tag {}".format(self._tag))
+            if last_compile == 0:
+                note("{} has never been compiled".format(what))
+                docompile = True
+            elif (self._expiry is not None
+                  and ((last_compile + self._expiry) < time.time())):
+                note("{} is due to be compiled again".format(what))
+                docompile = True
+            elif prev_cmds != self._compile:
+                note("{} needs to be compiled again with new commands"
+                     .format(what))
+                docompile = True
+
+        # run any compilation commands
+        if docompile:
             # FIXME: we probably need to delete all the symlink targets before
             # compiling, as this is our best way of determining that the
             # compilation has failed ...
             stdout = "TTY" if self._needs_tty else None
-            if docompile:
-                for cmd in self._compile:
-                    execute(cmd, cwd=self._real_clone_to, stdout=stdout)
+            for cmd in self._compile:
+                execute(cmd, cwd=self._real_clone_to, stdout=stdout)
 
-            if factname:
-                self._setfact(factname, self._compile)
+            self._setfact(factname, (time.time(), self._compile))
 
         # create new symlinks
         for source, dest in self._symlinks:
