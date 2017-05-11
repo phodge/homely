@@ -3,9 +3,13 @@
 ===========
 
 
+NEW
+
+* Bugfix for undocumented experimental InstallFromSource feature
+
+
 Version 0.15.0 - 05 May 2017
 ----------------------------
----
 
 * ``homely.system.execute()`` is now officially supported.
 
@@ -31,7 +35,6 @@ Version 0.13.0 - 25 Mar 2017
 
 Version 0.12.0 - 24 Mar 2017
 ----------------------------
----
 
 * Runs on python2.7
 
