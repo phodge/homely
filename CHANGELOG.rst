@@ -3,7 +3,8 @@
 ===========
 
 
-NEW
+Version 0.15.3 - 25 May 2018
+----------------------------
 
 * Allow overriding powerline unicode character using env var $HOMELY_POWERLINE_HOUSE
 
