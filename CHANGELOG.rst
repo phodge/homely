@@ -2,6 +2,12 @@
  CHANGELOG
 ===========
 
+
+NEW
+
+* Allow overriding powerline unicode character using env var $HOMELY_POWERLINE_HOUSE
+
+
 Version 0.15.2 - 11 May 2017
 ----------------------------
 

@@ -1,3 +1,4 @@
+import os
 import time
 from datetime import datetime
 from subprocess import STDOUT, Popen
@@ -15,7 +16,9 @@ _defaultcolors = {
 }
 
 
-_house = "\U0001F3E0"
+# FIXME: dirty hack
+_house = os.getenv("HOMELY_POWERLINE_HOUSE", "\U0001F3E0")
+
 
 _defaulttxt = {
     UpdateStatus.PAUSED: _house + "  ||",
