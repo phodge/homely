@@ -67,7 +67,7 @@ _needs_format_cache = {}
 
 def _needs_format(pipcmd):
     """
-    pip >= 9.0.0 needs a --format=legacy argument to avoid a DEPRECATION
+    pip >= 9.0.0 needs a --format=freeze argument to avoid a DEPRECATION
     warning. This function returns True if the nominated pip executable
     is >= 9.0.0
     """
@@ -91,9 +91,9 @@ def _haspkg(pipcmd, name):
         '--disable-pip-version-check',
     ]
     if _needs_format(pipcmd):
-        cmd.append('--format=legacy')
+        cmd.append('--format=freeze')
     output = execute(cmd, stdout=True)[1]
-    find = '%s ' % name
+    find = '%s==' % name
     for line in output.decode('utf-8').split("\n"):
         if line.startswith(find):
             return True
