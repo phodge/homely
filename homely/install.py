@@ -16,6 +16,28 @@ def installpkg(name, wantcmd=None, **methods):
     getengine().run(InstallPackage(name, methods, wantcmd))
 
 
+_ALLOW_INSTALL = True
+
+
+def setallowinstall(allow_install):
+    """
+    Configure whether installpkg() InstallPackage() are actually allowed to
+    install anything.
+
+    If installing isn't allowed, installpkg() and InstallPackage() will raise
+    an error instead of installing the package. This is useful in work
+    environment where your local sysadmin wants additional packages managed
+    externally by a tool like salt.
+
+    NOTE: This also controls whether InstallFromSource() is allowed to perform
+    commands starting with "sudo" - the assumption here is that if
+    InstallFromSource() can't run commands as root, it can't install anything.
+    Compiling from source and symlinking to ~/bin will still work fine.
+    """
+    global _ALLOW_INSTALL
+    _ALLOW_INSTALL = bool(allow_install)
+
+
 class InstallFromSource(Helper):
     _title = None
     _source_repo = None
@@ -170,6 +192,10 @@ class InstallFromSource(Helper):
             # compilation has failed ...
             stdout = "TTY" if self._needs_tty else None
             for cmd in self._compile:
+                if cmd[0] == "sudo" and not _ALLOW_INSTALL:
+                    raise HelperError(
+                        "%s is not allowed to run commands as root"
+                        ", as per setallowinstall()")
                 execute(cmd, cwd=self._real_clone_to, stdout=stdout)
 
             self._setfact(factname, (time.time(), self._compile))
@@ -244,6 +270,11 @@ class InstallPackage(Helper):
             # see if the required executable is installed
             if not haveexecutable(cmd[0]):
                 continue
+
+            if not _ALLOW_INSTALL:
+                raise HelperError(
+                    "InstallPackage() is not allowed to install packages"
+                    ", as per setallowinstall()")
 
             if method in _ASROOT:
                 if not allowinteractive():

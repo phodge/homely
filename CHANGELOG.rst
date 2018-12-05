@@ -6,6 +6,8 @@
 NEW
 
 * Better detection of git repos with no commits.
+* Allow disabling installation of packages / compile from source using
+  setallowinstall() (experimental feature).
 
 
 Version 0.15.3 - 25 May 2018
