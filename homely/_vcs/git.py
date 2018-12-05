@@ -84,6 +84,8 @@ class Repo(homely._vcs.Repo):
                                  stdout=True,
                                  stderr="STDOUT")[:2]
         if returncode == 0:
+            if stdout == b'':
+                raise RepoHasNoCommitsError()
             return self._getfirsthash(stdout)
         if returncode != 129:
             raise Exception("Unexpected returncode {} from git rev-list"

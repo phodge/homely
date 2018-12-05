@@ -3,6 +3,11 @@
 ===========
 
 
+NEW
+
+* Better detection of git repos with no commits.
+
+
 Version 0.15.3 - 25 May 2018
 ----------------------------
 
