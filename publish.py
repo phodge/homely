@@ -54,7 +54,10 @@ def main():
     # upload
     files = ['dist/homely-{}.tar.gz'.format(tag)]
     files.extend(glob.glob('dist/homely-{}-py*.whl'.format(tag)))
-    check_call(['twine', 'upload'] + files)
+
+    repository = 'https://upload.pypi.org/legacy/'
+
+    check_call(['twine', 'upload', '--repository-url', repository] + files)
     print("NEW VERSION PUBLISHED!")
     check_call(['git', 'push'])
     check_call(['git', 'push', '--tags'])
