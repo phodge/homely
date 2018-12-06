@@ -3,7 +3,8 @@
 ===========
 
 
-NEW
+Version 0.15.4 - 06 Dec 2018
+----------------------------
 
 * Better detection of git repos with no commits.
 * Allow disabling installation of packages / compile from source using
