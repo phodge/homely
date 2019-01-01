@@ -158,7 +158,10 @@ class InstallFromSource(Helper):
             if pull_needed and allowpull():
                 note("Updating %s from %s" %
                      (self._clone_to, self._source_repo))
-                execute(['git', 'fetch', '--tags'], cwd=self._real_clone_to)
+                # NOTE: we use --force for projects like neovim that have a
+                # rolling 'nightly' tag
+                execute(['git', 'fetch', '--tags', '--force'],
+                        cwd=self._real_clone_to)
             execute(['git', 'checkout', self._tag], cwd=self._real_clone_to)
 
             # if we used a tag name, create a 'fact' to prevent us re-compiling

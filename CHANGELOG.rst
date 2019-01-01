@@ -3,6 +3,12 @@
 ===========
 
 
+NEW
+---
+
+* Improvements for undocumented experimental InstallFromSource feature
+
+
 Version 0.15.4 - 06 Dec 2018
 ----------------------------
 
