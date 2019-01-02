@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-import sys
 import glob
-from subprocess import check_call, check_output
+import sys
 from datetime import date
+from subprocess import check_call, check_output
 
 
 def fail(message):
