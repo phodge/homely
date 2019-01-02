@@ -28,6 +28,7 @@ Version 0.15.2 - 11 May 2017
 
 * Improvements for undocumented experimental InstallFromSource feature
 
+
 Version 0.15.1 - 11 May 2017
 ----------------------------
 
@@ -84,6 +85,7 @@ Version 0.11.7 - 19 Jan 2017
   ``--update`` flags were removed.
 * CLI: better docstrings
 * ``homely.install.installpkg()`` now requires a ``name`` argument.
+
 
 Version 0.11.6 - 29 Dec 2016
 ----------------------------
