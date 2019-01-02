@@ -3,8 +3,8 @@
 ===========
 
 
-NEW
----
+Version 0.15.5 - 02 Jan 2019
+----------------------------
 
 * Improvements for undocumented experimental InstallFromSource feature
 
