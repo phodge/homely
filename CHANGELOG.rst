@@ -3,6 +3,13 @@
 ===========
 
 
+Version 0.15.6 - 14 Jan 2019
+----------------------------
+
+* Fix string formatting bug in yesno()
+* Stop using deprecated pytest_namespace() in tests
+
+
 Version 0.15.5 - 02 Jan 2019
 ----------------------------
 
