@@ -1,4 +1,4 @@
-import os
+import os.path
 import re
 import sys
 from contextlib import contextmanager
@@ -115,7 +115,8 @@ def getsystemfn(homedir):
 
                 if returncode == 0:
                     if expecterror:
-                        raise Exception("Expected exit(%d) but got clean exit" % expecterror)
+                        raise Exception("Expected exit(%d) but got clean exit"
+                                        % expecterror)
                 elif expecterror:
                     assert type(expecterror) is int
                     assert returncode == expecterror, (
@@ -218,13 +219,3 @@ def checkrepolist(HOME, systemfn, expected):
         if id_ not in found:
             raise Exception("homely repolist is missing repo %s: %s" % (
                 id_, expected[id_].url))
-
-
-def pytest_namespace():
-    return dict(
-        TempRepo=TempRepo,
-        getsystemfn=getsystemfn,
-        getjobstartfn=getjobstartfn,
-        checkrepolist=checkrepolist,
-        HOMELY=HOMELY,
-    )

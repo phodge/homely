@@ -81,13 +81,3 @@ def waitfor(desc, maxtime=1, interval=0.05):
         yield
         if time.time() > (start + maxtime):
             raise Exception("Waited too long for: %s" % desc)
-
-
-def pytest_namespace():
-    # path to the bin dir
-    return dict(
-        contents=contents,
-        gettmpfilepath=gettmpfilepath,
-        waitfor=waitfor,
-        withtmpdir=withtmpdir,
-    )
