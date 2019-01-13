@@ -405,7 +405,7 @@ def yesno(name, prompt, default=None, recommended=None, noprompt=None):
         if answer == "":
             sys.stderr.write("ERROR: An answer is required\n")
         else:
-            sys.stderr.write("ERROR: Invalid answer: {}\n" % (repr(answer), ))
+            sys.stderr.write("ERROR: Invalid answer: {!r}\n".format(answer))
 
     if name is not None:
         cfg.setquestionanswer(name, retval)
