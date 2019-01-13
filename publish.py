@@ -64,6 +64,7 @@ def updatechangelog(new_tag, latest_tag):
                     seen_title = True
                 elif seen_title and line.startswith('==='):
                     # add the new heading here
+                    f_new.write('\n\n')
                     f_new.write(new_heading)
                     f_new.write('\n')
                     f_new.write('-' * len(new_heading))
