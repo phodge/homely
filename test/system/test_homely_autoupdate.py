@@ -1,7 +1,7 @@
 import os
 
-from pytest import (HOMELY, TempRepo, contents, getjobstartfn, getsystemfn,
-                    waitfor)
+from homely._test import contents, waitfor
+from homely._test.system import HOMELY, TempRepo, getjobstartfn, getsystemfn
 
 
 def test_homely_updatestatus(HOME, tmpdir):

@@ -1,6 +1,7 @@
 import os
 
-from pytest import HOMELY, TempRepo, checkrepolist, contents, getsystemfn
+from homely._test import contents
+from homely._test.system import HOMELY, TempRepo, checkrepolist, getsystemfn
 
 
 def test_add_greenfield_repos(tmpdir, HOME):

@@ -2,7 +2,8 @@ import os
 import sys
 
 import simplejson
-from pytest import contents, gettmpfilepath
+
+from homely._test import contents, gettmpfilepath
 
 
 def test_engine_folder_cleanup(tmpdir):

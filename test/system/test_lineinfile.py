@@ -1,4 +1,5 @@
-from pytest import HOMELY, TempRepo, contents, getsystemfn
+from homely._test.system import HOMELY, TempRepo, getsystemfn
+from homely._test import contents
 
 
 def test_lineinfile_knows_about_ownership(HOME, tmpdir):

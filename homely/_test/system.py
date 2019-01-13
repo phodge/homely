@@ -4,7 +4,7 @@ import sys
 from contextlib import contextmanager
 from subprocess import STDOUT, Popen
 
-from pytest import withtmpdir
+from homely._test import withtmpdir
 
 try:
     from subprocess import TimeoutExpired

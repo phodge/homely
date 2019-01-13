@@ -2,7 +2,7 @@ import os
 import re
 from subprocess import check_call
 
-from pytest import contents
+from homely._test import contents
 
 GIT = [
     'git',

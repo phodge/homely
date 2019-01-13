@@ -1,6 +1,7 @@
 import os
 
-from pytest import HOMELY, TempRepo, contents, getsystemfn
+from homely._test import contents
+from homely._test.system import HOMELY, TempRepo, getsystemfn
 
 
 def test_symlink_recreate(HOME, tmpdir):
