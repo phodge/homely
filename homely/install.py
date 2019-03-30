@@ -121,6 +121,11 @@ class InstallFromSource(Helper):
             if self._tag not in map(str, current.splitlines()):
                 return False
 
+        # if there's no symlinks, we can't tell if it's done or not
+        # TODO: test this before releasing
+        if not len(self._symlinks):
+            return False
+
         # do the symlinks exist?
         for target, linkname in self._symlinks:
             if not os.path.islink(linkname):
