@@ -222,16 +222,19 @@ class InstallFromSource(Helper):
                 os.symlink(source, dest)
 
 
-_METHODS = ('brew', 'yum', 'apt', 'port')
-_ASROOT = ('yum', 'port', 'apt')
+_METHODS = ('brew', 'yum', 'apt', 'port', 'pacman')
+_ASROOT = ('yum', 'port', 'apt', 'pacman')
 _INSTALL = {
     'apt': lambda name: ['apt-get', 'install', name, '--quiet',
                          '--assume-yes'],
     'yum': lambda name: ['yum', 'install', name, '--assumeyes'],
+    'pacman': lambda name: ['pacman', '-S', '--quiet',
+                         '--noconfirm', name],
 }
 _UNINSTALL = {
     'apt': lambda name: ['apt-get', 'remove', name, '--quiet', '--assume-yes'],
     'yum': lambda name: ['yum', 'erase', name, '--assumeyes'],
+    'pacman': lambda name: ['pacman', '-R', '--noconfirm', name],
 }
 
 
