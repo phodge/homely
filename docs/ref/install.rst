@@ -11,12 +11,12 @@ also include a few calls to e.g. ``brew install ...`` to install your favourite
 software packages. The ``installpkg()`` function can do this for you, and also
 offers the following advantages:
 
-* Automaticaly chooses between ``brew``, ``yum``, ``port`` or ``apt``
+* Automaticaly chooses between ``brew``, ``yum``, ``port``, ``apt`` or ``pacman``
   depending on what's available in your $PATH.
 * Won't hang on a ``sudo`` password prompt when there's no TTY available.
 * :any:`automatic_cleanup`!
   
-``installpkg(name=None, *, apt=None, brew=None, yum=None, port=None)``
+``installpkg(name=None, *, apt=None, brew=None, yum=None, port=None, pacman=None)``
 
 ``name``
     The name of the package you want to install. If the package goes by
@@ -35,8 +35,11 @@ offers the following advantages:
 ``port=None``
     The alias to use when install using ``port install``. Defaults to ``name``.
     Use ``False`` to stop ``installpkg()`` trying to install with ``port`` altogether.
+``pacman=None``
+    The alias to use when install using ``pacman -S``. Defaults to ``name``.
+    Use ``False`` to stop ``installpkg()`` trying to install with ``pacman`` altogether.
 
-When the ``yum``, ``apt-get`` or ``port`` package managers are being used, they
+When the ``yum``, ``apt-get``, ``pacman`` or ``port`` package managers are being used, they
 will be run as root using ``sudo``. This means the call to ``installpkg()``
 will fail if you don't have ``sudo`` privileges, or when :any:`homely-update`
 is run without a TTY or with the ``--neverprompt`` flag.
@@ -57,7 +60,7 @@ Install `ack <http://beyondgrep.com/>`_ and `ag <http://geoff.greer.fm/ag/>`_::
     installpkg('ack', apt='ack-grep')
 
     # ag has different names in yum and apt-get repos
-    installpkg('ag', yum='the_silver_searcher', apt='silversearcher-ag')
+    installpkg('ag', yum='the_silver_searcher', apt='silversearcher-ag', pacman='the_silver_searcher')
 
 
 Automatic Cleanup
