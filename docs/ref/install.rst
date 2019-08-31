@@ -11,7 +11,7 @@ also include a few calls to e.g. ``brew install ...`` to install your favourite
 software packages. The ``installpkg()`` function can do this for you, and also
 offers the following advantages:
 
-* Automaticaly chooses between ``brew``, ``yum``, ``port``, ``apt`` or ``pacman``
+* Automaticaly chooses between ``brew``, ``yum``, ``port``, ``pacman`` or ``apt``
   depending on what's available in your $PATH.
 * Won't hang on a ``sudo`` password prompt when there's no TTY available.
 * :any:`automatic_cleanup`!
@@ -59,7 +59,7 @@ Install `ack <http://beyondgrep.com/>`_ and `ag <http://geoff.greer.fm/ag/>`_::
     # use the name "ack-grep" when installing using apt
     installpkg('ack', apt='ack-grep')
 
-    # ag has different names in yum and apt-get repos
+    # ag has different names in yum, pacman and apt-get repos
     installpkg('ag', yum='the_silver_searcher', apt='silversearcher-ag', pacman='the_silver_searcher')
 
 

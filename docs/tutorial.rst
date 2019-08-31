@@ -161,7 +161,7 @@ also include a few calls to e.g. ``brew install`` to install your favourite
 software packages. **homely** includes a dedicated function for this which
 offers the following advantages:
 
-* Automaticaly chooses between ``brew``, ``yum`` or ``apt`` depending which on
+* Automaticaly chooses between ``brew``, ``yum``, ``pacman`` or ``apt`` depending which on
   what's available on your operating system.
 * Won't hang on a ``sudo`` password prompt when there's no TTY available.
 * :any:`automatic_cleanup`!
@@ -176,11 +176,12 @@ You could get your ``HOMELY.py`` script to install
     from homely.install import installpkg
     # use the name "ack-grep" when installing using apt
     installpkg('ack', apt='ack-grep')
-    # ag uses different names for both yum and apt-get
-    installpkg('ag', yum='the_silver_searcher', apt='silversearcher-ag')
+    # ag uses different names for yum, pacman and apt-get
+    installpkg('ag', yum='the_silver_searcher', apt='silversearcher-ag', pacman = 'the_silver_searcher)
 
 and then::
 
     $ homely update
     
 Check the reference for :any:`homely-install-installpkg` for more information.
+
