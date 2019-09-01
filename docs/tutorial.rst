@@ -177,7 +177,7 @@ You could get your ``HOMELY.py`` script to install
     # use the name "ack-grep" when installing using apt
     installpkg('ack', apt='ack-grep')
     # ag uses different names for yum, pacman and apt-get
-    installpkg('ag', yum='the_silver_searcher', apt='silversearcher-ag', pacman = 'the_silver_searcher)
+    installpkg('ag', yum='the_silver_searcher', apt='silversearcher-ag', pacman = 'the_silver_searcher')
 
 and then::
 
