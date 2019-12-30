@@ -24,14 +24,20 @@ class Repo(homely._vcs.Repo):
         if (repo_path.startswith('ssh://') or
                 repo_path.startswith('https://') or
                 repo_path.startswith('git@')):
-            m = re.match(r'^(https://|git@)github\.com[/:]([^/]+)/([^/]+)',
+
+            m = re.match(r'^(https://|git@)([^/]+)[/:]([^/]+)/([^/]+)',
                          repo_path)
+                         
             if not m:
-                return
-            _, user, name = m.groups()
+                return class_(repo_path, 
+                              isremote=True, 
+                              iscanonical=False, 
+                              suggestedlocal=None)
+
+            _, user, domain, name = m.groups()
             if name.endswith('.git'):
                 name = name[0:-4]
-            canonical = 'https://github.com/%s/%s.git' % (user, name)
+            canonical = 'https://%s/%s/%s.git' % (domain, user, name)
             return class_(repo_path,
                           isremote=True,
                           iscanonical=repo_path == canonical,
