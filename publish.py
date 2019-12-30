@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import glob
 import os
+import shutil
 import sys
 from datetime import date
 from subprocess import check_call, check_output
@@ -93,7 +94,7 @@ def updatechangelog(new_tag, latest_tag):
     check_call(['vim', changelog_new] + splitcmds)
 
     # move file sideways and commit it
-    os.rename(changelog_new, changelog_old)
+    shutil.move(changelog_new, changelog_old)
     check_call(['git', 'commit', changelog_old, '-m', 'Update changelog'])
 
 

@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 import time
 from contextlib import contextmanager
@@ -341,7 +342,7 @@ def addfromremote(repo, dest_path):
             return RepoInfo(destrepo, destid), True
 
         # move our temporary clone into the final destination
-        os.rename(tmp, dest_path)
+        shutil.move(tmp, dest_path)
 
     destrepo = localrepo.frompath(dest_path)
     assert destrepo is not None
