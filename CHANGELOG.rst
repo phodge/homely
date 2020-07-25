@@ -3,6 +3,14 @@
 ===========
 
 
+Version 0.16.0 - 25 Jul 2020
+----------------------------
+
+* Fix git repo address only recognizing GitHub URLs
+* Switch from os.rename to shutil.move for /tmp management
+* Ignore dotfiles associated with VSCode
+
+
 Version 0.15.6 - 14 Jan 2019
 ----------------------------
 
