@@ -528,7 +528,7 @@ def filereplacer(filepath):
         raise
     if os.path.exists(filepath):
         os.unlink(filepath)
-    os.rename(tmpname, filepath)
+    shutil.move(tmpname, filepath)
 
 
 def isnecessarypath(parent, child):
