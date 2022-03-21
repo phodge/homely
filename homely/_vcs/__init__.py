@@ -44,13 +44,15 @@ class Repo(object):
                  repo_path,
                  isremote,
                  iscanonical,
-                 suggestedlocal):
+                 suggestedlocal,
+                 canonical=None):
         self.isremote = isremote
         self.iscanonical = iscanonical
         self.repo_path = repo_path
         if suggestedlocal is None:
             suggestedlocal = os.path.basename(repo_path)
         self.suggestedlocal = suggestedlocal
+        self._canonical = canonical
         super(Repo, self).__init__()
         assert self.type in (HANDLER_GIT_v1, HANDLER_TESTHANDLER_v1)
 

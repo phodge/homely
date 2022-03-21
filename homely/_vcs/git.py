@@ -12,6 +12,21 @@ class Repo(homely._vcs.Repo):
     pulldesc = 'git pull'
 
     @classmethod
+    def _from_parts(class_, repo_path, user, domain, name):
+        if name.endswith('.git'):
+            name = name[0:-4]
+
+        canonical = 'https://%s/%s/%s.git' % (domain, user, name)
+
+        return class_(
+            repo_path,
+            isremote=True,
+            iscanonical=repo_path == canonical,
+            canonical=canonical,
+            suggestedlocal=name,
+        )
+
+    @classmethod
     def frompath(class_, repo_path):
         if os.path.isdir(repo_path):
             if not os.path.isdir(os.path.join(repo_path, '.git')):
@@ -25,24 +40,23 @@ class Repo(homely._vcs.Repo):
                 repo_path.startswith('https://') or
                 repo_path.startswith('git@')):
 
-            m = re.match(r'^(https://|git@)([^/]+)[/:]([^/]+)/([^/]+)',
-                         repo_path)
-                         
-            if not m:
-                return class_(repo_path, 
-                              isremote=True, 
-                              iscanonical=False, 
-                              suggestedlocal=None)
+            # handle git@ url
+            m = re.match(r'^git@([^/]+)[/:]([^/]+)/([^/]+)', repo_path)
+            if m:
+                domain, user, name = m.groups()
+                return class_._from_parts(repo_path, user=user, domain=domain, name=name)
 
-            _, user, domain, name = m.groups()
-            if name.endswith('.git'):
-                name = name[0:-4]
-            canonical = 'https://%s/%s/%s.git' % (domain, user, name)
+            # TODO: gitlab allows '/' in the org name so we actually want all but the last '/part'
+            # to be the 'user'
+            m = re.match(r'^https://([^/]+)/([^/]+)/([^/]+)', repo_path)
+            if m:
+                domain, user, name = m.groups()
+                return class_._from_parts(repo_path, user=user, domain=domain, name=name)
+
             return class_(repo_path,
                           isremote=True,
-                          iscanonical=repo_path == canonical,
-                          suggestedlocal=name,
-                          )
+                          iscanonical=False,
+                          suggestedlocal=None)
 
     def pullchanges(self):
         assert not self.isremote

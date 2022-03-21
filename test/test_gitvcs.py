@@ -31,16 +31,6 @@ def makegitrepo(tmpdir, name):
 def test_git(tmpdir):
     # test loading handler from url
     from homely._vcs.git import Repo
-    https = 'https://github.com/johnsmith/example.git'
-
-    tests = [
-        'git@github.com:johnsmith/example.git',
-        https,
-    ]
-    for repo_path in tests:
-        repo = Repo.frompath(repo_path)
-        assert repo.iscanonical == (repo_path == https)
-        assert repo.isremote is True
 
     # check that frompath() works on folders also
     assert Repo.frompath(tmpdir) is None
@@ -86,3 +76,19 @@ def test_git(tmpdir):
         asyncio.get_event_loop().close()
     except ImportError:
         pass
+
+
+def test_repo_object_recognises_git_repos():
+    from homely._vcs.git import Repo
+
+    repo1 = Repo.frompath('https://github.com/johnsmith/example.git')
+    assert repo1.iscanonical is True
+    assert repo1.isremote is True
+    assert repo1.suggestedlocal == 'example'
+    assert repo1._canonical == 'https://github.com/johnsmith/example.git'
+
+    repo2 = Repo.frompath('git@github.com:johnsmith/example.git')
+    assert repo2.iscanonical is False
+    assert repo2.isremote is True
+    assert repo1.suggestedlocal == 'example'
+    assert repo2._canonical == 'https://github.com/johnsmith/example.git'
