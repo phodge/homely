@@ -47,7 +47,7 @@ def contents(path, new_content=None, strip=True):
             indent = len(new_content) - len(new_content[1:].lstrip(' ')) - 1
             stripped = []
             for line in new_content[1:].split('\n'):
-                assert line.startswith(' ' * indent)
+                assert line.startswith(' ' * indent) or line == ''
                 stripped.append(line[indent:])
             assert stripped[-1] == ''
             new_content = '\n'.join(stripped)
