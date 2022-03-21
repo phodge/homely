@@ -47,9 +47,9 @@ def include(pyscript):
                                                    traceback.format_exc()))
 
 
-def section(func=None, quick=False):
+def section(func=None, quick=False, enabled=True):
     def _decorator(func):
-        return _execute_section(func, is_quick=quick)
+        return _execute_section(func, is_quick=quick, is_enabled=enabled)
 
     if func:
         return _decorator(func)
@@ -57,9 +57,13 @@ def section(func=None, quick=False):
         return _decorator
 
 
-def _execute_section(func, is_quick):
+def _execute_section(func, is_quick, is_enabled):
     name = func.__name__
     engine = getengine()
+
+    if not is_enabled:
+        note("Skipping @section {}() due to enabled=False".format(name))
+        return
 
     if engine.quickmode and not is_quick:
         note("Skipping @section {}() due to --quick flag".format(name))

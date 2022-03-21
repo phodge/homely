@@ -187,3 +187,42 @@ def test_homely_update_quick(HOME, tmpdir, quick):
     else:
         assert contents(HOME + '/slow.txt') == "slow\n"
         assert contents(HOME + '/unspecified.txt') == "unspecified\n"
+
+
+def test_homely_update_section_enabling(HOME, tmpdir):
+    system = getsystemfn(HOME)
+
+    repo = TempRepo(tmpdir, 'cool-dotfiles')
+    contents(
+        repo.remotepath + '/HOMELY.py',
+        """
+        from homely.files import lineinfile
+        from homely.general import section
+
+        lineinfile('~/always.txt', 'always')
+
+        @section
+        def section1():
+            lineinfile('~/file1.txt', 'one')
+
+        @section()
+        def section2():
+            lineinfile('~/file2.txt', 'two')
+
+        @section(enabled=False)
+        def section3():
+            lineinfile('~/file3.txt', 'three')
+
+        @section(enabled=True)
+        def section4():
+            lineinfile('~/file4.txt', 'four')
+        """
+    )
+
+    system(HOMELY('add') + [repo.url])
+    system(HOMELY('update'))
+
+    assert contents(HOME + '/file1.txt') == "one\n"
+    assert contents(HOME + '/file2.txt') == "two\n"
+    assert not os.path.exists(HOME + '/file3.txt')  # section was not enabled
+    assert contents(HOME + '/file4.txt') == "four\n"
