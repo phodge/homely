@@ -225,7 +225,7 @@ def update(identifiers, nopull, only, quick):
                          pullfirst=not nopull,
                          only=only,
                          quick=quick,
-                         cancleanup=cleanup)
+                         cancleanup=cleanup and not quick)
     if not success:
         sys.exit(1)
 
