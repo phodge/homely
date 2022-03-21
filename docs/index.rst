@@ -7,7 +7,7 @@ Homely - Dotfile Management
 ===========================
 
 One of the joys of being a software developer is meticulously customising the
-various tools you use such that you maximumise their utility and potential for
+various tools you use such that you maximise their utility and potential for
 your own personal needs.  These customisations are typically stored in files
 with names that begin with a dot ("."), so developers have creatively named
 them "Dotfiles".
