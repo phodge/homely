@@ -115,7 +115,7 @@ def add(repo_path, dest_path):
     # remember this new local repo
     with saveconfig(RepoListConfig()) as cfg:
         cfg.add_repo(localrepo)
-    success = run_update([localrepo], pullfirst=needpull, cancleanup=True)
+    success = run_update([localrepo], pullfirst=needpull, cancleanup=True, quick=False)
     if not success:
         sys.exit(1)
 
@@ -181,8 +181,10 @@ def forget(identifier):
         " access")
 @option('--only', '-o', multiple=True,
         help="Only process the named sections (whole names only)")
+@option('--quick', is_flag=True,
+        help="Skip every @section except those marked with quick=True")
 @_globals
-def update(identifiers, nopull, only):
+def update(identifiers, nopull, only, quick):
     '''
     Performs a `git pull` in each of the repositories registered with
     `homely add`, runs all of their HOMELY.py scripts, and then performs
@@ -222,6 +224,7 @@ def update(identifiers, nopull, only):
     success = run_update(updatelist,
                          pullfirst=not nopull,
                          only=only,
+                         quick=quick,
                          cancleanup=cleanup)
     if not success:
         sys.exit(1)
@@ -316,6 +319,7 @@ def autoupdate(**kwargs):
             cfg = RepoListConfig()
             run_update(list(cfg.find_all()),
                        pullfirst=True,
+                       quick=False,
                        cancleanup=True)
         except Exception:
             import traceback

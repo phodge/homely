@@ -47,9 +47,23 @@ def include(pyscript):
                                                    traceback.format_exc()))
 
 
-def section(func):
+def section(func=None, quick=False):
+    def _decorator(func):
+        return _execute_section(func, is_quick=quick)
+
+    if func:
+        return _decorator(func)
+    else:
+        return _decorator
+
+
+def _execute_section(func, is_quick):
     name = func.__name__
     engine = getengine()
+
+    if engine.quickmode and not is_quick:
+        return
+
     try:
         with entersection(":" + name + "()"):
             if engine.pushsection(name):

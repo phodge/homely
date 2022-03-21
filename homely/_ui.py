@@ -149,7 +149,7 @@ def _writepidfile():
         return False
 
 
-def run_update(infos, pullfirst, only=None, cancleanup=None):
+def run_update(infos, pullfirst, only=None, cancleanup=None, quick=None):
     from homely._engine2 import initengine, resetengine, setrepoinfo
 
     assert cancleanup is not None
@@ -177,7 +177,7 @@ def run_update(infos, pullfirst, only=None, cancleanup=None):
         # write the section file with the current section name
         _write(SECTIONFILE, "<preparing>")
 
-        engine = initengine()
+        engine = initengine(quick=quick)
 
         for info in infos:
             setrepoinfo(info)

@@ -76,6 +76,8 @@ add`_, runs all of their ``HOMELY.py`` scripts, and then performs
     any code in the global scope of your ``HOMELY.py`` script (code not in a
     section) will also be executed. If you specify a ``SECTION``,
     :any:`automatic cleanup <automatic_cleanup>` will not be attempted.
+``--quick``
+    ``homely update`` will skip every ``@section`` unless it has ``quick=True``.
 ``--nopull``
     **homely** will not use ``git pull`` to update the repositories, and will
     also skip any action that requires internet access. Note that this only

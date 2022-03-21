@@ -1,5 +1,7 @@
 import os
 
+import pytest
+
 from homely._test import contents
 from homely._test.system import HOMELY, TempRepo, getsystemfn
 
@@ -144,3 +146,44 @@ def test_homely_update(HOME, tmpdir):
     system(HOMELY('update'))
     assert not os.path.exists(HOME + '/file2.txt')
     assert not os.path.exists(HOME + '/file3.txt')
+
+
+@pytest.mark.parametrize('quick', [False, True])
+def test_homely_update_quick(HOME, tmpdir, quick):
+    system = getsystemfn(HOME)
+
+    repo = TempRepo(tmpdir, 'cool-dotfiles')
+    contents(
+        repo.remotepath + '/HOMELY.py',
+        """
+        from homely.files import lineinfile
+        from homely.general import section
+
+        lineinfile('~/always.txt', 'always')
+
+        @section(quick=True)
+        def fast_section():
+            lineinfile('~/fast.txt', 'fast')
+
+        @section(quick=False)
+        def slow_section():
+            lineinfile('~/slow.txt', 'slow')
+
+        @section
+        def unspecified_section():
+            lineinfile('~/unspecified.txt', 'unspecified')
+        """
+    )
+
+    system(HOMELY('add') + [repo.url])
+    system(HOMELY('update') + (['--quick'] if quick else []))
+
+    assert contents(HOME + '/always.txt') == "always\n"
+    assert contents(HOME + '/fast.txt') == "fast\n"
+
+    if quick:
+        assert not os.path.exists(HOME + '/slow.txt')
+        assert not os.path.exists(HOME + '/unspecified.txt')
+    else:
+        assert contents(HOME + '/slow.txt') == "slow\n"
+        assert contents(HOME + '/unspecified.txt') == "unspecified\n"

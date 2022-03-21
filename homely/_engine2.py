@@ -11,9 +11,9 @@ _ENGINE = None
 _REPO = None
 
 
-def initengine():
+def initengine(quick):
     global _ENGINE
-    _ENGINE = Engine(ENGINE2_CONFIG_PATH)
+    _ENGINE = Engine(ENGINE2_CONFIG_PATH, quick=quick)
     return _ENGINE
 
 
@@ -196,7 +196,7 @@ class Engine(object):
     TYPE_FOLDER_ONLY = "directory"
     TYPE_LINK = "symlink"
 
-    def __init__(self, cfgpath):
+    def __init__(self, cfgpath, quick=False):
         super(Engine, self).__init__()
         self._cfgpath = cfgpath
         self._old_cleaners = []
@@ -211,6 +211,8 @@ class Engine(object):
         self._section = None
         # another way of keeping track of things we've claimed
         self._claims = set()
+
+        self.quickmode = quick
 
         if os.path.isfile(cfgpath):
             with open(cfgpath, 'r') as f:
