@@ -3,8 +3,8 @@
 ===========
 
 
-NEW
----
+Version 0.17.1 - 21 Mar 2022
+----------------------------
 
 * Fix bug where ``homely update --quick`` was performing cleanup.
 
