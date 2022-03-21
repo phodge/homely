@@ -2,6 +2,13 @@
  CHANGELOG
 ===========
 
+
+NEW
+---
+
+* Fix bug where ``homely update --quick`` was performing cleanup.
+
+
 Version 0.17.0 - 21 Mar 2022
 ----------------------------
 
