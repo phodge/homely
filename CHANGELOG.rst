@@ -2,6 +2,11 @@
  CHANGELOG
 ===========
 
+NEW
+---
+
+* Add "enabled" flag for @section() decorator
+
 
 Version 0.17.1 - 21 Mar 2022
 ----------------------------
