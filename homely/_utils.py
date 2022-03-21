@@ -326,7 +326,7 @@ class RepoListConfig(JsonConfig):
         """
         # note that the paths in self.jsondata were already _homepath2real()'d
         # in the class' __init__()
-        resolved = _homepath2real(path)
+        resolved = _homepath2real(path.rstrip('/'))
         for row in self.jsondata:
             if resolved == os.path.realpath(row["localpath"]):
                 return self._infofromdict(row)
