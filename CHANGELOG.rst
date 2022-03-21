@@ -2,8 +2,8 @@
  CHANGELOG
 ===========
 
-NEW
----
+Version 0.17.0 - 21 Mar 2022
+----------------------------
 
 * Added --quick option for ``homely update``
 * Fixed bug where you couldn't run ``homely update ~/dotfiles/`` with a trailing ``/``.
