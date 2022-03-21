@@ -153,6 +153,9 @@ def test_homely_update_quick(HOME, tmpdir, quick):
     system = getsystemfn(HOME)
 
     repo = TempRepo(tmpdir, 'cool-dotfiles')
+    contents(repo.remotepath + '/HOMELY.py', "\n")  # empty script while adding
+    system(HOMELY('add') + [repo.url])
+
     contents(
         repo.remotepath + '/HOMELY.py',
         """
@@ -175,7 +178,6 @@ def test_homely_update_quick(HOME, tmpdir, quick):
         """
     )
 
-    system(HOMELY('add') + [repo.url])
     system(HOMELY('update') + (['--quick'] if quick else []))
 
     assert contents(HOME + '/always.txt') == "always\n"
