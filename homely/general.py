@@ -4,7 +4,7 @@ from contextlib import contextmanager
 
 from homely._engine2 import Engine, Helper, getengine, getrepoinfo
 from homely._errors import HelperError
-from homely._ui import entersection, warn
+from homely._ui import entersection, head, note, warn
 # allow importing from outside
 from homely._utils import haveexecutable  # noqa
 from homely._utils import _homepath2real, _loadmodule, _repopath2real
@@ -62,9 +62,11 @@ def _execute_section(func, is_quick):
     engine = getengine()
 
     if engine.quickmode and not is_quick:
+        note("Skipping @section {}() due to --quick flag".format(name))
         return
 
     try:
+        head("Executing @section {}()".format(name))
         with entersection(":" + name + "()"):
             if engine.pushsection(name):
                 func()
