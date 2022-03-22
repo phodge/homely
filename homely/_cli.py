@@ -351,12 +351,6 @@ def main():
     except (Fatal, JsonError) as err:
         echo("ERROR: %s" % err, err=True)
         sys.exit(1)
-    finally:
-        try:
-            import asyncio
-            asyncio.get_event_loop().close()
-        except ImportError:
-            pass
 
 
 if __name__ == '__main__':
