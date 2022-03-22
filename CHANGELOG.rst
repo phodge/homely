@@ -2,8 +2,8 @@
  CHANGELOG
 ===========
 
-NEW
----
+Version 0.18.0 - 22 Mar 2022
+----------------------------
 
 * Add "interval" option for @section decorator
 * Script for running all tests on all python versions via docker
