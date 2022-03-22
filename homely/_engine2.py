@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 
 import simplejson
 
@@ -7,33 +8,33 @@ from homely._ui import note, warn
 from homely._utils import (ENGINE2_CONFIG_PATH, FactConfig, RepoInfo,
                            isnecessarypath)
 
-_ENGINE = None
-_REPO = None
+_ENGINE: "Optional[Engine]" = None
+_REPO: Optional[RepoInfo] = None
 
 
-def initengine(quick):
+def initengine(quick: bool) -> "Engine":
     global _ENGINE
     _ENGINE = Engine(ENGINE2_CONFIG_PATH, quick=quick)
     return _ENGINE
 
 
-def resetengine():
+def resetengine() -> None:
     global _ENGINE
     _ENGINE = None
 
 
-def getengine():
+def getengine() -> "Engine":
     assert _ENGINE is not None
     return _ENGINE
 
 
-def setrepoinfo(info):
+def setrepoinfo(info: Optional[RepoInfo]) -> None:
     assert info is None or isinstance(info, RepoInfo)
     global _REPO
     _REPO = info
 
 
-def getrepoinfo():
+def getrepoinfo() -> Optional[RepoInfo]:
     return _REPO
 
 

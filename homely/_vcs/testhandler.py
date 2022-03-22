@@ -1,5 +1,6 @@
 import os
 import shutil
+from typing import Optional
 
 import homely._vcs
 from homely._ui import note
@@ -16,7 +17,7 @@ class Repo(homely._vcs.Repo):
     pulldesc = 'fake repo pull'
 
     @classmethod
-    def frompath(class_, repo_path):
+    def frompath(class_, repo_path) -> "Optional[homely._vcs.Repo]":
         if repo_path.startswith(PREFIX):
             dirpart = repo_path[len(PREFIX):]
             return class_(repo_path,
@@ -26,10 +27,10 @@ class Repo(homely._vcs.Repo):
                           )
 
         if not os.path.isdir(repo_path):
-            return
+            return None
 
         if not os.path.exists(os.path.join(repo_path, MARKERFILE)):
-            return
+            return None
 
         return class_(_expandpath(repo_path),
                       isremote=False,
