@@ -5,9 +5,11 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from datetime import timedelta
 from functools import partial
 from itertools import chain
 from os.path import exists, join
+from typing import Union
 
 import simplejson
 
@@ -16,6 +18,7 @@ from homely._vcs import Repo, fromdict
 
 try:
     import asyncio
+
     from homely._asyncioutils import _runasync
 except ImportError:
     asyncio = None
@@ -646,3 +649,22 @@ def getstatus():
         return UpdateStatus.NEVER, None, None
 
     return UpdateStatus.OK, mtime, None
+
+
+def _time_interval_to_delta(input: Union[str, timedelta]) -> timedelta:
+    if isinstance(input, timedelta):
+        return input
+
+    m = re.match(r'^([\d]+)([dwh])$', input)
+    if not m:
+        raise ValueError("Invalid time interval {!r}".format(input))
+
+    quantity, type_ = m.groups()
+    if type_ == 'd':
+        return timedelta(days=int(quantity))
+    if type_ == 'w':
+        return timedelta(weeks=int(quantity))
+    if type_ == 'h':
+        return timedelta(hours=int(quantity))
+
+    raise ValueError("Invalid time interval {!r}".format(input))

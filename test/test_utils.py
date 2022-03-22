@@ -1,5 +1,7 @@
 import os
 
+import pytest
+
 
 def test_paths(tmpdir, HOME):
     from homely._utils import isnecessarypath
@@ -85,3 +87,43 @@ def test_expansion_repopath(tmpdir):
     assert _repopath2real('$HOME/bin/foo.txt', repo) == tmpdir + '/bin/foo.txt'
     for path in fixed:
         assert _repopath2real(path, repo) == path
+
+
+def test_time_interval_to_delta():
+    from datetime import timedelta
+
+    from homely._utils import _time_interval_to_delta
+
+    # simple conversions
+    assert _time_interval_to_delta('1h') == timedelta(hours=1)
+    assert _time_interval_to_delta('27h') == timedelta(hours=27)
+    assert _time_interval_to_delta('5d') == timedelta(days=5)
+    assert _time_interval_to_delta('1125d') == timedelta(days=1125)
+    assert _time_interval_to_delta('3w') == timedelta(weeks=3)
+    assert _time_interval_to_delta('52w') == timedelta(weeks=52)
+
+    # leading zeros are ignored
+    assert _time_interval_to_delta('05d') == timedelta(days=5)
+
+    # zero is technically valid
+    assert _time_interval_to_delta('0d') == timedelta(seconds=0)
+
+    # you can also pass a regular timedelta and get it back
+    assert _time_interval_to_delta(timedelta(minutes=125)) == timedelta(minutes=125)
+
+    def assert_invalid(invalid_value):
+        with pytest.raises(ValueError, match="Invalid time interval"):
+            _time_interval_to_delta(invalid_value)
+
+    # negative values are invalid
+    assert_invalid('-1h')
+    # no number is not allowed
+    assert_invalid('w')
+    # no quantity is not allowed
+    assert_invalid('5')
+    # invalid type not allowed
+    assert_invalid('5z')
+
+    # ordinary integers are not allowed, but it raises a TypeError instead
+    with pytest.raises(TypeError):
+        _time_interval_to_delta(5)
