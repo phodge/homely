@@ -2,6 +2,14 @@
  CHANGELOG
 ===========
 
+NEW
+---
+
+* Add "interval" option for @section decorator
+* Script for running all tests on all python versions via docker
+* Started adding type signatures - Python2 is no longer supported
+
+
 Version 0.17.2 - 22 Mar 2022
 ----------------------------
 
