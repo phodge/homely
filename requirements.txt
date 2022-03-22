@@ -1,0 +1,4 @@
+python-daemon==2.3.0
+requests==2.25.1
+simplejson==3.17.2
+click==7.1.2
