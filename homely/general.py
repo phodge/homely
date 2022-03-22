@@ -70,10 +70,12 @@ def _execute_section(func, is_quick, is_enabled):
         return
 
     try:
-        head("Executing @section {}()".format(name))
         with entersection(":" + name + "()"):
             if engine.pushsection(name):
+                head("Executing @section {}()".format(name))
                 func()
+            else:
+                note("Skipping @section {}() due to -o/--only flag".format(name))
     finally:
         engine.popsection(name)
 
