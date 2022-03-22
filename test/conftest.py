@@ -36,3 +36,22 @@ def tmpdir(request):
         shutil.rmtree(path)
     request.addfinalizer(functools.partial(destructor, path))
     return os.path.realpath(path)
+
+
+@pytest.fixture
+def testrepo(HOME, tmpdir):
+    from homely._test.system import TempRepo
+    from homely._utils import saveconfig, RepoListConfig
+    from homely._vcs import testhandler, Repo
+    from homely._ui import addfromremote
+
+    repo = TempRepo(tmpdir, 'cool-testrepo')
+
+    handler: Repo = testhandler.Repo.frompath(repo.url)
+    assert handler is not None
+    localrepo, needpull = addfromremote(handler, None)
+
+    with saveconfig(RepoListConfig()) as cfg:
+        cfg.add_repo(localrepo)
+
+    yield repo

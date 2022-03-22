@@ -81,3 +81,19 @@ def waitfor(desc, maxtime=1, interval=0.05):
         yield
         if time.time() > (start + maxtime):
             raise Exception("Waited too long for: %s" % desc)
+
+
+def run_update_all(pullfirst=False, cancleanup=False, quick=False) -> None:
+    from homely._ui import run_update
+    from homely._utils import RepoListConfig
+
+    cfg = RepoListConfig()
+    success = run_update(
+        list(cfg.find_all()),
+        pullfirst=pullfirst,
+        only=None,
+        cancleanup=cancleanup,
+        quick=quick,
+    )
+
+    assert success, "run_update() encountered errors or warnings"

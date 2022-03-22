@@ -121,6 +121,7 @@ class Helper(_AccessibleFacts):
 def cleanerfromdict(data):
     # import the module
     from importlib import import_module
+
     # FIXME: handle an ImportError here in case the module disappears
     module = import_module(data["module"])
 
@@ -183,7 +184,7 @@ class Cleaner(_AccessibleFacts):
                                   self.__class__.__name__)
 
 
-class Engine(object):
+class Engine(_AccessibleFacts):
     # possible actions to take when a conflict occurs between cleaners
     RAISE = "__raise__"
     WARN = "__warn__"
