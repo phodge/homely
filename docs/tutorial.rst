@@ -109,8 +109,9 @@ files::
 
     # NOTE that we use homely's symlink() not os.symlink()
     from homely.files import symlink
-    symlink('init.vim', '~/.coonfig/nvim')
-    symlink('pip.conf', '~/.coonfig/pip')
+    # TODO: make sure this syntax with the trailing slash will work
+    symlink('init.vim', '~/.coonfig/nvim/')
+    symlink('pip.conf', '~/.coonfig/pip/')
 
 **homely**'s functions are idempotent, so it is safe to run them again and
 again. Run :any:`homely-update` again now to install your symlinks::

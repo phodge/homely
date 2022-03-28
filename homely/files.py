@@ -50,6 +50,9 @@ def symlink(target, linkname=None):
         linkname = os.path.join(os.environ.get('HOME'),
                                 os.path.basename(target))
     else:
+        # allow the symlink to end with '/'
+        if linkname.endswith('/'):
+            linkname = linkname + os.path.basename(target)
         linkname = _homepath2real(linkname)
     getengine().run(MakeSymlink(target, linkname))
 
@@ -162,7 +165,8 @@ class MakeSymlink(Helper):
         assert linkname.startswith('/')
         self._target = target
         self._linkname = linkname
-        assert self._target != self._linkname
+        if self._target == self._linkname:
+            raise ValueError("target and linkname must be different paths")
 
     def getclaims(self):
         return []
