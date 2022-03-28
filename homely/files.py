@@ -552,10 +552,9 @@ class CleanBlockInFile(Cleaner):
 
 
 class WriteFile(Helper):
-    def __init__(self, filename, contents, canoverwrite=False):
+    def __init__(self, filename, contents):
         self._filename = filename
         self._contents = contents
-        self._canoverwrite = canoverwrite
 
     @property
     def description(self):
