@@ -499,7 +499,7 @@ class CleanBlockInFile(Cleaner):
         haveprefix = False
 
         with open(self._filename) as f:
-            for line in [l.rstrip("\r\n") for l in f]:
+            for line in [l.rstrip("\r\n") for l in f]:  # noqa: E741
                 if line == self._prefix:
                     haveprefix = True
                 elif line == self._suffix and haveprefix:
