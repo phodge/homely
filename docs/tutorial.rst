@@ -61,6 +61,15 @@ path, the repo's local path will be similar to what ``git clone`` would use.
 cloned to ``~/dotfiles``.). Check the CLI Reference for :any:`homely-add` for
 more information.
 
+You should see output similar to this::
+
+    [peter@mac ~]$ homely add https://github.com/peter/dotfiles.git
+    [Tue Sep 27 07:49:52 2016]     Cloning https://github.com/peter/dotfiles.git to tmp:/tmp/tmpr01c_5_j/dotfiles
+    [Tue Sep 27 07:49:52 2016]     $ git clone https://github.com/peter/dotfiles.git /tmp/tmpr01c_5_j/dotfiles
+    [Tue Sep 27 07:49:52 2016]     &> Cloning into '/tmp/tmpr01c_5_j/dotfiles'...
+    [Tue Sep 27 07:50:15 2016] ::: Updating from /home/peter/dotfiles [2dfd48b0]
+    [Tue Sep 27 07:50:15 2016] ERR   /home/peter/dotfiles/HOMELY.py does not exist
+
 
 3. Write and Run a HOMELY.py script
 -----------------------------------
@@ -85,6 +94,15 @@ could create a ``HOMELY.py`` script that looks like this::
 Now you can use :any:`homely-update` to execute your ``HOMELY.py``::
 
     $ homely update
+    [Tue Sep 27 03:04:42 2016] ::: Updating from /home/peter/dotfiles [2dfd48b0]
+    [Tue Sep 27 03:04:42 2016]     - Pulling changes for /home/peter/dotfiles
+    [Tue Sep 27 03:04:42 2016]       - /home/peter/dotfiles$ git status --porcelain
+    [Tue Sep 27 03:04:42 2016]       - /home/peter/dotfiles$ git pull
+    [Tue Sep 27 03:04:48 2016]         &> Already up-to-date.
+    [Tue Sep 27 03:04:48 2016]     - Create dir /home/peter/.coonfig: Running ...
+    [Tue Sep 27 03:04:48 2016]     - Create dir /home/peter/.coonfig/nvim: Running ...
+    [Tue Sep 27 03:04:48 2016]     - Create dir /home/peter/.coonfig/pip: Running ...
+
 
 Now, assuming you already have a ``pip.conf`` and an ``init.vim`` in your
 ``~/.config`` directory, you might want to move these files into your dotfiles
@@ -116,6 +134,13 @@ files::
 again. Run :any:`homely-update` again now to install your symlinks::
 
     $ homely update
+    [Tue Sep 27 03:07:54 2016] ::: Updating from /home/peter/dotfiles [2dfd48b0]
+    [Tue Sep 27 03:07:54 2016]     - Pulling changes for /home/peter/dotfiles
+    [Tue Sep 27 03:07:54 2016]       - /home/peter/dotfiles$ git status --porcelain
+    [Tue Sep 27 03:07:54 2016]       - /home/peter/dotfiles$ git pull
+    [Tue Sep 27 03:07:59 2016]         &> Already up-to-date.
+    [Tue Sep 27 03:07:59 2016]     - Create symlink /home/peter/init.vim -> /home/peter/.coonfig/nvim/init.vim: Running ...
+    [Tue Sep 27 03:07:59 2016]     - Create symlink /home/peter/pip.conf -> /home/peter/.coonfig/pip/pip.conf: Running ...
 
 Oh no! We misspelled ``~/.config`` everywhere! This is actually OK, because
 **homely**'s :any:`automatic-cleanup` can remove all these unwanted
@@ -136,6 +161,9 @@ while we're at it::
 Now re-run update::
 
     $ homely update
+
+.. TODO: paste content here
+
 So what exactly did :any:`homely-update` do here?
 
 * First, :any:`homely-update` re-ran the corrected ``HOMELY.py`` script which
@@ -183,3 +211,15 @@ and then::
     $ homely update
     
 Check the reference for :any:`homely-install-installpkg` for more information.
+
+.. TODO: show what the output would look like if you ran this on OS X
+
+
+TODO:
+^^^^^
+
+* download()ing
+* pipinstall()'ing
+* sections
+* running shell commands with execute()
+* A sample HOMELY.py script that does all the things we talked about above.

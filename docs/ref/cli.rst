@@ -100,12 +100,14 @@ add`_, runs all of their ``HOMELY.py`` scripts, and then performs
     these calls in a conditional check for :any:`homely-ui-allowinteractive` to
     avoid unnecessary errors).
 
+.. TODO: link to the yesno() docs or the tutorial on how to use yesno() effectively
 
 The ``--nopull`` and ``--only`` options are useful when you are working on your
 ``HOMELY.py`` script - the ``--nopull`` option stops you from wasting time
 checking the internet for the same updates on every run, and the ``--only``
 option allows you to execute only the section you are working on.
 
+.. TODO: link to the tutorial on --nopull handling when it is ready
 
 Examples
 ^^^^^^^^
@@ -135,6 +137,8 @@ that dotfiles repo.
     This should be the path to a local dotfiles repository that has already
     been registered using `homely add`_. You may specify multiple REPOs to
     remove at once.
+
+.. TODO: make @section references into links above
 
 Examples
 ^^^^^^^^
