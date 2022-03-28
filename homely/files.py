@@ -1,5 +1,7 @@
 import os
+from io import StringIO
 import time
+from contextlib import contextmanager
 from copy import copy
 
 from homely._engine2 import Cleaner, Engine, Helper, getengine, getrepoinfo
@@ -52,6 +54,19 @@ def symlink(target, linkname=None):
     else:
         linkname = _homepath2real(linkname)
     getengine().run(MakeSymlink(target, linkname))
+
+
+@contextmanager
+def writefile(filename):
+    stream = None
+    try:
+        stream = StringIO()
+        yield stream
+        stream.seek(0)
+        getengine().run(WriteFile(_homepath2real(filename), stream.read()))
+    finally:
+        if stream:
+            stream.close()
 
 
 def lineinfile(filename, contents, where=None):
@@ -533,4 +548,44 @@ class CleanBlockInFile(Cleaner):
         return [self._filename] if changed else []
 
     def needsclaims(self):
+        return []
+
+
+class WriteFile(Helper):
+    def __init__(self, filename, contents, canoverwrite=False):
+        self._filename = filename
+        self._contents = contents
+        self._canoverwrite = canoverwrite
+
+    @property
+    def description(self):
+        return "Write file %s" % self._filename
+
+    def getcleaner(self):
+        # no cleaner needed
+        pass
+
+    def isdone(self):
+        if os.path.islink(self._filename):
+            return False
+        if os.path.exists(self._filename):
+            with open(self._filename, 'r') as f:
+                if f.read() == self._contents:
+                    return True
+        return False
+
+    def makechanges(self):
+        if os.path.islink(self._filename):
+            raise HelperError("{} is already a symlink"
+                              .format(self._filename))
+        with open(self._filename, 'w') as f:
+            f.write(self._contents)
+
+    def pathsownable(self):
+        return {self._filename: Engine.TYPE_FILE_ALL}
+
+    def affectspath(self, path):
+        return path == self._filename
+
+    def getclaims(self):
         return []
