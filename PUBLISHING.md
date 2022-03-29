@@ -16,3 +16,11 @@ Next, add a section to CHANGELOG.rst that looks like this:
 Then, after you have committed the changelog changes, run the publish script:
 
     ./publish.py NEW_VERSION_NUMBER
+
+
+# Publishing Updated Docs
+
+1. Make sure the `doc` branch is fast-forwarded to the same commit as master.
+2. Log into https://readthedocs.io/
+3. Navigate to "Builds"
+4. Select "latest" in the dropdown at the top of the list, then click "Build Version"
