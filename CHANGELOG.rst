@@ -2,6 +2,12 @@
  CHANGELOG
 ===========
 
+NEW
+---
+
+* Made homely.file.writefile() officially available (added unit tests and docs).
+
+
 Version 0.18.0 - 22 Mar 2022
 ----------------------------
 
