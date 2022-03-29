@@ -556,7 +556,7 @@ def test_writefile_usage(tmpdir):
     contents(f2, "Already here!\n")
     assert os.path.exists(f2)
     e = Engine(cfgpath)
-    e.run(WriteFile(f2, "AAA\nBBB\n", canoverwrite=True))
+    e.run(WriteFile(f2, "AAA\nBBB\n"))
     e.cleanup(e.RAISE)
     del e
     assert contents(f2) == "AAA\nBBB\n"

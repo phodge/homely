@@ -327,12 +327,13 @@ class Engine(_AccessibleFacts):
                 # take ownership of any paths that don't exist yet!
                 for path, type_ in helper.pathsownable().items():
                     if type_ in (self.TYPE_FILE_ALL, self.TYPE_FOLDER_ALL):
-                        exists = path in self._created
+                        exists = os.path.exists(path)
                     elif type_ in (self.TYPE_FILE_PART, self.TYPE_FOLDER_ONLY):
                         exists = os.path.exists(path)
                     else:
+                        assert type_ == self.TYPE_LINK
                         exists = os.path.islink(path)
-                    if not exists:
+                    if not exists and path not in self._created:
                         self._created.add(path)
                         cfg_modified = True
 

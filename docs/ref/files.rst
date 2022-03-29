@@ -270,3 +270,60 @@ more - simply remove the call to ``symlink()`` and homely will clean it up for
 you.  Note that the symlink *won't* be cleaned up if it has been modified by
 something other than homely, or replaced with a regular file or directory.
 See :ref:`automatic_cleanup` for more information.
+
+
+homely.files.writefile()
+----------------------
+
+``writefile()`` gives you a file handle for creating or overwriting a file on disk.
+
+``writefile(filename)``
+
+``filename``
+    The name of the file to create or overwrite. If ``filename`` begins with a ``/`` it will be
+    treated as an absolute path, otherwise it is assumed to be relative to ``$HOME``.  You can also
+    use ``~`` and environment variables like ``$HOME`` directly in the filename string.
+
+
+Examples
+^^^^^^^^
+
+Write out a config file for the `Composer <https://getcomposer.org/>`_ dependency manager for PHP.
+An additional private repository will be conditionally added to the config JSON if the user answers
+``Y`` when asked.::
+
+    import json
+
+    from homely.files import mkdir, writefile
+
+    # base config
+    composer_config = {
+        'minimum-stability': 'dev',
+        'prefer-stable': True,
+    }
+
+    # optional extra repository
+    if yesno('use_my_private_composer_repo', 'Use my private composer repo?'):
+        composer_config['repositories'] = [
+            {'type': 'composer', 'url': 'http://packages.example.com'}
+        ]
+
+    # now write the JSON file
+    mkdir('~/.config')
+    mkdir('~/.config/composer')
+    with writefile('~/.config/composer/composer.json') as f:
+        json.dump(composer_config, f)
+
+
+Automatic Cleanup
+^^^^^^^^^^^^^^^^^
+
+If a file doesn't exist and Homely has to create it, then Homely will take ownership of the file and
+will [possibly] perform automatic cleanup in the future. Each time you run ``homely update`` homely
+will check to see if ``writefile()`` was used to write the same file again, and if it wasn't then
+the file will be removed.
+
+But if the file already exists before Homely writes to it for the first time, then homely won't
+take ownership of the file and won't automatically remove it aftewards.
+
+See :ref:`automatic_cleanup` for more information.
