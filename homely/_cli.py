@@ -121,7 +121,7 @@ def add(repo_path, dest_path):
 
 
 @homely.command()
-@option('--format', '-f',
+@option('--format', '-f', default='%(repoid)s: %(localpath)s',
         help="Format string for the output, which will be passed through"
         " str.format(). You may use the following named replacements:"
         "\n%(repoid)s"
