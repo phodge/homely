@@ -34,7 +34,7 @@ def include(pyscript):
     name = '__imported_by_homely_{}'.format(_include_num)
     try:
         with entersection("/" + pyscript):
-            _loadmodule(name, path)
+            return _loadmodule(name, path)
     except Exception:
         import traceback
         warn("Error while including {}: {}".format(pyscript,
