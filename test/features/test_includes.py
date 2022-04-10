@@ -111,3 +111,55 @@ def test_homely_general_include_can_import_parent_module(HOME, testrepo):
     )
 
     assert contents(HOME + '/the_word.txt') == "bonza"
+
+
+def test_homely_general_include_is_always_relative_to_repo_root(HOME, testrepo):
+    """
+    This test also ensures the main "HOMELY" import is always the root module
+    """
+    from homely._test import run_update_all
+
+    contents(
+        testrepo.remotepath + '/HOMELY.py',
+        """
+        from homely.general import include
+        THE_WORD = 'flamingo'
+        include("a/HOMELY.py")
+        """
+    )
+
+    contents(
+        testrepo.remotepath + '/a/HOMELY.py',
+        """
+        THE_WORD = 'flamingo'
+        from homely.general import include
+        include("a/b/HOMELY.py")
+        """,
+        mkdir=True,
+    )
+
+    contents(
+        testrepo.remotepath + '/a/b/HOMELY.py',
+        """
+        from homely.general import include
+        include("a/b/c/HOMELY.py")
+        """,
+        mkdir=True,
+    )
+
+    contents(
+        testrepo.remotepath + '/a/b/c/HOMELY.py',
+        """
+        from homely.files import writefile
+        import HOMELY
+        with writefile('~/the_word.txt') as f: f.write(HOMELY.THE_WORD)
+        """,
+        mkdir=True,
+    )
+
+    run_update_all(
+        # pull first so we get the new HOMELY.py script
+        pullfirst=True,
+    )
+
+    assert contents(HOME + '/the_word.txt') == "flamingo"
