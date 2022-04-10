@@ -39,8 +39,23 @@ def withtmpdir(func):
     return wrapper
 
 
-def contents(path, new_content=None, strip=True):
+def mkdir_recursive(path_to_check):
+    if os.path.exists(path_to_check):
+        assert os.path.isdir(path_to_check)
+        return
+
+    # check the parent exists first
+    mkdir_recursive(os.path.dirname(path_to_check))
+
+    # now mkdir the target folder
+    os.mkdir(path_to_check)
+
+
+def contents(path, new_content=None, strip=True, mkdir=False):
     if new_content is not None:
+        if mkdir:
+            mkdir_recursive(os.path.dirname(os.path.realpath(path)))
+
         # if new_content was a triple-quoted python string, try and strip off
         # the indent
         if strip and new_content.startswith('\n'):
