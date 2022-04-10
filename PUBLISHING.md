@@ -18,9 +18,15 @@ Then, after you have committed the changelog changes, run the publish script:
     ./publish.py NEW_VERSION_NUMBER
 
 
-# Publishing Updated Docs
+After that is finished, you probably want to publish any changes to docs.
+Checkout the `docs` branch, fast-forward it to the commit of the new tag, then
+push that branch. readthedocs.io should hopefully publish an updated version of
+the docs soon afterward.
 
-1. Make sure the `doc` branch is fast-forwarded to the same commit as master.
+
+# Manually Publishing Updated Docs
+
+1. Make sure the `doc` branch is fast-forwarded to the same commit as master or the latest tag.
 2. Log into https://readthedocs.io/
 3. Navigate to "Builds"
 4. Select "latest" in the dropdown at the top of the list, then click "Build Version"
