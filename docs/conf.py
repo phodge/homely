@@ -72,7 +72,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'homely'
-copyright = '2016, Peter Hodge'
+copyright = '2022, Peter Hodge'
 author = 'Peter Hodge'
 
 # The version info for the project you're documenting, acts as replacement for
