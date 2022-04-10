@@ -39,13 +39,15 @@ def tmpdir(request):
 
 
 @pytest.fixture
-def testrepo(HOME, tmpdir):
+def testrepo(tmpdir):
     from homely._test.system import TempRepo
+    yield _get_test_repo(TempRepo(tmpdir, 'cool-testrepo'))
+
+
+def _get_test_repo(repo):
     from homely._utils import saveconfig, RepoListConfig
     from homely._vcs import testhandler, Repo
     from homely._ui import addfromremote
-
-    repo = TempRepo(tmpdir, 'cool-testrepo')
 
     handler: Repo = testhandler.Repo.frompath(repo.url)
     assert handler is not None
@@ -54,4 +56,10 @@ def testrepo(HOME, tmpdir):
     with saveconfig(RepoListConfig()) as cfg:
         cfg.add_repo(localrepo)
 
-    yield repo
+    return repo
+
+
+@pytest.fixture
+def testrepo2(tmpdir):
+    from homely._test.system import TempRepo
+    yield _get_test_repo(TempRepo(tmpdir, 'cool-testrepo-2'))
