@@ -2,6 +2,12 @@
  CHANGELOG
 ===========
 
+NEW
+---
+
+* New feature homely.general.include().
+
+
 Version 0.19.0 - 29 Mar 2022
 ----------------------------
 
