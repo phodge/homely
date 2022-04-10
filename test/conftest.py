@@ -39,7 +39,9 @@ def tmpdir(request):
 
 
 @pytest.fixture
-def testrepo(tmpdir):
+def testrepo(HOME, tmpdir):
+    # XXX: this fixture needs the "HOME" fixture or it won't be able to
+    # homely-add the repo
     from homely._test.system import TempRepo
     yield _get_test_repo(TempRepo(tmpdir, 'cool-testrepo'))
 
@@ -60,6 +62,8 @@ def _get_test_repo(repo):
 
 
 @pytest.fixture
-def testrepo2(tmpdir):
+def testrepo2(HOME, tmpdir):
+    # XXX: this fixture needs the "HOME" fixture or it won't be able to
+    # homely-add the repo
     from homely._test.system import TempRepo
     yield _get_test_repo(TempRepo(tmpdir, 'cool-testrepo-2'))
