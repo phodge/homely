@@ -1,13 +1,11 @@
-# NOTE: this file is python3-only because of asyncio and yield from syntax
-# asyncio
+# NOTE: this file is python3-only because of asyncio
 import asyncio
 
 
 def _runasync(stdoutfilter, stderrfilter, cmd, **kwargs):
     assert asyncio is not None
 
-    @asyncio.coroutine
-    def _runandfilter(loop, cmd, **kwargs):
+    async def _runandfilter(loop, cmd, **kwargs):
         def factory():
             return FilteringProtocol(asyncio.streams._DEFAULT_LIMIT, loop)
 
@@ -38,13 +36,13 @@ def _runasync(stdoutfilter, stderrfilter, cmd, **kwargs):
                         stderrfilter(self._stderr, True)
                 return super().pipe_connection_lost(fd, exc)
 
-        transport, protocol = yield from loop.subprocess_exec(factory,
-                                                              *cmd,
-                                                              **kwargs)
+        transport, protocol = await loop.subprocess_exec(factory,
+                                                         *cmd,
+                                                         **kwargs)
         process = asyncio.subprocess.Process(transport, protocol, loop)
 
         # now wait for the process to complete
-        out, err = yield from process.communicate()
+        out, err = await process.communicate()
         return process.returncode, out, err
 
     _exception = None
