@@ -15,13 +15,6 @@ except ImportError:
         pass
 
 
-def _waitfor(process, timeout):
-    # this function exists to provide python2/3 compatibility. Python2 doesn't
-    # allow passing a timeout to process.wait() and also doesn't have the
-    # TimeoutExpired exception
-    return process.wait() if sys.version_info[0] < 3 else process.wait(timeout)
-
-
 def HOMELY(command):
     return [
         'python',
@@ -89,7 +82,7 @@ def getsystemfn(homedir):
     - it sets env's $HOME to the specified dir
     - it modifies $PYTHONPATH to include this version of the homely source code
     - it raises an exception if the command takes longer than 1 second to
-      complete (python3 only)
+      complete
     - it raises an exception if the command doesn't exit(0) or
       exit(expecterror)
     """
@@ -107,7 +100,7 @@ def getsystemfn(homedir):
                             stdout=stdout,
                             stderr=STDOUT)
                 try:
-                    returncode = _waitfor(sub, 1)
+                    returncode = sub.wait(1)
                 except TimeoutExpired:
                     returncode = '<KILLED>'
                     sub.kill()
@@ -178,7 +171,7 @@ def getjobstartfn(homedir):
                 if retval is None:
                     try:
                         # give the process a tiny bit of time to finish
-                        retval = _waitfor(proc, 1)
+                        retval = proc.wait(1)
                     except TimeoutExpired:
                         # kill the background process if it didn't finish
                         retval = '<KILLED>'
