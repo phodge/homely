@@ -10,10 +10,9 @@ try_tests() {
     docker build --pull --build-arg=PYTHON_VERSION=$version -f test/tests.Dockerfile . || fail "Containerised testing failed"
 }
 
-try_tests 3.6
-try_tests 3.7
-try_tests 3.8
 try_tests 3.9
 try_tests 3.10
+try_tests 3.11
+try_tests 3.12
 
 win "All tests succeeded"
