@@ -118,6 +118,7 @@ def add(repo_path, dest_path):
     success = run_update(
         [localrepo],
         pullfirst=needpull,
+        can_create_venv=True,
         cancleanup=True,
         quick=False,
     )
@@ -232,6 +233,7 @@ def update(identifiers, nopull, only, quick):
         only=only,
         quick=quick,
         cancleanup=cleanup and not quick,
+        can_create_venv=True,
     )
     if not success:
         sys.exit(1)
