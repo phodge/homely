@@ -326,10 +326,12 @@ def autoupdate(**kwargs):
                 os.chdir(oldcwd)
 
             cfg = RepoListConfig()
-            run_update(list(cfg.find_all()),
-                       pullfirst=True,
-                       quick=False,
-                       cancleanup=True)
+            run_update(
+                list(cfg.find_all()),
+                pullfirst=True,
+                quick=False,
+                cancleanup=True,
+            )
         except Exception:
             import traceback
             f.write(traceback.format_exc())
