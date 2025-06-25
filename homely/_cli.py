@@ -331,6 +331,7 @@ def autoupdate(**kwargs):
                 pullfirst=True,
                 quick=False,
                 cancleanup=True,
+                can_create_venv=True,
             )
         except Exception:
             import traceback
