@@ -115,7 +115,12 @@ def add(repo_path, dest_path):
     # remember this new local repo
     with saveconfig(RepoListConfig()) as cfg:
         cfg.add_repo(localrepo)
-    success = run_update([localrepo], pullfirst=needpull, cancleanup=True, quick=False)
+    success = run_update(
+        [localrepo],
+        pullfirst=needpull,
+        cancleanup=True,
+        quick=False,
+    )
     if not success:
         sys.exit(1)
 
