@@ -102,7 +102,7 @@ def add(repo_path, dest_path):
     else:
         try:
             repoid = repo.getrepoid()
-        except RepoHasNoCommitsError as err:
+        except RepoHasNoCommitsError:
             echo("ERROR: {}".format(ERR_NO_COMMITS))
             sys.exit(1)
         localrepo = RepoInfo(repo, repoid, None)
