@@ -13,15 +13,9 @@ from typing import Union
 
 import simplejson
 
+from homely._asyncioutils import _runasync
 from homely._errors import JsonError
 from homely._vcs import Repo, fromdict
-
-try:
-    import asyncio
-
-    from homely._asyncioutils import _runasync
-except ImportError:
-    asyncio = None
 
 try:
     # python3.3+
@@ -169,7 +163,7 @@ def run(cmd, stdout=None, stderr=None, **kwargs):
         else:
             assert stderr is None, "Invalid stderr %r" % stderr
 
-        if (stdoutfilter or stderrfilter) and asyncio:
+        if (stdoutfilter or stderrfilter):
             # run background process asynchronously and filter output as
             # it is running
             exitcode, out, err, = _runasync(stdoutfilter,
