@@ -226,11 +226,13 @@ def update(identifiers, nopull, only, quick):
     else:
         updatelist = list(cfg.find_all())
         cleanup = True
-    success = run_update(updatelist,
-                         pullfirst=not nopull,
-                         only=only,
-                         quick=quick,
-                         cancleanup=cleanup and not quick)
+    success = run_update(
+        updatelist,
+        pullfirst=not nopull,
+        only=only,
+        quick=quick,
+        cancleanup=cleanup and not quick,
+    )
     if not success:
         sys.exit(1)
 
