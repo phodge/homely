@@ -52,4 +52,5 @@ build-backend = "hatchling.build"
 
 
 [tool.mypy]
-python_version = 3.6
+# the oldest python version we support
+python_version = "3.10"
