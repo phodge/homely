@@ -1,0 +1,14 @@
+name: Automated Tests
+on: [pull_request]
+jobs:
+  Pytest:
+    runs-on: ubuntu-latest
+    container: ghcr.io/astral-sh/uv:python${{ matrix.pythonversion }}-alpine
+    strategy:
+      matrix:
+        pythonversion: ["3.9", "3.10"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - run: apk add git
+      - run: uv run pytest test
