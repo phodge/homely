@@ -1,0 +1,23 @@
+name: Automated Release
+on: [tag]
+
+# see https://docs.github.com/en/actions/how-tos/use-cases-and-examples/building-and-testing/building-and-testing-python
+jobs:
+  pypi-publish:
+    runs-on: ubuntu-latest
+    container: ghcr.io/astral-sh/uv:python3.12-alpine
+
+    permissions:
+      # IMPORTANT: this permission is mandatory for trusted publishing
+      id-token: write
+
+    # Dedicated environments with protections for publishing are strongly recommended.
+    environment:
+      name: pypi
+      url: https://pypi.org/p/homely
+
+    steps:
+      - run: sh bin/ci/check_versions.sh
+      - run: uv build
+      - name: Publish release distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@6f7e8d9c0b1a2c3d4e5f6a7b8c9d0e1f2a3b4c5d
