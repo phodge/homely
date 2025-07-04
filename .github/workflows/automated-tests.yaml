@@ -11,4 +11,5 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - run: apk add git
+      - run: sh bin/ci/check_versions.sh
       - run: uv run pytest test
