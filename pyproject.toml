@@ -1,2 +1,52 @@
+[project]
+name = "homely"
+description = "Automate the installation of your personal config files and favourite tools using Python."
+authors = [
+    {name = "Peter Hodge"},
+]
+license = "MIT"
+license-files = ["LICENSE"]
+keywords = ["dotfiles", "environment", "configuration", "tools", "utilities", "automation"]
+classifiers=[
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Topic :: Utilities",
+]
+
+requires-python = ">=3.9"
+version = "0.20.0"
+
+dependencies = [
+    "python-daemon==2.3.0",
+    "requests==2.25.1",
+    "simplejson==3.17.2",
+    "click==7.1.2",
+]
+
+[dependency-groups]
+dev = [
+    "freezegun>=1.2.1",
+    "pytest>=6.2.4",
+    "sphinx>=4.5.0",
+    "sphinx-autobuild>=2021.3.14",
+    "twine>=3.2.0",
+]
+
+
+[project.urls]
+Documentation = "https://homely.readthedocs.io/"
+
+
+[project.scripts]
+homely = "homely._cli:main"
+
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+
 [tool.mypy]
 python_version = 3.6

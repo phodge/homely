@@ -91,9 +91,6 @@ ENV/
 # pytest
 .pytest_cache
 
-# contains version information
-homely/__init__.py
-
 # generated slides
 docs/_static/slides.html
 
