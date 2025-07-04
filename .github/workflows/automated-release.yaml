@@ -8,7 +8,6 @@ on:
 jobs:
   pypi-publish:
     runs-on: ubuntu-latest
-    container: ghcr.io/astral-sh/uv:python3.12-alpine
 
     permissions:
       # IMPORTANT: this permission is mandatory for trusted publishing
@@ -20,7 +19,15 @@ jobs:
       url: https://pypi.org/p/homely
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - run: pipx install uv
       - run: sh bin/ci/check_versions.sh
       - run: uv build
+      - run: find dist
       - name: Publish release distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@6f7e8d9c0b1a2c3d4e5f6a7b8c9d0e1f2a3b4c5d
+        uses: pypa/gh-action-pypi-publish@release/v1
