@@ -307,16 +307,16 @@ class Engine(_AccessibleFacts):
         cleaner = helper.getcleaner()
 
         if helper.isdone():
-            # if there is already a cleaner for this thing, add and remove it
-            # so it hangs around. If there is no cleaner but the thing is
-            # already done, it means we shouldn't be cleaning it up
+            # if there is already a cleaner for this thing, re-add it so that
+            # we won't execute the cleaner at the end
             if cleaner is not None:
                 cfg_modified = True
+                # TODO: rather than remove/add waht if we have a single
                 if self._removecleaner(cleaner):
                     self._addcleaner(cleaner)
-                note("{}: Already done".format(helper.description))
+            note("{}: Already done".format(helper.description))
         else:
-            # remove and add the cleaner so that we know it will try to clean
+            # re-add the cleaner so that we know it will try to clean
             # up, since we know we will be making the change
             if cleaner is not None:
                 cfg_modified = True

@@ -149,7 +149,15 @@ def _writepidfile():
         return False
 
 
-def run_update(infos, pullfirst, only=None, cancleanup=None, quick=None):
+def run_update(
+    infos,
+    pullfirst,
+    *,
+    can_create_venv: bool,
+    only=None,
+    cancleanup=None,
+    quick=None,
+):
     from homely._engine2 import initengine, resetengine, setrepoinfo
 
     assert cancleanup is not None
@@ -208,6 +216,10 @@ def run_update(infos, pullfirst, only=None, cancleanup=None, quick=None):
                     engine.onlysections(only)
 
                 try:
+                    # TODO: if we're doing virtualenvs then we need to:
+                    # A) inject any required state into the subprocess engine
+                    # B) collect any required state updates from the
+                    # subprocess' engine
                     homely._utils._loadmodule('HOMELY', pyscript)
                 except Exception as err:
                     import traceback
