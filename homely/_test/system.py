@@ -2,17 +2,10 @@ import os.path
 import re
 import sys
 from contextlib import contextmanager
-from subprocess import STDOUT, Popen
+from subprocess import STDOUT, Popen, TimeoutExpired
 
 from homely._test import withtmpdir
 
-try:
-    from subprocess import TimeoutExpired
-except ImportError:
-    class TimeoutExpired(Exception):
-        # nothing will raise this exception, we just define it here to prevent
-        # a NameError in python2
-        pass
 
 
 def HOMELY(command):
