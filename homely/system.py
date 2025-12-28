@@ -1,6 +1,7 @@
+import shlex
 from functools import partial
 
-from homely._ui import allowinteractive, note, shellquote, warn
+from homely._ui import allowinteractive, note, warn
 from homely._utils import haveexecutable, run
 
 __all__ = ["haveexecutable", "execute"]
@@ -64,7 +65,7 @@ def execute(cmd, stdout=None, stderr=None, expectexit=0, **kwargs):
         errredir = ' 2> /dev/null' if stderr is False else ''
 
     with note('{}$ {}{}{}'.format(kwargs.get('cwd', ''),
-                                  ' '.join(map(shellquote, cmd)),
+                                  ' '.join(map(shlex.quote, cmd)),
                                   outredir,
                                   errredir)):
         returncode, out, err = run(cmd, stdout=stdout, stderr=stderr, **kwargs)

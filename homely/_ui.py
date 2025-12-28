@@ -12,21 +12,6 @@ from homely._utils import (FAILFILE, RUNFILE, SECTIONFILE, TIMEFILE, RepoInfo,
                            tmpdir)
 from homely._vcs import Repo
 
-# try and get a function for quoting shell args
-try:
-    from shlex import quote as shellquote
-except ImportError:
-    try:
-        from pipes import quote as shellquote
-    except ImportError:
-        def shellquote(data):
-            if data.isalnum():
-                return data
-            return "'{}'".format(data
-                                 .replace('\\', '\\\\')
-                                 .replace("'", "\\'"))
-
-
 _VERBOSE = False
 _ALLOWPULL = True
 _WANTPROMPT = None
