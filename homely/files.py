@@ -1,8 +1,8 @@
 import os
-from io import StringIO
 import time
 from contextlib import contextmanager
 from copy import copy
+from io import StringIO
 
 from homely._engine2 import Cleaner, Engine, Helper, getengine, getrepoinfo
 from homely._errors import HelperError

@@ -5,7 +5,7 @@ from homely._test.system import HOMELY, TempRepo, getjobstartfn, getsystemfn
 
 
 def test_homely_updatestatus(HOME, tmpdir):
-    from homely._utils import RUNFILE, FAILFILE, UpdateStatus, STATUSCODES
+    from homely._utils import FAILFILE, RUNFILE, STATUSCODES, UpdateStatus
 
     system = getsystemfn(HOME)
     jobstart = getjobstartfn(HOME)

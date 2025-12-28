@@ -8,7 +8,7 @@ def test_add_greenfield_repos(tmpdir, HOME):
     """
     Work or at least die with a helpful error message when ...
     """
-    from homely._errors import ERR_NO_COMMITS, ERR_NOT_A_REPO, ERR_NO_SCRIPT
+    from homely._errors import ERR_NO_COMMITS, ERR_NO_SCRIPT, ERR_NOT_A_REPO
 
     system = getsystemfn(HOME)
 
