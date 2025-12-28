@@ -28,6 +28,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "freezegun>=1.2.1",
+    "isort>=6.1.0",
     "pytest>=6.2.4",
     "sphinx>=4.5.0",
     "sphinx-autobuild>=2021.3.14",

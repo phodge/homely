@@ -249,7 +249,7 @@ def test_lineinfile_usage(tmpdir):
 
 def test_lineinfile_cleanup_interaction(tmpdir):
     from homely._engine2 import Engine
-    from homely.files import MakeDir, LineInFile
+    from homely.files import LineInFile, MakeDir
 
     # a temporary file where the engine can store its config
     cfgpath = gettmpfilepath(tmpdir, '.json')
@@ -400,7 +400,7 @@ def test_blockinfile_lineinfile_cleanup_interaction(tmpdir):
     reapplied, then they *all* need to be reapplied.
     '''
     from homely._engine2 import Engine
-    from homely.files import LineInFile, BlockInFile
+    from homely.files import BlockInFile, LineInFile
 
     cfgpath = gettmpfilepath(tmpdir, '.json')
     f1 = gettmpfilepath(tmpdir, '.txt')
@@ -463,7 +463,7 @@ def test_cleanup_everything(tmpdir):
     cleanup() will remove all of things that might be lying around
     '''
     from homely._engine2 import Engine
-    from homely.files import MakeDir, MakeSymlink, LineInFile
+    from homely.files import LineInFile, MakeDir, MakeSymlink
 
     cfgpath = gettmpfilepath(tmpdir, '.json')
     d1 = gettmpfilepath(tmpdir, '.d')

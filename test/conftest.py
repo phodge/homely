@@ -47,9 +47,9 @@ def testrepo(HOME, tmpdir):
 
 
 def _get_test_repo(repo):
-    from homely._utils import saveconfig, RepoListConfig
-    from homely._vcs import testhandler, Repo
     from homely._ui import addfromremote
+    from homely._utils import RepoListConfig, saveconfig
+    from homely._vcs import Repo, testhandler
 
     handler: Repo = testhandler.Repo.frompath(repo.url)
     assert handler is not None

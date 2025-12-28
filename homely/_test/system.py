@@ -1,3 +1,4 @@
+import os
 import os.path
 import re
 import sys
@@ -5,7 +6,6 @@ from contextlib import contextmanager
 from subprocess import STDOUT, Popen, TimeoutExpired
 
 from homely._test import withtmpdir
-
 
 
 def HOMELY(command):
@@ -24,8 +24,9 @@ NEXT_ID = 1
 
 class TempRepo(object):
     def __init__(self, tmpdir, name):
-        import hashlib
         import datetime
+        import hashlib
+
         from homely._vcs.testhandler import MARKERFILE
         self._tmpdir = tmpdir
         self._name = name

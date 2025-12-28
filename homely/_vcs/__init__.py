@@ -2,7 +2,6 @@ import os
 
 from homely._errors import NotARepo
 
-
 _handlers = None
 
 HANDLER_GIT_v1 = "vcs:git"
