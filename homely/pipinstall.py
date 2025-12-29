@@ -1,5 +1,6 @@
 import re
 from distutils.version import StrictVersion
+from typing import Optional
 
 from homely._engine2 import Cleaner, Helper, getengine
 from homely._errors import HelperError
@@ -103,7 +104,7 @@ def _haspkg(pipcmd, name):
 class PIPInstall(Helper):
     _name = None
     _pip = None
-    _pipcmd = None
+    _pipcmd: Optional[str] = None
     _mustinstall = True
     # TODO: get rid of this option
     _user = False
