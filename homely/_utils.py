@@ -10,7 +10,7 @@ from datetime import timedelta
 from functools import partial
 from itertools import chain
 from os.path import exists, join
-from typing import Union
+from typing import Any, Optional, Union
 
 from homely._asyncioutils import _runasync
 from homely._errors import JsonError
@@ -203,8 +203,8 @@ def haveexecutable(name):
 
 
 class JsonConfig(object):
-    jsonpath = None
-    jsondata = None
+    jsonpath: Optional[str] = None
+    jsondata: Optional[list[Any]] = None
 
     def __init__(self):
         # load up the default json until we know that we can load something
