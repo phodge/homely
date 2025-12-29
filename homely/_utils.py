@@ -1,4 +1,5 @@
 import contextlib
+import json
 import os
 import re
 import shutil
@@ -10,8 +11,6 @@ from functools import partial
 from itertools import chain
 from os.path import exists, join
 from typing import Union
-
-import simplejson
 
 from homely._asyncioutils import _runasync
 from homely._errors import JsonError
@@ -219,9 +218,9 @@ class JsonConfig(object):
                 data = f.read()
                 if not len(data):
                     return
-                self.jsondata = simplejson.loads(data)
+                self.jsondata = json.loads(data)
                 self.checkjson()
-        except simplejson.JSONDecodeError:
+        except json.JSONDecodeError:
             raise JsonError("%s does not contain valid JSON" % self.jsonpath)
 
     def checkjson(self):
@@ -244,7 +243,7 @@ class JsonConfig(object):
         if not os.path.exists(parentdir):
             os.makedirs(parentdir, mode=0o755)
         # write the config file now
-        dumped = simplejson.dumps(self.jsondata, indent=' ' * 4)
+        dumped = json.dumps(self.jsondata, indent=' ' * 4)
         with open(self.jsonpath, 'w') as f:
             f.write(dumped)
 

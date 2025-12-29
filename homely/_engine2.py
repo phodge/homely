@@ -1,7 +1,6 @@
+import json
 import os
 from typing import Optional
-
-import simplejson
 
 from homely._errors import CleanupConflict, CleanupObstruction, HelperError
 from homely._ui import note, warn
@@ -219,7 +218,7 @@ class Engine(_AccessibleFacts):
         if os.path.isfile(cfgpath):
             with open(cfgpath, 'r') as f:
                 raw = f.read()
-                data = simplejson.loads(raw)
+                data = json.loads(raw)
                 if not isinstance(data, dict):
                     raise Exception("Invalid json in %s" % cfgpath)
                 for item in data.get('cleaners', []):
@@ -251,7 +250,7 @@ class Engine(_AccessibleFacts):
                     paths_postponed=list(self._postponed),
                     paths_created=list(self._created),
                     )
-        dumped = simplejson.dumps(data, indent=' ' * 4)
+        dumped = json.dumps(data, indent=' ' * 4)
         with open(self._cfgpath, 'w') as f:
             f.write(dumped)
 

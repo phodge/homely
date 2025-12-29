@@ -1,7 +1,6 @@
+import json
 import os
 import sys
-
-import simplejson
 
 from homely._test import contents, gettmpfilepath
 
@@ -583,14 +582,14 @@ def test_writefile_usage(tmpdir):
     data = {"z": [3, 4, 5, True], "y": "Hello world", "x": None}
     with writefile(f3) as f:
         if sys.version_info[0] < 3:
-            f.write(simplejson.dumps(data, ensure_ascii=False))
+            f.write(json.dumps(data, ensure_ascii=False))
         else:
-            f.write(simplejson.dumps(data))
+            f.write(json.dumps(data))
     e.cleanup(e.RAISE)
     del e
     assert os.path.exists(f3)
     with open(f3, 'r') as f:
-        assert simplejson.loads(f.read()) == data
+        assert json.loads(f.read()) == data
 
     # prove that the WriteFile() disappearing results in the file being removed
     e = Engine(cfgpath)
