@@ -305,7 +305,7 @@ def autoupdate(**kwargs):
                       UpdateStatus.NOCONN)
 
     oldcwd = os.getcwd()
-    import daemon
+    import daemon  # type: ignore
     with daemon.DaemonContext(), open(OUTFILE, 'w') as f:
         try:
             from homely._ui import setstreams

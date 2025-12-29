@@ -3,6 +3,7 @@ import os.path
 import shutil
 import sys
 import tempfile
+from typing import Optional
 
 import pytest
 
@@ -46,12 +47,12 @@ def testrepo(HOME, tmpdir):
     yield _get_test_repo(TempRepo(tmpdir, 'cool-testrepo'))
 
 
-def _get_test_repo(repo):
+def _get_test_repo(repo) -> None:
     from homely._ui import addfromremote
     from homely._utils import RepoListConfig, saveconfig
     from homely._vcs import Repo, testhandler
 
-    handler: Repo = testhandler.Repo.frompath(repo.url)
+    handler: Optional[Repo] = testhandler.Repo.frompath(repo.url)
     assert handler is not None
     localrepo, needpull = addfromremote(handler, None)
 

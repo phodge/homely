@@ -60,9 +60,9 @@ def pipinstall(packagename, pips=None, trypips=[], scripts=None):
         engine.run(helper)
 
 
-_known_pips = {}
+_known_pips: dict[str, bool] = {}
 # dict of pip executables and whether they need the --format arg
-_needs_format_cache = {}
+_needs_format_cache: dict[str, bool] = {}
 
 
 def _needs_format(pipcmd):

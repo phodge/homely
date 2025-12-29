@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timedelta
+from typing import Optional
 
 from homely._engine2 import getengine, getrepoinfo
 from homely._ui import entersection, head, note, warn
@@ -60,7 +61,7 @@ def section(func=None, quick=False, enabled=True, interval=None):
         return _decorator
 
 
-def _execute_section(func, is_quick, is_enabled, interval: timedelta = None) -> None:
+def _execute_section(func, is_quick, is_enabled, interval: Optional[timedelta] = None) -> None:
     name = func.__name__
     engine = getengine()
 

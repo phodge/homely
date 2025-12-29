@@ -49,7 +49,7 @@ def setallowpull(value):
 
 
 _INDENT = 0
-_NOTECOUNT = {}
+_NOTECOUNT: dict[str, int] = {}
 
 
 class note(object):
