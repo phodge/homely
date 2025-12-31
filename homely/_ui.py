@@ -426,7 +426,7 @@ _CURRENT_SECTION = ""
 
 @contextmanager
 def entersection(name):
-    global _CURRENT_SECTION, _PREV_SECTION
+    global _CURRENT_SECTION
     _PREV_SECTION.append(_CURRENT_SECTION)
     try:
         # update the section name and put it in the file
