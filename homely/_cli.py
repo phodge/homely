@@ -306,7 +306,14 @@ def autoupdate(**kwargs):
 
     oldcwd = os.getcwd()
     import daemon  # type: ignore
-    with daemon.DaemonContext(), open(OUTFILE, 'w') as f:
+    with daemon.DaemonContext(
+        # When this CLI is invoked by tests inside the testing container it's
+        # possible the parent process (pytest) has PID=1 and DaemonContext()
+        # will mistakenly think we've been invoked by initd and think that
+        # detach_process is unnecessary. Hard-code detach_process=True to
+        # avoid the confusion and ensure tests work in the testing container.
+        detach_process=True,
+    ), open(OUTFILE, 'w') as f:
         try:
             from homely._ui import setstreams
             setstreams(f, f)
