@@ -1,18 +1,22 @@
 ARG PYTHON_VERSION
 
-FROM python:${PYTHON_VERSION}
+FROM ghcr.io/astral-sh/uv:python${PYTHON_VERSION}-alpine
+
+# git executable is required for many tests
+RUN apk add git
 
 WORKDIR /repo
 
-# install app requirements
-COPY requirements.txt requirements.txt
-RUN pip install -r requirements.txt
-
-# install dev/test requirements
-COPY requirements_dev.txt requirements_dev.txt
-RUN pip install -r requirements_dev.txt
+# Pull in minimum number of project files required for installing dependencies
+# so that the cached layer containing dependency installation isn't invalidated
+# by other source code changes.
+RUN mkdir homely
+COPY homely/__init__.py ./homely/
+COPY pyproject.toml ./
+COPY uv.lock ./
+RUN uv venv .venv && uv pip install -e . --group=dev
 
 COPY ./test ./test
 COPY ./homely ./homely
 
-RUN PYTHONPATH=. pytest test -x
+RUN .venv/bin/pytest test -x
