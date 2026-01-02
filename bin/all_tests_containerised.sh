@@ -7,21 +7,32 @@ try_tests() {
     version=$1
     shift
     say "Testing under python $version"
-    docker build --pull --build-arg=PYTHON_VERSION=$version -f test/tests.Dockerfile . || fail "Containerised testing failed"
+    docker build $build_opts --build-arg=PYTHON_VERSION=$version -f test/tests.Dockerfile . || fail "Containerised testing failed"
 }
 
-case "$1" in
-	3.1*)
-		try_tests "$1";;
-	ALL)
-		try_tests 3.10
-		try_tests 3.11
-		try_tests 3.12
-		;;
-	*)
-		echo "Usage: $0 { 3.10 | 3.11 | ... | ALL }" >&2
-		exit 2
-		;;
-esac
+build_opts=""
+targets=""
+
+for arg in "$@"; do
+	case "$arg" in
+		--pull)
+			build_opts="--pull"
+			;;
+		3.1*)
+			targets="$targets $arg"
+			;;
+		ALL)
+			targets="3.10 3.11 3.12"
+			;;
+		*)
+			echo "Usage: $0 { 3.10 | 3.11 | ... | ALL }" >&2
+			exit 2
+			;;
+	esac
+done
+
+for target in $targets; do
+    try_tests "$target"
+done
 
 win "All tests succeeded"
