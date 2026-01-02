@@ -20,12 +20,17 @@ class RepoVirtualenvConfig:
 
     @classmethod
     def from_pyproject_toml(cls, pyproject_path: Path) -> "RepoVirtualenvConfig":
-        import tomli
+        try:
+            # we need a type-ignore here because tomllib is only in Python
+            # 3.11+ and mypy is configured to check against 3.10 stdlib.
+            import tomllib  # type: ignore
+        except ImportError:
+            import tomli as tomllib
 
         with pyproject_path.open('rb') as f:
             try:
-                toml_dict = tomli.load(f)
-            except tomli.TOMLDecodeError:
+                toml_dict = tomllib.load(f)
+            except tomllib.TOMLDecodeError:
                 # FIXME: raise a better exception here
                 raise
 
