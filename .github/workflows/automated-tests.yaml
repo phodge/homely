@@ -16,7 +16,7 @@ jobs:
       - run: uv run pytest test
   Mypy:
     runs-on: ubuntu-latest
-    # only run on latest supported python version
+    # only run on oldest supported python version
     container: ghcr.io/astral-sh/uv:python3.10-alpine
     steps:
       - name: Checkout
