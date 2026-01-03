@@ -22,7 +22,7 @@ version = "0.20.3"
 dependencies = [
     "python-daemon>=2.3.0",
     "requests>=2.25.1",
-    "click>=7.1.2",
+    "click>=8.3",
     # tomli is required before python 3.11
     "tomli>=2.3.0 ; python_full_version < '3.11'",
 ]
