@@ -1,13 +1,14 @@
 import contextlib
+import importlib.util
 import json
 import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 from datetime import timedelta
 from functools import partial
-from importlib.machinery import SourceFileLoader
 from itertools import chain
 from os.path import exists, join
 from typing import Any, Optional, Union
@@ -17,8 +18,28 @@ from homely._errors import JsonError
 from homely._vcs import Repo, fromdict
 
 
-def _loadmodule(name, path):
-    return SourceFileLoader(name, path).load_module()
+def _loadmodule(name: str, file_path: str):
+    spec = importlib.util.spec_from_file_location(name, file_path)
+    if spec is None:
+        raise ImportError(f"Cannot find module spec for {name} at {file_path}")
+    if spec.loader is None:
+        raise Exception(f"No loader for module {name} at {file_path}")
+
+    module = importlib.util.module_from_spec(spec)
+
+    # Crucial step: Register the module in sys.modules *before* execution
+    # This prevents issues with relative imports within the module
+    sys.modules[name] = module
+
+    # Execute the module's code in its own namespace
+    try:
+        spec.loader.exec_module(module)
+    except Exception:
+        # If execution fails, remove the module from sys.modules
+        del sys.modules[name]
+        raise
+
+    return module
 
 
 # for python3, we open text files with universal newline support
