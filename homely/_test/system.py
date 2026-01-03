@@ -123,7 +123,8 @@ def getsystemfn(homedir):
             print(open(stdoutpath).read())
             raise
 
-        return open(stdoutpath, 'r').read()
+        with open(stdoutpath, 'r') as f:
+            return f.read()
 
     return system
 
