@@ -19,4 +19,4 @@ RUN uv venv .venv && uv pip install -e . --group=dev
 COPY ./test ./test
 COPY ./homely ./homely
 
-RUN .venv/bin/pytest test -x
+RUN .venv/bin/pytest -W error test -x
