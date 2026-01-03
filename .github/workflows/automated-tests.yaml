@@ -13,7 +13,7 @@ jobs:
       - run: apk add git
       - run: sh bin/ci/check_versions.sh
       - run: uv run isort --check homely test
-      - run: uv run pytest test
+      - run: uv run pytest -W error test
   Mypy:
     runs-on: ubuntu-latest
     # only run on oldest supported python version
