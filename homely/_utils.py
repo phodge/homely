@@ -511,14 +511,14 @@ def filereplacer(filepath):
                         NL = firstline[len(stripped):]
                         assert NL in ("\r", "\n", "\r\n"), "Bad NL %r" % NL
                         origlines = chain([stripped],
-                                          (l.rstrip('\r\n') for l in orig))
+                                          (line.rstrip('\r\n') for line in orig))
                     yield tmp, origlines, NL
             else:
                 yield tmp, None, "\n"
     except NoChangesNeeded:
         if os.path.exists(tmpname):
             os.unlink(tmpname)
-    except:
+    except Exception:
         if os.path.exists(tmpname):
             os.unlink(tmpname)
         raise
