@@ -516,8 +516,10 @@ def filereplacer(filepath):
                         stripped = firstline.rstrip('\r\n')
                         NL = firstline[len(stripped):]
                         assert NL in ("\r", "\n", "\r\n"), "Bad NL %r" % NL
-                        origlines = chain([stripped],
-                                          (line.rstrip('\r\n') for line in orig))
+                        origlines = chain(
+                            [stripped],
+                            (line.rstrip('\r\n') for line in orig),
+                        )
                     yield tmp, origlines, NL
             else:
                 yield tmp, None, "\n"
