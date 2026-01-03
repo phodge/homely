@@ -304,7 +304,6 @@ def autoupdate(**kwargs):
                       UpdateStatus.NEVER,
                       UpdateStatus.NOCONN)
 
-    oldcwd = os.getcwd()
     import daemon  # type: ignore
     with daemon.DaemonContext(
         # When this CLI is invoked by tests inside the testing container it's
@@ -317,11 +316,6 @@ def autoupdate(**kwargs):
         try:
             from homely._ui import setstreams
             setstreams(f, f)
-
-            # we need to chdir back to the old working directory or  imports
-            # will be broken!
-            if sys.version_info[0] < 3:
-                os.chdir(oldcwd)
 
             cfg = RepoListConfig()
             run_update(list(cfg.find_all()),
