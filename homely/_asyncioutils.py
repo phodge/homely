@@ -1,11 +1,14 @@
 # NOTE: this file is python3-only because of asyncio
 import asyncio
+import sys
 
 
 def _runasync(stdoutfilter, stderrfilter, cmd, **kwargs):
     assert asyncio is not None
 
-    async def _runandfilter(loop, cmd, **kwargs):
+    async def _runandfilter(cmd, **kwargs):
+        loop = asyncio.get_event_loop()
+
         def factory():
             return FilteringProtocol(asyncio.streams._DEFAULT_LIMIT, loop)
 
@@ -45,17 +48,11 @@ def _runasync(stdoutfilter, stderrfilter, cmd, **kwargs):
         out, err = await process.communicate()
         return process.returncode, out, err
 
-    _exception = None
+    run_kwargs = {}
+    if sys.version_info >= (3, 13):
+        run_kwargs['loop_factory'] = asyncio.EventLoop
 
-    def handleexception(loop, context):
-        nonlocal _exception
-        if _exception is None:
-            _exception = context["exception"]
-
-    # FIXME: probably shouldn't be using the main loop here
-    loop = asyncio.get_event_loop()
-    loop.set_exception_handler(handleexception)
-    result = loop.run_until_complete(_runandfilter(loop, cmd, **kwargs))
-    if _exception:
-        raise _exception
-    return result
+    return asyncio.run(
+        _runandfilter(cmd, **kwargs),
+        **run_kwargs,
+    )
