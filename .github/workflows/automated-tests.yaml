@@ -6,7 +6,7 @@ jobs:
     container: ghcr.io/astral-sh/uv:python${{ matrix.pythonversion }}-alpine
     strategy:
       matrix:
-        pythonversion: ["3.10", "3.11", "3.12", "3.13"]
+        pythonversion: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
