@@ -58,7 +58,7 @@ class note(object):
 
     def __init__(self, message, dash=None):
         super(note, self).__init__()
-        self._log(self._getstream(), message, dash=dash)
+        self._unicodelog(self._getstream(), message, dash=dash)
 
     def _getstream(self):
         return _OUTSTREAM
@@ -73,13 +73,6 @@ class note(object):
             _NOTECOUNT[self.__class__.__name__] += 1
         except KeyError:
             _NOTECOUNT[self.__class__.__name__] = 1
-
-    def _asciilog(self, stream, message, dash=None):
-        if isinstance(message, unicode):  # noqa: F821
-            message = message.encode('utf-8')
-        return self._unicodelog(stream, message, dash)
-
-    _log = _asciilog if sys.version_info[0] < 3 else _unicodelog
 
     def __enter__(self):
         global _INDENT
@@ -111,18 +104,7 @@ class dirty(warn):
 
 
 def _writepidfile():
-    if sys.version_info[0] < 3:
-        # Note: py2 doesn't have a way to open a file in 'x' mode so we just
-        # have to accept that a race condition is possible, although unlikely.
-        if not os.path.exists(RUNFILE):
-            with open(RUNFILE, 'w') as f:
-                f.write(str(os.getpid()))
-            return True
-        with open(RUNFILE) as f:
-            warn("Update is already running (PID={})".format(f.read().strip()))
-        return False
-
-    # python3 allows us to create the pid file without race conditions
+    # Create the pid file without race conditions
     try:
         with open(RUNFILE, 'x') as f:
             f.write(str(os.getpid()))
@@ -374,10 +356,8 @@ def yesno(name, prompt, default=None, recommended=None, noprompt=None):
     if recommended is not None:
         rec = "[recommended={}] ".format("Y" if recommended else "N")
 
-    input_ = raw_input if sys.version_info[0] < 3 else input  # noqa: F821
-
     while True:
-        answer = input_("{} {} {} : ".format(prompt, rec, options))
+        answer = input("{} {} {} : ".format(prompt, rec, options))
         if answer == "" and default is not None:
             retval = default
             break
@@ -413,11 +393,7 @@ def setcurrentrepo(info):
 def _write(path, content):
     with open(path + ".new", 'w') as f:
         f.write(content)
-    if sys.version_info[0] < 3:
-        # use the less-reliable os.rename() on python2
-        os.rename(path + ".new", path)
-    else:
-        os.replace(path + ".new", path)
+    os.replace(path + ".new", path)
 
 
 _PREV_SECTION = []

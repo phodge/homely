@@ -4,10 +4,10 @@ import os
 import re
 import shutil
 import subprocess
-import sys
 import tempfile
 from datetime import timedelta
 from functools import partial
+from importlib.machinery import SourceFileLoader
 from itertools import chain
 from os.path import exists, join
 from typing import Any, Optional, Union
@@ -16,28 +16,13 @@ from homely._asyncioutils import _runasync
 from homely._errors import JsonError
 from homely._vcs import Repo, fromdict
 
-try:
-    # python3.3+
-    from importlib.machinery import SourceFileLoader
 
-    def _loadmodule(name, path):
-        return SourceFileLoader(name, path).load_module()
-except ImportError:
-    # python2
-    import imp
+def _loadmodule(name, path):
+    return SourceFileLoader(name, path).load_module()
 
-    def _loadmodule(name, path):
-        return imp.load_source(name, path)
 
-if sys.version_info[0] < 3:
-    def opentext(path, mode, *args, **kwargs):
-        if 'r' in mode:
-            mode = "U" + mode
-        return open(path, mode, *args, **kwargs)
-else:
-    # for python3, we open text files with universal newline support
-    opentext = partial(open, newline="")
-
+# for python3, we open text files with universal newline support
+opentext = partial(open, newline="")
 
 ROOT = join(os.environ['HOME'], '.homely')
 REPO_CONFIG_PATH = join(ROOT, 'repos.json')
