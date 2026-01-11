@@ -390,7 +390,7 @@ def yesno(name, prompt, default=None, recommended=None, noprompt=None):
 _CURRENT_REPO = None
 
 
-def setcurrentrepo(info):
+def setcurrentrepo(info: RepoInfo) -> None:
     assert isinstance(info, RepoInfo)
     global _CURRENT_REPO
     _CURRENT_REPO = info
