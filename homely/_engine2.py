@@ -28,7 +28,6 @@ def getengine() -> "Engine":
 
 
 def setrepoinfo(info: Optional[RepoInfo]) -> None:
-    assert info is None or isinstance(info, RepoInfo)
     global _REPO
     _REPO = info
 
