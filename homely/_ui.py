@@ -220,10 +220,10 @@ def run_update(infos, pullfirst, only=None, cancleanup=None, quick=None):
                     pass
             elif noconncount:
                 with open(FAILFILE, 'w') as f:
-                    f.write(UpdateStatus.NOCONN)
+                    f.write(UpdateStatus.NOCONN.value)
             elif dirtycount:
                 with open(FAILFILE, 'w') as f:
-                    f.write(UpdateStatus.DIRTY)
+                    f.write(UpdateStatus.DIRTY.value)
             _write(TIMEFILE, time.strftime("%H:%M"))
         if os.path.exists(RUNFILE):
             os.unlink(RUNFILE)
