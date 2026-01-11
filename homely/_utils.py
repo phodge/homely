@@ -378,55 +378,12 @@ class RepoScriptConfig(JsonConfig):
         os.unlink(join(ROOT, 'repos', info.repoid + '.json'))
 
     def defaultjson(self):
-        # TODO: prevthings and prevchanges are not needed with the new engine
         return {
-            # a list of things that were installed on the last run
-            "prevthings": [],
-            "prevchanges": {},
             "questions": {},
         }
 
     def checkjson(self):
         pass
-
-    def getthings(self):
-        import homely.general
-        import homely.install
-        modules = [homely.general, homely.install]
-        for thing in self.jsondata['prevthings']:
-            class_ = thing["class"]
-            identifiers = thing["identifiers"]
-            for module in modules:
-                if hasattr(module, class_):
-                    yield getattr(module, class_).fromidentifiers(identifiers)
-                    break
-            else:
-                raise Exception("No modules own %s" % class_)
-
-    def clearthings(self):
-        self.jsondata["prevthings"] = []
-        return self.jsondata["prevchanges"]
-
-    @staticmethod
-    def _asdict(thing):
-        return {"class": thing.__class__.__name__,
-                "identifiers": thing.identifiers}
-
-    def addthing(self, thing):
-        self.jsondata["prevthings"].append(self._asdict(thing))
-        self.jsondata["prevchanges"].setdefault(thing.uniqueid, {})
-
-    def removething(self, thing):
-        thingdict = self._asdict(thing)
-        prevthings = [t for t in self.jsondata["prevthings"] if t != thingdict]
-        assert (len(self.jsondata["prevthings"]) - len(prevthings)) == 1
-        del self.jsondata["prevchanges"][thing.uniqueid]
-
-    def setchanges(self, uniqueid, changes):
-        self.jsondata["prevchanges"][uniqueid] = changes
-
-    def getprevchanges(self, uniqueid):
-        return self.jsondata["prevchanges"].get(uniqueid, {})
 
     def getquestionanswer(self, name):
         return self.jsondata["questions"].get(name, None)
