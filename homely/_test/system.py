@@ -22,7 +22,7 @@ def HOMELY(command):
 NEXT_ID = 1
 
 
-class TempRepo(object):
+class TempRepo:
     def __init__(self, tmpdir, name):
         import datetime
         import hashlib

@@ -35,7 +35,7 @@ def fromdict(row):
     raise Exception("No Repo handler wants to load %r" % row)
 
 
-class Repo(object):
+class Repo:
     """
     Base class for VCS handlers
     """

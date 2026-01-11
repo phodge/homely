@@ -41,7 +41,7 @@ def _exists(path):
     return os.path.exists(path) or os.path.islink(path)
 
 
-class _AccessibleFacts(object):
+class _AccessibleFacts:
     _facts = None
 
     def _setfact(self, name, value):
