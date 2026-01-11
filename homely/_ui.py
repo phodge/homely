@@ -4,6 +4,7 @@ import sys
 import time
 from contextlib import contextmanager
 from datetime import datetime
+from typing import Optional
 
 import homely._utils
 from homely._errors import ERR_NO_SCRIPT, ConnectionError, InputError
