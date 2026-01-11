@@ -120,9 +120,9 @@ def run_update(
     infos: list[RepoInfo],
     pullfirst: bool,
     *,
-    only=None,
-    cancleanup=None,
-    quick=None,
+    cancleanup: bool,
+    quick: bool,
+    only: Optional[list[str]] = None,
 ) -> bool:
     from homely._engine2 import initengine, resetengine, setrepoinfo
 
