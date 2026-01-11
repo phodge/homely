@@ -126,7 +126,6 @@ def run_update(
 ) -> bool:
     from homely._engine2 import initengine, resetengine, setrepoinfo
 
-    assert cancleanup is not None
     if only is None:
         only = []
     elif len(only):
@@ -155,7 +154,6 @@ def run_update(
 
         for info in infos:
             setrepoinfo(info)
-            assert isinstance(info, RepoInfo)
             _CURRENT_REPO = info
             localrepo = info.localrepo
             with entersection(os.path.basename(localrepo.repo_path)), \
