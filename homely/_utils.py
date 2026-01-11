@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 from datetime import timedelta
+from enum import Enum
 from functools import partial
 from itertools import chain
 from os.path import exists, join
@@ -595,7 +596,7 @@ def tmpdir(name):
             shutil.rmtree(tmp)
 
 
-class UpdateStatus:
+class UpdateStatus(Enum):
     OK = "ok"
     NEVER = "never"
     RUNNING = "running"
@@ -640,9 +641,9 @@ def getstatus():
         # contact one or more remote servers
         with open(FAILFILE) as f:
             content = f.read().strip()
-            if content == UpdateStatus.NOCONN:
+            if content == UpdateStatus.NOCONN.value:
                 return UpdateStatus.NOCONN, mtime, None
-            elif content == UpdateStatus.DIRTY:
+            elif content == UpdateStatus.DIRTY.value:
                 return UpdateStatus.DIRTY, mtime, None
         return UpdateStatus.FAILED, mtime, None
 
