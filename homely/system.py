@@ -14,7 +14,7 @@ def execute(
     stderr=None,
     expectexit: int | Collection[int] = 0,
     **kwargs,
-) -> tuple[int, str, str]:
+) -> tuple[int, list[str] | None, list[str] | None]:
     # Executes `cmd` in a subprocess. Raises a SystemError if the exit code
     # is different to `expecterror`.
     #
