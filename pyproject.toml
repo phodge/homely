@@ -67,7 +67,6 @@ disallow_untyped_defs = true
 [[tool.mypy.overrides]]
 # burn-down untyped defs in these modules to gradually add type annotations to the whole project
 module = [
-    "homely._asyncioutils",
     "homely._cli",
     "homely._engine2",
     "homely._errors",
