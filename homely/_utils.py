@@ -10,16 +10,20 @@ import tempfile
 from datetime import timedelta
 from enum import Enum
 from functools import partial
+from io import TextIOWrapper
 from itertools import chain
 from os.path import exists, join
-from typing import Any, Optional, Union
+from typing import (IO, Any, Generic, Iterable, Iterator, Literal, Optional,
+                    Sequence, TypedDict, TypeVar, Union)
+
+from typing_extensions import NotRequired
 
 from homely._asyncioutils import _runasync
 from homely._errors import JsonError
 from homely._vcs import Repo, fromdict
 
 
-def _loadmodule(name: str, file_path: str):
+def _loadmodule(name: str, file_path: str) -> object:
     spec = importlib.util.spec_from_file_location(name, file_path)
     if spec is None:
         raise ImportError(f"Cannot find module spec for {name} at {file_path}")
@@ -69,12 +73,12 @@ OUTFILE = join(ROOT, "autoupdate-output.txt")
 _urlregex = re.compile(r"^[a-zA-Z0-9+\-.]{2,20}://")
 
 
-def mkcfgdir():
+def mkcfgdir() -> None:
     if not exists(ROOT):
         os.mkdir(ROOT)
 
 
-def _expandpath(path):
+def _expandpath(path: str) -> str:
     if path.startswith('~'):
         path = os.path.expanduser(path)
     path = os.path.expandvars(path)
@@ -83,8 +87,7 @@ def _expandpath(path):
     return path
 
 
-def _repopath2real(path, repo):
-    assert isinstance(repo, Repo)
+def _repopath2real(path: str, repo: Repo) -> str:
     assert not path.endswith('/')
     assert not repo.isremote
     if path.startswith('~'):
@@ -97,7 +100,7 @@ def _repopath2real(path, repo):
     return path
 
 
-def _homepath2real(path):
+def _homepath2real(path: str) -> str:
     assert not path.endswith('/')
     # expand ~
     if path.startswith('~'):
@@ -112,7 +115,12 @@ def _homepath2real(path):
     return path
 
 
-def run(cmd, stdout=None, stderr=None, **kwargs):
+def run(
+    cmd: Sequence[str | os.PathLike],
+    stdout: int | bool | IO | None = None,
+    stderr: int | bool | Literal["STDOUT"] | TextIOWrapper | None = None,
+    **kwargs: Any,
+) -> tuple[int, Optional[list[str]], Optional[list[str]]]:
     """
     A blocking wrapper around subprocess.Popen(), but with a simpler interface
     for the stdout/stderr arguments:
@@ -200,7 +208,7 @@ def run(cmd, stdout=None, stderr=None, **kwargs):
             devnull.close()
 
 
-def haveexecutable(name):
+def haveexecutable(name: str) -> bool:
     exitcode = run(['which', name], stdout=False, stderr=False)[0]
     if exitcode == 0:
         return True
@@ -209,11 +217,14 @@ def haveexecutable(name):
     raise SystemError("Unexpected return value from 'which {}'".format(name))
 
 
-class JsonConfig:
-    jsonpath: Optional[str] = None
-    jsondata: Optional[list[Any]] = None
+T = TypeVar("T")
 
-    def __init__(self):
+
+class JsonConfig(Generic[T]):
+    jsonpath: str
+    jsondata: T
+
+    def __init__(self) -> None:
         # load up the default json until we know that we can load something
         # from the file
         self.jsondata = self.defaultjson()
@@ -230,21 +241,21 @@ class JsonConfig:
         except json.JSONDecodeError:
             raise JsonError("%s does not contain valid JSON" % self.jsonpath)
 
-    def checkjson(self):
+    def checkjson(self) -> None:
         """
         Child classes should override this method to check if self.jsondata is
         sane.
         """
         raise Exception("This method needs to be overridden")
 
-    def defaultjson(self):
+    def defaultjson(self) -> T:
         """
         Child classes should override this method to return the default json
         object for when the config file doesn't exist yet.
         """
         raise Exception("This method needs to be overridden")
 
-    def writejson(self):
+    def writejson(self) -> None:
         # make dirs needed for config file
         parentdir = os.path.dirname(self.jsonpath)
         if not os.path.exists(parentdir):
@@ -255,14 +266,21 @@ class JsonConfig:
             f.write(dumped)
 
 
-class RepoListConfig(JsonConfig):
-    jsonpath = REPO_CONFIG_PATH
-    jsondata = None
+class RepoListEntry(TypedDict):
+    repoid: str
+    localrepo: str
+    localpath: str
+    canonicalpath: NotRequired[str]
+    canonicalrepo: NotRequired[str]
 
-    def defaultjson(self):
+
+class RepoListConfig(JsonConfig[list[RepoListEntry]]):
+    jsonpath = REPO_CONFIG_PATH
+
+    def defaultjson(self) -> list[RepoListEntry]:
         return []
 
-    def checkjson(self):
+    def checkjson(self) -> None:
         assert isinstance(self.jsondata, list)
         for row in self.jsondata:
             assert 'repoid' in row
@@ -271,8 +289,7 @@ class RepoListConfig(JsonConfig):
             if 'canonicalpath' in row:
                 assert 'canonicalrepo' in row
 
-    def add_repo(self, info):
-        assert isinstance(info, RepoInfo)
+    def add_repo(self, info: "RepoInfo") -> None:
         modified = False
         for row in self.jsondata:
             if row["repoid"] == info.repoid:
@@ -283,9 +300,9 @@ class RepoListConfig(JsonConfig):
             self.jsondata.append(self._infotodict(info))
 
     @staticmethod
-    def _infotodict(info):
-        assert isinstance(info, RepoInfo)
-        ret = {
+    def _infotodict(info: "RepoInfo") -> RepoListEntry:
+        assert info.localrepo is not None  # TODO: can we get rid of this assertion?
+        ret: RepoListEntry = {
             "repoid": info.repoid,
             "localpath": info.localrepo.repo_path,
             "localrepo": info.localrepo.asdict(),
@@ -295,7 +312,7 @@ class RepoListConfig(JsonConfig):
             ret["canonicalrepo"] = info.canonicalrepo.asdict()
         return ret
 
-    def _infofromdict(self, row):
+    def _infofromdict(self, row: RepoListEntry) -> "RepoInfo":
         localrepo = fromdict(row["localrepo"])
         assert localrepo is not None
         if row.get("canonicalpath"):
@@ -308,14 +325,14 @@ class RepoListConfig(JsonConfig):
             canonical,
         )
 
-    def remove_repo(self, repoid):
+    def remove_repo(self, repoid: str) -> None:
         newdata = []
         for row in self.jsondata:
             if row["repoid"] != repoid:
                 newdata.append(row)
         self.jsondata = newdata
 
-    def find_by_id(self, repoid):
+    def find_by_id(self, repoid: str) -> Optional["RepoInfo"]:
         """
         Returns the repo with the specified <repoid>
         """
@@ -325,7 +342,7 @@ class RepoListConfig(JsonConfig):
 
         return None
 
-    def find_by_localpath(self, path):
+    def find_by_localpath(self, path: str) -> Optional["RepoInfo"]:
         """
         Returns the repo with the specified local <path>
         """
@@ -338,14 +355,14 @@ class RepoListConfig(JsonConfig):
 
         return None
 
-    def find_by_canonical(self, repo_path):
+    def find_by_canonical(self, repo_path: str) -> Optional["RepoInfo"]:
         for row in self.jsondata:
             if repo_path == row.get("canonicalpath"):
                 return self._infofromdict(row)
 
         return None
 
-    def find_by_any(self, identifier, how):
+    def find_by_any(self, identifier: str, how: str) -> Optional["RepoInfo"]:
         """
         how should be a string with any or all of the characters "ilc"
         """
@@ -364,74 +381,81 @@ class RepoListConfig(JsonConfig):
 
         return None
 
-    def find_all(self):
+    def find_all(self) -> Iterable["RepoInfo"]:
         for row in self.jsondata:
             yield self._infofromdict(row)
 
-    def repo_count(self):
+    def repo_count(self) -> int:
         return len(self.jsondata)
 
 
-class RepoScriptConfig(JsonConfig):
-    jsondata = None
+class RepoScriptConfigData(TypedDict):
+    questions: dict[str, bool]
 
-    def __init__(self, info):
-        assert isinstance(info, RepoInfo)
+
+class RepoScriptConfig(JsonConfig[RepoScriptConfigData]):
+    def __init__(self, info: "RepoInfo") -> None:
         self.jsonpath = join(ROOT, 'repos', info.repoid + '.json')
         super(RepoScriptConfig, self).__init__()
 
     @staticmethod
-    def remove(info):
-        assert isinstance(info, RepoInfo)
+    def remove(info: "RepoInfo") -> None:
         os.unlink(join(ROOT, 'repos', info.repoid + '.json'))
 
-    def defaultjson(self):
+    def defaultjson(self) -> RepoScriptConfigData:
         return {
             "questions": {},
         }
 
-    def checkjson(self):
+    def checkjson(self) -> None:
         pass
 
-    def getquestionanswer(self, name):
+    def getquestionanswer(self, name: str) -> Optional[bool]:
         return self.jsondata["questions"].get(name, None)
 
-    def setquestionanswer(self, name, value):
+    def setquestionanswer(self, name: str, value: bool) -> None:
         self.jsondata["questions"][name] = value
 
 
-class FactConfig(JsonConfig):
+# FIXME: avoid use of Any for FactConfig generic
+class FactConfig(JsonConfig[dict[str, Any]]):
     jsonpath = FACT_CONFIG_PATH
 
-    def checkjson(self):
+    def checkjson(self) -> None:
         pass
 
-    def defaultjson(self):
+    def defaultjson(self) -> dict[str, Any]:
         return {}
 
 
+T_JC = TypeVar("T_JC", bound=JsonConfig)
+
+
 @contextlib.contextmanager
-def saveconfig(cfg):
-    assert isinstance(cfg, JsonConfig)
+def saveconfig(cfg: T_JC) -> Iterator[T_JC]:
     yield cfg
     cfg.writejson()
 
 
 class RepoInfo:
-    def __init__(self, localrepo, repoid, canonicalrepo=None):
+    def __init__(
+        self,
+        localrepo: Optional[Repo],
+        repoid: str,
+        canonicalrepo: Optional[Repo] = None,
+    ):
         if localrepo is not None:
-            assert isinstance(localrepo, Repo)
             assert not localrepo.isremote
         if canonicalrepo is not None:
-            assert isinstance(canonicalrepo, Repo)
             assert canonicalrepo.isremote
             assert canonicalrepo.iscanonical
 
-        self.localrepo = localrepo
-        self.canonicalrepo = canonicalrepo
-        self.repoid = repoid
+        self.localrepo: Optional[Repo] = localrepo
+        self.canonicalrepo: Optional[Repo] = canonicalrepo
+        self.repoid: str = repoid
 
-    def shortid(self):
+    def shortid(self) -> str:
+        assert self.localrepo is not None  # FIXME: remove this assertion
         return self.localrepo.shortid(self.repoid)
 
 
@@ -440,7 +464,7 @@ class NoChangesNeeded(Exception):
 
 
 @contextlib.contextmanager
-def filereplacer(filepath):
+def filereplacer(filepath: str) -> Iterator[tuple[TextIOWrapper, Optional[Iterable[str]], str]]:
     """
     This context manager yields two file pointers:
 
@@ -474,7 +498,7 @@ def filereplacer(filepath):
             if os.path.exists(filepath):
                 with opentext(filepath, 'r') as orig:
                     NL = "\n"
-                    origlines = []
+                    origlines: Iterable[str] = []
                     firstline = None
                     for firstline in orig:
                         break
@@ -501,7 +525,7 @@ def filereplacer(filepath):
     shutil.move(tmpname, filepath)
 
 
-def isnecessarypath(parent, child):
+def isnecessarypath(parent: str, child: str) -> bool:
     """
     returns True if the file, directory or symlink <parent> is required to
     exist in order for the path <child> to refer to a valid filesystem entry.
@@ -550,7 +574,7 @@ def isnecessarypath(parent, child):
 
 
 @contextlib.contextmanager
-def tmpdir(name):
+def tmpdir(name: str) -> Iterator[str]:
     assert '/' not in name, "Invalid name %r" % name
     tmp = None
     try:
@@ -582,7 +606,7 @@ STATUSCODES = {
 }
 
 
-def getstatus():
+def getstatus() -> tuple[UpdateStatus, Optional[float], Optional[str]]:
     """Get the status of the previous 'homely update', or any 'homely update'
     that may be running in another process.
     """

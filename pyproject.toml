@@ -70,7 +70,6 @@ module = [
     "homely._test.system",
     "homely._test",
     "homely._ui",
-    "homely._utils",
     "homely._vcs.git",
     "homely._vcs.testhandler",
     "homely._vcs",
