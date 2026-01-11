@@ -57,3 +57,29 @@ build-backend = "hatchling.build"
 [tool.mypy]
 # the oldest python version we support
 python_version = "3.10"
+disallow_untyped_defs = true
+
+
+[[tool.mypy.overrides]]
+# burn-down untyped defs in these modules to gradually add type annotations to the whole project
+module = [
+    "homely._asyncioutils",
+    "homely._cli",
+    "homely._engine2",
+    "homely._errors",
+    "homely._test.system",
+    "homely._test",
+    "homely._ui",
+    "homely._utils",
+    "homely._vcs.git",
+    "homely._vcs.testhandler",
+    "homely._vcs",
+    "homely.files",
+    "homely.general",
+    "homely.install",
+    "homely.pipinstall",
+    "homely.powerline",
+    "homely.system",
+    "test.*",
+]
+disallow_untyped_defs = false
