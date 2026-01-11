@@ -34,12 +34,14 @@ _defaulttxt = {
 SUB = None
 
 
-def shortstatus(pl,
-                colors={},
-                fmt={},
-                autoupdate=None,
-                interval=60*60*20,
-                reattach_to_user_namespace=False):
+def shortstatus(
+    pl,
+    colors={},
+    fmt={},
+    autoupdate=None,
+    interval=60*60*20,
+    reattach_to_user_namespace=False,
+):
     status, timestamp, section = getstatus()
 
     doupdate = False
