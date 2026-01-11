@@ -1,36 +1,51 @@
-# NOTE: this file is python3-only because of asyncio
 import asyncio
+import os
 import sys
+from typing import Any, Callable, Sequence
 
 
-def _runasync(stdoutfilter, stderrfilter, cmd, **kwargs):
+def _runasync(
+    stdoutfilter: Callable[[bytes, bool], bytes] | None,
+    stderrfilter: Callable[[bytes, bool], bytes] | None,
+    cmd: Sequence[str | os.PathLike],
+    **kwargs: Any,
+) -> tuple[int | None, bytes, bytes]:
     assert asyncio is not None
 
-    async def _runandfilter(cmd, **kwargs):
+    async def _runandfilter(
+        cmd: Sequence[str | os.PathLike],
+        **kwargs: Any,
+    ) -> tuple[int | None, bytes, bytes]:
         loop = asyncio.get_event_loop()
 
-        def factory():
-            return FilteringProtocol(asyncio.streams._DEFAULT_LIMIT, loop)
+        def factory() -> asyncio.subprocess.SubprocessStreamProtocol:
+            return FilteringProtocol(
+                asyncio.streams._DEFAULT_LIMIT,  # type: ignore
+                loop,
+            )
 
         class FilteringProtocol(asyncio.subprocess.SubprocessStreamProtocol):
             _stdout = b""
             _stderr = b""
 
-            def pipe_data_received(self, fd, data):
+            def pipe_data_received(self, fd: int, data: bytes | str) -> None:
+                assert isinstance(data, bytes)
                 if fd == 1:
                     if stdoutfilter:
                         self._stdout = stdoutfilter(self._stdout + data, False)
                     else:
+                        assert self.stdout is not None
                         self.stdout.feed_data(data)
                 elif fd == 2:
                     if stderrfilter:
                         self._stderr = stderrfilter(self._stderr + data, False)
                     else:
+                        assert self.stderr is not None
                         self.stderr.feed_data(data)
                 else:
                     raise Exception("Unexpected fd %r" % fd)
 
-            def pipe_connection_lost(self, fd, exc):
+            def pipe_connection_lost(self, fd: int, exc: Exception | None) -> None:
                 if fd == 1:
                     if stdoutfilter and self._stdout:
                         stdoutfilter(self._stdout, True)
@@ -48,7 +63,7 @@ def _runasync(stdoutfilter, stderrfilter, cmd, **kwargs):
         out, err = await process.communicate()
         return process.returncode, out, err
 
-    run_kwargs = {}
+    run_kwargs: dict[str, Any] = {}
     if sys.version_info >= (3, 13):
         run_kwargs['loop_factory'] = asyncio.EventLoop
 
