@@ -323,6 +323,8 @@ class RepoListConfig(JsonConfig):
             if repoid == row["repoid"]:
                 return self._infofromdict(row)
 
+        return None
+
     def find_by_localpath(self, path):
         """
         Returns the repo with the specified local <path>
@@ -334,10 +336,14 @@ class RepoListConfig(JsonConfig):
             if resolved == os.path.realpath(row["localpath"]):
                 return self._infofromdict(row)
 
+        return None
+
     def find_by_canonical(self, repo_path):
         for row in self.jsondata:
             if repo_path == row.get("canonicalpath"):
                 return self._infofromdict(row)
+
+        return None
 
     def find_by_any(self, identifier, how):
         """
@@ -355,6 +361,8 @@ class RepoListConfig(JsonConfig):
             match = self.find_by_canonical(identifier)
             if match:
                 return match
+
+        return None
 
     def find_all(self):
         for row in self.jsondata:
