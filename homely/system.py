@@ -1,4 +1,5 @@
 import shlex
+from collections.abc import Collection
 from functools import partial
 
 from homely._ui import allowinteractive, note, warn
@@ -11,9 +12,9 @@ def execute(
     cmd,
     stdout=None,
     stderr=None,
-    expectexit=0,
+    expectexit: int | Collection[int] = 0,
     **kwargs,
-):
+) -> tuple[int, str, str]:
     # Executes `cmd` in a subprocess. Raises a SystemError if the exit code
     # is different to `expecterror`.
     #
@@ -75,7 +76,7 @@ def execute(
                                   outredir,
                                   errredir)):
         returncode, out, err = run(cmd, stdout=stdout, stderr=stderr, **kwargs)
-        if type(expectexit) is int:
+        if isinstance(expectexit, int):
             exitok = returncode == expectexit
         else:
             exitok = returncode in expectexit
