@@ -587,11 +587,10 @@ def getstatus():
     that may be running in another process.
     """
     if exists(RUNFILE):
-        mtime = os.stat(RUNFILE).st_mtime
         with open(SECTIONFILE) as f:
             section = f.read().strip()
         # what section?
-        return UpdateStatus.RUNNING, mtime, section
+        return UpdateStatus.RUNNING, os.stat(RUNFILE).st_mtime, section
     if exists(PAUSEFILE):
         return UpdateStatus.PAUSED, None, None
 
