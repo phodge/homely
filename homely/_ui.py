@@ -116,7 +116,14 @@ def _writepidfile():
         return False
 
 
-def run_update(infos, pullfirst, only=None, cancleanup=None, quick=None):
+def run_update(
+    infos: list[RepoInfo],
+    pullfirst: bool,
+    *,
+    only=None,
+    cancleanup=None,
+    quick=None,
+) -> bool:
     from homely._engine2 import initengine, resetengine, setrepoinfo
 
     assert cancleanup is not None
