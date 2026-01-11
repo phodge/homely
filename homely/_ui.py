@@ -156,6 +156,7 @@ def run_update(
             setrepoinfo(info)
             _CURRENT_REPO = info
             localrepo = info.localrepo
+            assert localrepo is not None  # TODO: can we get rid of this assertion in favour of type safety?
             with entersection(os.path.basename(localrepo.repo_path)), \
                     head("Updating from {} [{}]".format(
                         localrepo.repo_path, info.shortid())):
