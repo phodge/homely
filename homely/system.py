@@ -7,7 +7,13 @@ from homely._utils import haveexecutable, run
 __all__ = ["haveexecutable", "execute"]
 
 
-def execute(cmd, stdout=None, stderr=None, expectexit=0, **kwargs):
+def execute(
+    cmd,
+    stdout=None,
+    stderr=None,
+    expectexit=0,
+    **kwargs,
+):
     # Executes `cmd` in a subprocess. Raises a SystemError if the exit code
     # is different to `expecterror`.
     #
