@@ -52,7 +52,7 @@ _INDENT = 0
 _NOTECOUNT: dict[str, int] = {}
 
 
-class note(object):
+class note:
     sep = '   '
     dash = '- '
 

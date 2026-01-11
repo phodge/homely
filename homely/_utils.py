@@ -208,7 +208,7 @@ def haveexecutable(name):
     raise SystemError("Unexpected return value from 'which {}'".format(name))
 
 
-class JsonConfig(object):
+class JsonConfig:
     jsonpath: Optional[str] = None
     jsondata: Optional[list[Any]] = None
 
@@ -451,7 +451,7 @@ def saveconfig(cfg):
     cfg.writejson()
 
 
-class RepoInfo(object):
+class RepoInfo:
     def __init__(self, localrepo, repoid, canonicalrepo=None):
         if localrepo is not None:
             assert isinstance(localrepo, Repo)
@@ -595,7 +595,7 @@ def tmpdir(name):
             shutil.rmtree(tmp)
 
 
-class UpdateStatus(object):
+class UpdateStatus:
     OK = "ok"
     NEVER = "never"
     RUNNING = "running"
