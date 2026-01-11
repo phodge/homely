@@ -3,6 +3,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 
+PythonVersion = tuple[int, int, int]
+
 
 class PythonManager(Enum):
     UV = "uv"
@@ -14,7 +16,7 @@ class PythonManager(Enum):
 class RepoVirtualenvConfig:
     want_virtualenv: bool
     venv_path: Optional[Path]
-    min_python_version: tuple[int, int, int]
+    min_python_version: PythonVersion
     install_with: list[PythonManager]
     config_warnings: list[str]
 
@@ -96,7 +98,7 @@ class RepoVirtualenvConfig:
         )
 
 
-def _parse_python_version(version_str: str, label: str, config_warnings: list[str]) -> tuple[int, int, int]:
+def _parse_python_version(version_str: str, label: str, config_warnings: list[str]) -> PythonVersion:
     if not isinstance(version_str, str):
         config_warnings.append(f"Error parsing {label}. Expected a string like '3.13'.")
         return (0, 0, 0)
