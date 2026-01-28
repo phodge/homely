@@ -39,12 +39,14 @@ class Repo:
     """
     Base class for VCS handlers
     """
-    def __init__(self,
-                 repo_path,
-                 isremote,
-                 iscanonical,
-                 suggestedlocal,
-                 canonical=None):
+    def __init__(
+        self,
+        repo_path,
+        isremote,
+        iscanonical,
+        suggestedlocal,
+        canonical=None,
+    ):
         self.isremote = isremote
         self.iscanonical = iscanonical
         self.repo_path = repo_path
@@ -107,8 +109,9 @@ class Repo:
     @classmethod
     def fromdict(class_, row):
         if row["type"] == class_.type:
-            return class_(row["repo_path"],
-                          row["isremote"],
-                          row["iscanonical"],
-                          row["suggestedlocal"],
-                          )
+            return class_(
+                row["repo_path"],
+                row["isremote"],
+                row["iscanonical"],
+                row["suggestedlocal"],
+            )
