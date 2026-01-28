@@ -17,7 +17,7 @@ class Repo(homely._vcs.Repo):
     pulldesc = 'fake repo pull'
 
     @classmethod
-    def frompath(class_, repo_path) -> "Optional[homely._vcs.Repo]":
+    def frompath(class_, repo_path: str) -> "Optional[homely._vcs.Repo]":
         if repo_path.startswith(PREFIX):
             dirpart = repo_path[len(PREFIX):]
             return class_(repo_path,
@@ -37,7 +37,7 @@ class Repo(homely._vcs.Repo):
                       iscanonical=False,
                       suggestedlocal=None)
 
-    def clonetopath(self, dest_path):
+    def clonetopath(self, dest_path: str) -> None:
         assert not os.path.exists(dest_path)
         os.mkdir(dest_path)
         with open(os.path.join(dest_path, ORIGINFILE), 'w') as f:
@@ -47,7 +47,7 @@ class Repo(homely._vcs.Repo):
             origin = origin[len(PREFIX):]
         self._pull(origin, dest_path)
 
-    def _pull(self, origin, local):
+    def _pull(self, origin: str, local: str) -> None:
         # delete every local file except the special ones
         for thing in os.listdir(local):
             if thing not in (ORIGINFILE, MARKERFILE, DIRTYFILE):
@@ -70,7 +70,7 @@ class Repo(homely._vcs.Repo):
             else:
                 shutil.copy2(src, dst)
 
-    def pullchanges(self):
+    def pullchanges(self) -> None:
         assert not self.isdirty()
         with open(os.path.join(self.repo_path, ORIGINFILE), 'r') as f:
             origin = f.read().strip()
@@ -78,15 +78,15 @@ class Repo(homely._vcs.Repo):
                 origin = origin[len(PREFIX):]
         self._pull(origin, self.repo_path)
 
-    def getrepoid(self):
+    def getrepoid(self) -> str:
         assert not self.isremote
         with open(os.path.join(self.repo_path, MARKERFILE), 'r') as f:
             return f.read().strip()
 
     @staticmethod
-    def shortid(repoid):
+    def shortid(repoid: str) -> str:
         return repoid[0:5]
 
-    def isdirty(self):
+    def isdirty(self) -> bool:
         assert not self.isremote
         return os.path.exists(os.path.join(self.repo_path, DIRTYFILE))
