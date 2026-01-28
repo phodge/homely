@@ -1,5 +1,6 @@
 import os
 import re
+from typing import Optional
 
 import homely._vcs
 from homely._errors import ConnectionError, RepoError, RepoHasNoCommitsError
@@ -12,7 +13,7 @@ class Repo(homely._vcs.Repo):
     pulldesc = 'git pull'
 
     @classmethod
-    def _from_parts(class_, repo_path, user, domain, name):
+    def _from_parts(class_, repo_path: str, user: str, domain: str, name: str) -> "Repo":
         if name.endswith('.git'):
             name = name[0:-4]
 
@@ -27,15 +28,17 @@ class Repo(homely._vcs.Repo):
         )
 
     @classmethod
-    def frompath(class_, repo_path):
+    def frompath(class_, repo_path: str) -> Optional["Repo"]:
         if os.path.isdir(repo_path):
             if not os.path.isdir(os.path.join(repo_path, '.git')):
-                return
+                return None
+
             return class_(_expandpath(repo_path),
                           isremote=False,
                           iscanonical=False,
                           suggestedlocal=None
                           )
+
         if (repo_path.startswith('ssh://') or
                 repo_path.startswith('https://') or
                 repo_path.startswith('git@')):
@@ -58,7 +61,9 @@ class Repo(homely._vcs.Repo):
                           iscanonical=False,
                           suggestedlocal=None)
 
-    def pullchanges(self):
+        return None
+
+    def pullchanges(self) -> None:
         assert not self.isremote
         cmd = ['git', 'pull']
         code, _, err = execute(cmd,
@@ -69,23 +74,25 @@ class Repo(homely._vcs.Repo):
             return
 
         assert code == 1
+        assert isinstance(err, bytes)  # TODO: replace this with a type check
         needle = b'fatal: Could not read from remote repository.'
         if needle in err:
             raise ConnectionError()
 
-        raise SystemError("Unexpected output from 'git pull': {}".format(err))
+        raise SystemError(f"Unexpected output from 'git pull': {err!r}")
 
-    def clonetopath(self, dest):
+    def clonetopath(self, dest: str) -> None:
         origin = self.repo_path
         execute(['git', 'clone', origin, dest])
 
-    def getrepoid(self):
+    def getrepoid(self) -> str:
         assert not self.isremote
         cmd = ['git', 'rev-list', '--max-parents=0', 'HEAD']
         returncode, stdout = run(cmd,
                                  cwd=self.repo_path,
                                  stdout=True,
                                  stderr="STDOUT")[:2]
+        assert isinstance(stdout, bytes)  # TODO: replace this with a type check
         if returncode == 0:
             return self._getfirsthash(stdout)
         if returncode != 128:
@@ -115,19 +122,20 @@ class Repo(homely._vcs.Repo):
 
         raise SystemError("Unexpected exitcode {}".format(returncode))
 
-    def _getfirsthash(self, stdout):
+    def _getfirsthash(self, stdout: bytes) -> str:
         stripped = stdout.rstrip().decode('utf-8')
         if '\n' in stripped:
             raise RepoError("Git repo has multiple initial commits")
         return stripped
 
     @staticmethod
-    def shortid(repoid):
+    def shortid(repoid: str) -> str:
         return repoid[0:8]
 
-    def isdirty(self):
+    def isdirty(self) -> bool:
         cmd = ['git', 'status', '--porcelain']
         out = execute(cmd, cwd=self.repo_path, stdout=True)[1]
+        assert isinstance(out, bytes)  # TODO: replace this with a type check
         for line in out.split(b'\n'):
             if len(line) and not line.startswith(b'?? '):
                 return True
