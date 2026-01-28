@@ -268,10 +268,10 @@ class JsonConfig(Generic[T]):
 
 class RepoListEntry(TypedDict):
     repoid: str
-    localrepo: str
+    localrepo: dict[str, str | bool]
     localpath: str
     canonicalpath: NotRequired[str]
-    canonicalrepo: NotRequired[str]
+    canonicalrepo: NotRequired[dict[str, str | bool]]
 
 
 class RepoListConfig(JsonConfig[list[RepoListEntry]]):
