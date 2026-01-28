@@ -8,7 +8,7 @@ from homely.system import execute
 
 
 class Repo(homely._vcs.Repo):
-    type = homely._vcs.HANDLER_GIT_v1
+    type_ = homely._vcs.RepoType.HANDLER_GIT_v1
     pulldesc = 'git pull'
 
     @classmethod

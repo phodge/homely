@@ -13,7 +13,7 @@ DIRTYFILE = '.dirty'
 
 
 class Repo(homely._vcs.Repo):
-    type = homely._vcs.HANDLER_TESTHANDLER_v1
+    type_ = homely._vcs.RepoType.HANDLER_TESTHANDLER_v1
     pulldesc = 'fake repo pull'
 
     @classmethod

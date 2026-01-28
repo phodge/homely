@@ -1,11 +1,14 @@
 import os
+from enum import Enum
 
 from homely._errors import NotARepo
 
 _handlers = None
 
-HANDLER_GIT_v1 = "vcs:git"
-HANDLER_TESTHANDLER_v1 = "vcs:testhandler"
+
+class RepoType(Enum):
+    HANDLER_GIT_v1 = "vcs:git"
+    HANDLER_TESTHANDLER_v1 = "vcs:testhandler"
 
 
 def _gethandlers():
@@ -39,6 +42,8 @@ class Repo:
     """
     Base class for VCS handlers
     """
+    type_: RepoType
+
     def __init__(
         self,
         repo_path,
@@ -54,8 +59,6 @@ class Repo:
             suggestedlocal = os.path.basename(repo_path)
         self.suggestedlocal = suggestedlocal
         self._canonical = canonical
-        super(Repo, self).__init__()
-        assert self.type in (HANDLER_GIT_v1, HANDLER_TESTHANDLER_v1)
 
     @classmethod
     def frompath(class_, repo_path):
@@ -99,7 +102,7 @@ class Repo:
 
     def asdict(self):
         return dict(
-            type=self.type,
+            type=self.type_.value,
             repo_path=self.repo_path,
             isremote=self.isremote,
             iscanonical=self.iscanonical,
@@ -108,7 +111,7 @@ class Repo:
 
     @classmethod
     def fromdict(class_, row):
-        if row["type"] == class_.type:
+        if row["type"] == class_.type_.value:
             return class_(
                 row["repo_path"],
                 row["isremote"],
