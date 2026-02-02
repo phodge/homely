@@ -349,6 +349,7 @@ class PackageCleaner(Cleaner):
                 cmd.insert(0, 'sudo')
             try:
                 execute(cmd)
+                return
             finally:
                 # always clear the fact
                 self._clearfact(factname)
