@@ -69,9 +69,8 @@ disallow_untyped_defs = true
 module = [
     "homely._cli",
     "homely._engine2",
-    "homely._errors",
-    "homely._test.system",
     "homely._test",
+    "homely._test.system",
     "homely._ui",
     "homely.files",
     "homely.general",
