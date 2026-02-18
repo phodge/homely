@@ -2,7 +2,7 @@ import json
 import os
 from typing import Optional
 
-from homely._errors import CleanupConflict, CleanupObstruction, HelperError
+from homely._errors import CleanupConflict, HelperError
 from homely._ui import note, warn
 from homely._utils import (ENGINE2_CONFIG_PATH, FactConfig, RepoInfo,
                            isnecessarypath)
@@ -196,14 +196,14 @@ class Engine(_AccessibleFacts):
     TYPE_FOLDER_ONLY = "directory"
     TYPE_LINK = "symlink"
 
-    def __init__(self, cfgpath, quick=False):
+    def __init__(self, cfgpath: str, *, quick: bool = False) -> None:
         super(Engine, self).__init__()
-        self._cfgpath = cfgpath
+        self._cfgpath: str = cfgpath
         self._old_cleaners = []
-        self._new_cleaners = []
+        self._new_cleaners: list["Cleaner"] = []
         self._helpers = []
         self._old_paths_owned = {}
-        self._new_paths_owned = {}
+        self._new_paths_owned: dict[str, bool] = {}
         self._postponed = set()
         # keep track of which things we created ourselves
         self._created = set()
@@ -414,23 +414,9 @@ class Engine(_AccessibleFacts):
                     self._addcleaner(cleaner)
                     return
 
-            try:
-                affected.extend(cleaner.makechanges())
-            except CleanupObstruction as err:
-                why = err.args[0]
-                if conflicts == self.RAISE:
-                    raise
-                if conflicts == self.POSTPONE:
-                    note("Postponed: %s" % why)
-                    # add the cleaner back in
-                    self._addcleaner(cleaner)
-                    return
-                # NOTE: eventually we'd like to ask the user what to do, but
-                # for now we just issue a warning
-                assert conflicts in (self.WARN, self.ASK)
-                warn("Aborted: %s" % err.why)
+            affected.extend(cleaner.makechanges())
 
-    def _trycleanpath(self, path, type_, conflicts):
+    def _trycleanpath(self, path: str, type_, conflicts):
         def _discard():
             note("    Forgetting about %s %s" % (type_, path))
             self._old_paths_owned.pop(path)
@@ -504,7 +490,7 @@ class Engine(_AccessibleFacts):
                 return
 
         # if any helpers want the path, don't delete it
-        wantedby = None
+        wantedby: Optional["Cleaner"] = None
         for c in self._new_cleaners:
             if c.wantspath(path):
                 wantedby = c
