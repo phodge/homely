@@ -17,7 +17,8 @@ classifiers=[
 
 requires-python = ">=3.10"
 # this also needs to be updated in homely/__init__.py
-version = "0.21.0"
+# and uv.lock by running "uv lock"
+version = "0.21.1"
 
 dependencies = [
     "python-daemon>=2.3.0",
