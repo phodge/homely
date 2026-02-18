@@ -13,14 +13,15 @@ from functools import partial
 from io import TextIOWrapper
 from itertools import chain
 from os.path import exists, join
-from typing import (IO, Any, Generic, Iterable, Iterator, Literal, Optional,
-                    Sequence, TypedDict, TypeVar, Union)
-
-from typing_extensions import NotRequired
+from typing import (IO, TYPE_CHECKING, Any, Generic, Iterable, Iterator,
+                    Literal, Optional, Sequence, TypedDict, TypeVar, Union)
 
 from homely._asyncioutils import _runasync
 from homely._errors import JsonError
 from homely._vcs import Repo, fromdict
+
+if TYPE_CHECKING:
+    from typing_extensions import NotRequired
 
 
 def _loadmodule(name: str, file_path: str) -> object:
@@ -270,8 +271,8 @@ class RepoListEntry(TypedDict):
     repoid: str
     localrepo: dict[str, str | bool]
     localpath: str
-    canonicalpath: NotRequired[str]
-    canonicalrepo: NotRequired[dict[str, str | bool]]
+    canonicalpath: "NotRequired[str]"
+    canonicalrepo: "NotRequired[dict[str, str | bool]]"
 
 
 class RepoListConfig(JsonConfig[list[RepoListEntry]]):
