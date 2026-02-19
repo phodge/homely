@@ -1,14 +1,17 @@
+import datetime
+import hashlib
 import os
 import os.path
 import re
 import sys
 from contextlib import contextmanager
 from subprocess import STDOUT, Popen, TimeoutExpired
+from typing import Callable, Optional
 
 from homely._test import withtmpdir
 
 
-def HOMELY(command):
+def HOMELY(command: str) -> list[str]:
     return [
         'python',
         '-m',
@@ -23,11 +26,9 @@ NEXT_ID = 1
 
 
 class TempRepo:
-    def __init__(self, tmpdir, name):
-        import datetime
-        import hashlib
-
+    def __init__(self, tmpdir: str, name: str) -> None:
         from homely._vcs.testhandler import MARKERFILE
+
         self._tmpdir = tmpdir
         self._name = name
         self.remotepath = os.path.join(tmpdir, name)
@@ -41,9 +42,11 @@ class TempRepo:
             f.write(self.repoid)
             NEXT_ID += 1
 
-    def installedin(self, HOME):
+    def installedin(self, HOME: str) -> bool:
         from homely._vcs.testhandler import Repo
+
         remote = Repo.frompath(self.remotepath)
+        assert remote is not None
         localdir = os.path.join(HOME, self._name)
         if os.path.exists(localdir):
             local = Repo.frompath(localdir)
@@ -51,16 +54,16 @@ class TempRepo:
                 return local.getrepoid() == remote.getrepoid()
         return False
 
-    def getrepoid(self):
+    def getrepoid(self) -> str:
         from homely._vcs.testhandler import MARKERFILE
         with open(self.remotepath + '/' + MARKERFILE, 'r') as f:
             return f.read().strip()
 
-    def suggestedlocal(self, HOME):
+    def suggestedlocal(self, HOME: str) -> str:
         return os.path.join(HOME, self._name)
 
 
-def _getfakeenv(homedir):
+def _getfakeenv(homedir: str) -> dict[str, str]:
     env = os.environ.copy()
     env["HOME"] = homedir
     # FIXME: we have to manually add all paths to $PYTHONPATH because python in
@@ -70,7 +73,7 @@ def _getfakeenv(homedir):
     return env
 
 
-def getsystemfn(homedir):
+def getsystemfn(homedir: str) -> Callable[[list[str], Optional[str], bool, Optional[str]], str]:
     """
     Returns a sytem() function which has some special behaviours:
     - it sets env's $HOME to the specified dir
@@ -83,8 +86,14 @@ def getsystemfn(homedir):
     env = _getfakeenv(homedir)
 
     @withtmpdir
-    def system(cmd, cwd=None, expecterror=False, tmpdir=None):
-        returncode = '<NOT SPAWNED>'
+    def system(
+        cmd: list[str],
+        *,
+        cwd: Optional[str] = None,
+        expecterror: bool = False,
+        tmpdir: Optional[str] = None,
+    ) -> str:
+        returncode: str | int = '<NOT SPAWNED>'
         try:
             stdoutpath = tmpdir + '/stdout'
             with open(stdoutpath, 'w') as stdout:
