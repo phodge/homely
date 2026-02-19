@@ -34,9 +34,9 @@ class NotARepo(RepoError):
     """
     Raised when a path isn't a real repo
     """
-    def __init__(self, repo_path):
+    def __init__(self, repo_path: str) -> None:
         super(NotARepo, self).__init__()
-        self.repo_path = repo_path
+        self.repo_path: str = repo_path
 
 
 class RepoHasNoCommitsError(RepoError):
@@ -59,26 +59,10 @@ class ConnectionError(Exception):
     """
 
 
-# TODO: merge this with CleanupObstruction ... I don't think its worthwhile
-# having them as separate
 class CleanupConflict(Exception):
-    def __init__(self, *args, **kwargs):
-        import pprint
-        print('args = ' + pprint.pformat(args))  # noqa TODO
-        import pprint
-        print('kwargs = ' + pprint.pformat(kwargs))  # noqa TODO
+    def __init__(self, *, conflictpath: str, pathwanter: bool):
         # which is the path that needs cleaning up?
-        self.conflictpath = kwargs.pop('conflictpath')
+        self.conflictpath = conflictpath
         # who still wants this path to hang around?
-        self.pathwanter = kwargs.pop('pathwanter')
-        super(CleanupConflict, self).__init__(*args, **kwargs)
-
-
-# TODO: work out if this is still needed?
-class CleanupObstruction(Exception):
-    def __init__(self, *args, **kwargs):
-        # which cleaner
-        self.cleaner = kwargs.pop('cleaner')
-        # what was the reason given?
-        self.why = kwargs.pop('why')
-        super(CleanupObstruction, self).__init__(*args, **kwargs)
+        self.pathwanter = pathwanter
+        super().__init__()
