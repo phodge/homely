@@ -20,3 +20,5 @@ COPY ./test ./test
 COPY ./homely ./homely
 
 RUN .venv/bin/pytest -W error test -x
+
+RUN .venv/bin/mypy homely test
