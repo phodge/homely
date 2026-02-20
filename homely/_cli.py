@@ -58,7 +58,7 @@ version_message = (
 
 @group()
 @version_option(message=version_message)
-def homely():
+def homely() -> None:
     """
     Single-command dotfile installation.
     """
@@ -69,7 +69,7 @@ def homely():
 @argument('repo_path')
 @argument('dest_path', required=False)
 @_globals
-def add(repo_path, dest_path):
+def add(repo_path: str, dest_path: str) -> None:
     '''
     Registers a git repository with homely so that it will run its `HOMELY.py`
     script on each invocation of `homely update`. `homely add` also immediately
