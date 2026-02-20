@@ -23,3 +23,5 @@ jobs:
         uses: actions/checkout@v2
       - run: apk add git
       - run: uv run mypy homely test
+      # also verify homely will run on latest python
+      - run: uv run mypy --python-version=3.14 homely test
