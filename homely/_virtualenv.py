@@ -25,7 +25,8 @@ class RepoVirtualenvConfig:
             # 3.11+ and mypy is configured to check against 3.10 stdlib.
             import tomllib  # type: ignore
         except ImportError:
-            import tomli as tomllib
+            # NOTE: this needs a type-ignore for mypy checking against python3.14 which won't have tomli
+            import tomli as tomllib  # type: ignore
 
         with pyproject_path.open('rb') as f:
             try:
