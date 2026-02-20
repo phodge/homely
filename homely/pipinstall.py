@@ -1,10 +1,8 @@
-import re
-from distutils.version import StrictVersion
 from typing import Optional
 
 from homely._engine2 import Cleaner, Helper, getengine
 from homely._errors import HelperError
-from homely._utils import haveexecutable, run
+from homely._utils import haveexecutable
 from homely.system import execute
 
 __all__ = ["pipinstall"]
@@ -62,27 +60,6 @@ def pipinstall(packagename, pips=None, trypips=[], scripts=None):
 
 
 _known_pips: dict[str, bool] = {}
-# dict of pip executables and whether they need the --format arg
-_needs_format_cache: dict[str, bool] = {}
-
-
-def _needs_format(pipcmd):
-    """
-    pip >= 9.0.0 needs a --format=freeze argument to avoid a DEPRECATION
-    warning. This function returns True if the nominated pip executable
-    is >= 9.0.0
-    """
-    try:
-        return _needs_format_cache[pipcmd]
-    except KeyError:
-        pass
-
-    # grab the version number
-    output = run([pipcmd, '--version'], stdout=True)[1].decode('utf-8')
-    m = re.match(r'^pip (\S+) from ', output)
-    needs_format = StrictVersion(m.group(1)) >= '9.0.0'
-    _needs_format_cache[pipcmd] = needs_format
-    return needs_format
 
 
 def _haspkg(pipcmd, name):
@@ -90,9 +67,8 @@ def _haspkg(pipcmd, name):
         pipcmd,
         'list',
         '--disable-pip-version-check',
+        '--format=freeze',
     ]
-    if _needs_format(pipcmd):
-        cmd.append('--format=freeze')
     output = execute(cmd, stdout=True)[1]
     find = '%s==' % name
     for line in output.decode('utf-8').split("\n"):
