@@ -54,7 +54,7 @@ class SystemError(Exception):
 
 class ConnectionError(Exception):
     """
-    Raised when a remote resource just as git repo or download URL are not
+    Raised when a remote resource such as git repo or download URL are not
     reachable
     """
 
