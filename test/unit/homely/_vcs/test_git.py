@@ -1,5 +1,6 @@
 import os
 import re
+from pathlib import Path
 from subprocess import check_call
 
 from homely._test import contents
@@ -68,6 +69,39 @@ def test_git(tmpdir):
     check_call(GIT + ['commit', '-m', 'Added file'], cwd=fake1path)
     clone1repo.pullchanges()
     assert os.path.exists(os.path.join(clone1path, 'file.txt'))
+
+
+def test_clonetopath_recurses_submodules(tmpdir, monkeypatch):
+    """
+    Ensure that clonetopath() uses --recurse-submodules so that submodules are
+    initialised and checked out in the clone.
+    """
+    from homely._vcs.git import Repo
+
+    # allow local file:// cloning for submodules in this test
+    monkeypatch.setenv('GIT_CONFIG_COUNT', '1')
+    monkeypatch.setenv('GIT_CONFIG_KEY_0', 'protocol.file.allow')
+    monkeypatch.setenv('GIT_CONFIG_VALUE_0', 'always')
+
+    # create a repo that will be used as a submodule
+    subpath = makegitrepo(tmpdir, 'subrepo')
+
+    # create a parent repo that adds subrepo as a submodule
+    parentpath = makegitrepo(tmpdir, 'parent')
+    check_call(
+        GIT + ['submodule', 'add', subpath, 'libs/the_submodule'],
+        cwd=parentpath,
+    )
+    check_call(GIT + ['commit', '-m', 'Added submodule'], cwd=parentpath)
+
+    # clone via Repo.clonetopath()
+    parentrepo = Repo.frompath(parentpath)
+    clonepath = os.path.join(tmpdir, 'clone')
+    parentrepo.clonetopath(clonepath)
+
+    # the submodule should already be initialised and checked out
+    sub_readme = Path(clonepath) / 'libs/the_submodule' / 'README.md'
+    assert sub_readme.exists()
 
 
 def test_repo_object_recognises_git_repos():
