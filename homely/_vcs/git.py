@@ -83,7 +83,7 @@ class Repo(homely._vcs.Repo):
 
     def clonetopath(self, dest: str) -> None:
         origin = self.repo_path
-        execute(['git', 'clone', origin, dest])
+        execute(['git', 'clone', '--recurse-submodules', origin, dest])
 
     def getrepoid(self) -> str:
         assert not self.isremote
