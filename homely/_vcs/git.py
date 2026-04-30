@@ -191,17 +191,10 @@ class Repo(homely._vcs.Repo):
 
             # update submodule to expected commit
             note(f"Updating submodule '{info.path}': {info.current_sha[:8]}...{expected_sha[:8]}")
-            # For nested submodules, `git submodule update` must run inside
-            # the parent submodule's working tree with a relative path.
-            if info.parent is not None:
-                cwd = os.path.join(self.repo_path, info.parent)
-                relative_path = info.path[len(info.parent) + 1:]
-            else:
-                cwd = self.repo_path
-                relative_path = info.path
             returncode = execute(
-                ['git', 'submodule', 'update', relative_path],
-                cwd=cwd,
+                ['git', 'checkout', expected_sha],
+                cwd=os.path.join(self.repo_path, info.path),
+                expectexit=(0, 1),
             )[0]
             if returncode == 0:
                 # we need to look for NEW submodules with info.path as parent
