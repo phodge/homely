@@ -18,9 +18,7 @@ if [ -n "$expected_version" ]; then
 	grep "^version = \"$expected_version\"" homely/__init__.py
 	echo $?
 	echo '----------'
-	if grep "^version = \"$expected_version\"" homely/__init__.py &>/dev/null; then
-		echo "GOOD: version in homely/__init__.py matches expected version '$expected_version'"
-	else
+	if ! grep "^version = \"$expected_version\"" homely/__init__.py &>/dev/null; then
 		echo "ERROR: expected 'version = \"$expected_version\"' in homely/__init__.py" >&2
 		exit 3
 	fi
