@@ -356,11 +356,11 @@ def test_pullchanges_initialises_new_submodules(ed2source_wr: Path) -> None:
     _register_submodule(ed2syntax_source, 'lang/rust', rustpath)
 
     # Add docs/ to the ed2 source repo
-    _register_submodule(ed2sourcepath, 'docs', ed2docspath)
+    _register_submodule(ed2source_wr, 'docs', ed2docspath)
 
     # Update ed2's extra/ed2syntax pointer to include lang/rust + updated html
-    check_call(GIT + ['submodule', 'update', '--remote', 'extra/ed2syntax'], cwd=ed2sourcepath)
-    check_call(GIT + ['commit', '-m', 'Latest extra/ed2syntax', 'extra/ed2syntax'], cwd=ed2sourcepath)
+    check_call(GIT + ['submodule', 'update', '--remote', 'extra/ed2syntax'], cwd=ed2source_wr)
+    check_call(GIT + ['commit', '-m', 'Latest extra/ed2syntax', 'extra/ed2syntax'], cwd=ed2source_wr)
 
     # pullchanges with submodules=True should initialise the three new submodules
     clonerepo = path2Repo(clonepath)
