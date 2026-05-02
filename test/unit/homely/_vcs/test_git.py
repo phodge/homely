@@ -190,6 +190,7 @@ def ed2source_wr(ed2sessionsourcepath: Path, with_submodules_root: WithSubmodule
     needs_submodule_init = []
     with tempfile.TemporaryDirectory() as tmpdir:
         onetest_repos_root = Path(tmpdir)
+        #_clone_all(ed2sessionsourcepath, onetest_repos_root, init_submodules=True)
 
         # clone each repo in ed2sessionsourcepath into our single-test folder
         for entry in ed2sessionsourcepath.parent.iterdir():
