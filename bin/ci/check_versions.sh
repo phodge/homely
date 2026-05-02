@@ -1,4 +1,4 @@
-#!/bin/env bash
+#!/usr/bin/env bash
 pyproject_version=$(grep '^version =' pyproject.toml)
 importable_version=$(grep '^version =' homely/__init__.py)
 if [ "$pyproject_version" != "$importable_version" ]; then
