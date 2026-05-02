@@ -582,6 +582,7 @@ def test_pullchanges_removes_removed_submodules(ed2sourcepath, submodule_state):
     - has no uncommitted changes
     - is already checked out at the expected commit
     """
+    raise Exception("TODO: finish me")
 
 
 def test_pullchanges_updates_submodules_failure_aborts_nested_submodules(
