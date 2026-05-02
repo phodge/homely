@@ -480,10 +480,10 @@ def test_pullchanges_updates_submodules(
         commitmsg = 'Rewind to commit 1'
 
     # Check out the target commits in the submodules. Update intermediate submodules of the grandchild.
-    _pull_commit_latest_submodule(ed2sourcepath, 'www', commitmsg=commitmsg, commitsha=wwwtargetcommit)
+    _pull_commit_latest_submodule(ed2source_wr, 'www', commitmsg=commitmsg, commitsha=wwwtargetcommit)
     _pull_commit_latest_submodule(phpsourcepath, 'extensions/html', commitmsg=commitmsg, commitsha=htmltargetcommit)
     _pull_commit_latest_submodule(ed2syntaxsourcepath, 'lang/php')
-    _pull_commit_latest_submodule(ed2sourcepath, 'extra/ed2syntax')
+    _pull_commit_latest_submodule(ed2source_wr, 'extra/ed2syntax')
     del commitmsg
 
     # what submodule we affect in the next section depends on whether we're
