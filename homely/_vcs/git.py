@@ -328,6 +328,10 @@ class Repo(homely._vcs.Repo):
             cmd.append('--recurse-submodules')
         execute(cmd + [origin, dest])
 
+        # TODO: why did we use 'git submodule update --init --recursive instead???'
+        if submodules and False:
+            execute(['git', 'submodule', 'update', '--init', '--recursive'], cwd=dest)
+
     def getrepoid(self) -> str:
         assert not self.isremote
         cmd = ['git', 'rev-list', '--max-parents=0', 'HEAD']
