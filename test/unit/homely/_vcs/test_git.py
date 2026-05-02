@@ -591,3 +591,4 @@ def test_pullchanges_updates_submodules_failure_aborts_nested_submodules(
     """
     Confirm that when a submodule update/checkout fails, we don't attempt to update/checkout its nested submodules either.
     """
+    raise Exception("TODO: finish me")
