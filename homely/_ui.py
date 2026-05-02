@@ -273,7 +273,7 @@ def addfromremote(repo, dest_path):
         note("HOME: %s" % os.environ["HOME"])
         note("tmp:  %s" % tmp)
         note("Cloning %s to tmp:%s" % (repo.repo_path, tmp))
-        repo.clonetopath(tmp)
+        repo.clonetopath(tmp, submodules=True)
 
         # find out the first commit id
         localrepo = repo.frompath(tmp)

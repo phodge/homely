@@ -55,7 +55,7 @@ def test_git(tmpdir):
     assert fake1repo.isdirty()
 
     clone1path = os.path.join(tmpdir, 'clone1')
-    fake1repo.clonetopath(clone1path)
+    fake1repo.clonetopath(clone1path, submodules=False)
     clone1repo = Repo.frompath(clone1path)
     assert clone1repo.getrepoid() == fake1repo.getrepoid()
 
@@ -92,7 +92,7 @@ def test_clonetopath_recurses_submodules(tmpdir, monkeypatch):
     # clone via Repo.clonetopath()
     parentrepo = Repo.frompath(parentpath)
     clonepath = os.path.join(tmpdir, 'clone')
-    parentrepo.clonetopath(clonepath)
+    parentrepo.clonetopath(clonepath, submodules=True)
 
     # the submodule should already be initialised and checked out
     sub_readme = Path(clonepath) / 'libs/the_submodule' / 'README.md'
