@@ -70,7 +70,7 @@ class Repo(homely._vcs.Repo):
             else:
                 shutil.copy2(src, dst)
 
-    def pullchanges(self) -> None:
+    def pullchanges(self, submodules: bool) -> None:
         assert not self.isdirty()
         with open(os.path.join(self.repo_path, ORIGINFILE), 'r') as f:
             origin = f.read().strip()

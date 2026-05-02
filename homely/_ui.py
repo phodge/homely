@@ -141,6 +141,7 @@ def run_update(infos, pullfirst, only=None, cancleanup=None, quick=None):
             os.unlink(FAILFILE)
 
     must_abort_when_dirty = os.getenv("HOMELY_PULL_WHEN_DIRTY", "0") != "1"
+    can_pull_submodules = os.getenv("HOMELY_PULL_SYNC_SUBMODULES", "0") == "1"
 
     try:
         # write the section file with the current section name
@@ -157,14 +158,13 @@ def run_update(infos, pullfirst, only=None, cancleanup=None, quick=None):
                     head("Updating from {} [{}]".format(
                         localrepo.repo_path, info.shortid())):
                 if pullfirst:
-                    with note("Pulling changes for {}".format(
-                            localrepo.repo_path)):
+                    with note("Pulling changes for {}".format(localrepo.repo_path)):
                         if must_abort_when_dirty and localrepo.isdirty():
                             dirty("Aborting - uncommitted changes")
                             dirty("(use HOMELY_PULL_WHEN_DIRTY=1 to override)")
                         else:
                             try:
-                                localrepo.pullchanges()
+                                localrepo.pullchanges(submodules=can_pull_submodules)
                             except ConnectionError:
                                 noconn("Could not connect to remote server")
 

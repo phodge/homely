@@ -96,7 +96,7 @@ class Repo:
             "%s.%s needs to implement .isdirty()" % (
                 self.__class__.__module__, self.__class__.__name__))
 
-    def pullchanges(self) -> None:
+    def pullchanges(self, submodules: bool) -> None:
         raise Exception(
             "%s.%s needs to implement .pullchanges()" % (
                 self.__class__.__module__, self.__class__.__name__))

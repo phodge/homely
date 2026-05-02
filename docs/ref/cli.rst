@@ -66,6 +66,12 @@ eventually become the default. You can avoid merge conflicts from pulls in your 
 running `git config pull.ff only` in each of your repositories, of using `git config --global
 pull.ff only` to set this option globally.
 
+If `HOMELY_PULL_SYNC_SUBMODULES=1` is present in the environment, then any git submodules of the
+registered repositories will also be updated to the commit specified by their respective parents as
+long as they haven't been manually moved to another commit or otherwise modified in such a way that
+might produce merge conflicts with the commit expected by the parent. This is an experimental new
+feature which will eventually become the default.
+
 ``homely update [OPTIONS] [REPO ...]``
 
 ``REPO``
