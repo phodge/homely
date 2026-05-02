@@ -211,13 +211,13 @@ def test_git(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize('with_submodules', [False, True])
-def test_clonetopath(tmp_path: Path, ed2sourcepath: Path, with_submodules: bool) -> None:
+def test_clonetopath(tmp_path: Path, ed2source_ro: Path, with_submodules: bool) -> None:
     """
     Ensure that clonetopath() correctly clones the source repo and uses
     --recurse-submodules to initialise submodules as well.
     """
     # ed2 is a source repo that includes submodules
-    edrepo = path2Repo(ed2sourcepath)
+    edrepo = path2Repo(ed2source_ro)
     clonepath = tmp_path / 'Desktop/ed2.git'
     edrepo.clonetopath(str(clonepath), submodules=with_submodules)
 
