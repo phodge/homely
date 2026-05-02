@@ -25,3 +25,13 @@ jobs:
       - run: uv run mypy homely test
       # also verify homely will run on latest python
       - run: uv run mypy --python-version=3.14 homely test
+  CheckVersionsDemo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - run: sh bin/ci/check_versions.sh "0.23.1"
