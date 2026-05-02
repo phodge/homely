@@ -264,7 +264,7 @@ def test_repo_object_recognises_git_repos():
     assert repo2._canonical == 'https://github.com/johnsmith/example.git'
 
 
-def test_pullchanges_initialises_new_submodules(ed2sourcepath: Path) -> None:
+def test_pullchanges_initialises_new_submodules(ed2source_wr: Path) -> None:
     """
     Confirm that new submodules added to the main repo or any of its children
     are initialised and checked out at the correct commit.
