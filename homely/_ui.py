@@ -140,6 +140,8 @@ def run_update(infos, pullfirst, only=None, cancleanup=None, quick=None):
         if os.path.exists(FAILFILE):
             os.unlink(FAILFILE)
 
+    must_abort_when_dirty = os.getenv("HOMELY_PULL_WHEN_DIRTY", "0") != "1"
+
     try:
         # write the section file with the current section name
         _write(SECTIONFILE, "<preparing>")
@@ -157,8 +159,9 @@ def run_update(infos, pullfirst, only=None, cancleanup=None, quick=None):
                 if pullfirst:
                     with note("Pulling changes for {}".format(
                             localrepo.repo_path)):
-                        if localrepo.isdirty():
+                        if must_abort_when_dirty and localrepo.isdirty():
                             dirty("Aborting - uncommitted changes")
+                            dirty("(use HOMELY_PULL_WHEN_DIRTY=1 to override)")
                         else:
                             try:
                                 localrepo.pullchanges()

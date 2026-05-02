@@ -60,6 +60,12 @@ Performs a ``git pull`` in each of the repositories registered with `homely
 add`_, runs all of their ``HOMELY.py`` scripts, and then performs
 :any:`automatic cleanup <automatic_cleanup>` as necessary.
 
+If `HOMELY_PULL_WHEN_DIRTY=1` is present in the environment, then homely will attempt to use `git
+pull` in the registered repositories even if they have uncommitted changes. This behaviour will
+eventually become the default. You can avoid merge conflicts from pulls in your repositories by
+running `git config pull.ff only` in each of your repositories, of using `git config --global
+pull.ff only` to set this option globally.
+
 ``homely update [OPTIONS] [REPO ...]``
 
 ``REPO``
