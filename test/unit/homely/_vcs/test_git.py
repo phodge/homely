@@ -5,13 +5,8 @@ from subprocess import check_call
 
 from homely._test import contents
 
-GIT = [
-    'git',
-    '-c',
-    'user.name=John Smith',
-    '-c',
-    'user.email=john@example.com',
-]
+# TODO: get rid of this thing
+GIT: list[str | os.PathLike] = ['git']
 
 
 def makegitrepo(tmpdir, name):
