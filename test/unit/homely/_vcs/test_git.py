@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Callable, Iterator
 
 import pytest
 
-# TODO: get rid of this thing
+# TODO: get rid of this thing!
 GIT: list[str | os.PathLike] = ['git']
 
 if TYPE_CHECKING:
