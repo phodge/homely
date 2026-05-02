@@ -176,6 +176,8 @@ class Repo(homely._vcs.Repo):
             # find out what the expected commit is for this submodule
             expected_sha = self._get_expected_submodule_sha(info.path, info.parent)
 
+            # TODO: what would expected_sha be if the submodule was *removed* by its parent?
+
             if info.current_sha == expected_sha:
                 note(f"Submodule '{info.path}' is already at expected commit {expected_sha[:8]}")
                 done.add(info.path)
@@ -191,7 +193,27 @@ class Repo(homely._vcs.Repo):
 
             # update submodule to expected commit
             note(f"Updating submodule '{info.path}': {info.current_sha[:8]}...{expected_sha[:8]}")
+            # For nested submodules, `git submodule update` must run inside
+            # the parent submodule's working tree with a relative path.
+            #if info.parent is not None:
+                #cwd = os.path.join(self.repo_path, info.parent)
+                #relative_path = info.path[len(info.parent) + 1:]
+            #else:
+                #cwd = self.repo_path
+                #relative_path = info.path
+            # TODO: explain why we're using 'git checkout $SHA' instead of 'git submodule update':
+            # Use 'git checkout $SHA' instead of the simpler 'git submodule update' for the following reasons:
+            # - Won't attempt to recurse into sub-submodules
+            # - Will more?????
+            # the parent submodule is at the wrong commit, because it tries to
+            # check out the nested submodule at the expected commit before
+            # moving the parent submodule to the expected commit, and this
+            # causes it to fail with "fatal: reference is not a tree" (because
+            # the expected commit for the nested submodule doesn't exist in the
+            # current commit of the parent submodule).
             returncode = execute(
+                #['git', 'submodule', 'update', relative_path],
+                #cwd=cwd,
                 ['git', 'checkout', expected_sha],
                 cwd=os.path.join(self.repo_path, info.path),
                 expectexit=(0, 1),
