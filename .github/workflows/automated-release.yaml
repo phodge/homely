@@ -33,6 +33,7 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
 
       # update 'doc' branch also
+      - run: git fetch --all
       - run: git checkout doc
       - run: git merge origin/master --ff-only
       - run: git push origin doc
