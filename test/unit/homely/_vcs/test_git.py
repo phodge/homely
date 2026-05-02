@@ -270,8 +270,8 @@ def test_pullchanges_initialises_new_submodules(ed2source_wr: Path) -> None:
     are initialised and checked out at the correct commit.
     """
     # Clone ed2 without submodules so they are registered but uninitialised
-    clonepath = ed2sourcepath.parent / 'ed2clone'
-    edrepo = path2Repo(ed2sourcepath)
+    clonepath = ed2source_wr.parent / 'ed2clone'
+    edrepo = path2Repo(ed2source_wr)
     edrepo.clonetopath(str(clonepath), submodules=True)
 
     # 1st layer of submodules
@@ -295,7 +295,7 @@ def test_pullchanges_initialises_new_submodules(ed2source_wr: Path) -> None:
 
     # Add some new submodules to the source repos, then propagate the updated
     # submodule pointers up through the hierarchy so the clone sees them on pull.
-    tmp_path = ed2sourcepath.parent
+    tmp_path = ed2source_wr.parent
     ed2syntax_source = tmp_path / 'ed2syntax'
     html_source = tmp_path / 'html'
 
