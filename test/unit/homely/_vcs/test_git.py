@@ -395,6 +395,8 @@ def test_pullchanges_initialises_new_submodules(ed2source_wr: Path) -> None:
     "clean",
     "changed_files_with_conflict",
     "changed_files_no_conflict",
+    #'staged_changes_with_conflict',
+    #'staged_changes_no_conflict',
     "changed_subsubmodules",
     "newer_commit",
     "older_commit",
