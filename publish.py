@@ -99,6 +99,8 @@ def updatechangelog(new_tag, latest_tag):
 
 
 def main():
+    raise Exception("This script is deprecated; see instructions in PUBLISHING.md")
+
     tag = sys.argv[1]
     if not len(tag):
         fail("USAGE: {} TAG".format(sys.argv[0]))

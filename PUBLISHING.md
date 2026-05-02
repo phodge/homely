@@ -7,21 +7,29 @@ version of python.
 
 Next, add a section to CHANGELOG.rst that looks like this:
 
-    NEW
-    ---
+    Version $NEW_VERSION - $D $MMM $YYYY
+    -------------------------------------
 
     * fixed something
     * fixed something else
 
-Then, after you have committed the changelog changes, run the publish script:
+Then, after you have committed the changelog changes, update the version number in these three files:
 
-    ./publish.py NEW_VERSION_NUMBER
+    vim homely/__init__.py
+    vim pyproject.toml
+    uv lock
+    git add homely/__init__.py pyproject.toml uv.lock
+    git commit -m "Bump version to $NEW_VERSION"
 
 
-After that is finished, you probably want to publish any changes to docs.
-Checkout the `docs` branch, fast-forward it to the commit of the new tag, then
-push that branch. readthedocs.io should hopefully publish an updated version of
-the docs soon afterward.
+Push these changes in a new branch.
+Open a PR for the branch.
+After the branch is merged, add a tag on the merge commit and push the tag:
+
+    git checkout master
+    git pull
+    git tag $NEW_VERSION
+    git push --tags
 
 
 # Manually Publishing Updated Docs
