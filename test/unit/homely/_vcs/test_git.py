@@ -87,6 +87,30 @@ def _pull_commit_latest_submodule(
     check_call(GIT + ['commit', '-m', commitmsg, submodule_where], cwd=parent_path)
 
 
+@pytest.fixture(scope='session')
+def session_tmpdir() -> Iterator[Path]:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        yield Path(tmpdir)
+
+
+WithSubmodulesRoot = Callable[[Path], _GeneratorContextManager[Path, None, None]]
+
+
+@pytest.fixture(scope='session')
+def with_submodules_root() -> Iterator[WithSubmodulesRoot]:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        symlink_home = Path(tmpdir) / 'submodules'
+
+        @contextmanager
+        def _context_manager(temporary_home: Path) -> Iterator[Path]:
+            # connect the symlink to the temporary home
+            symlink_home.symlink_to(temporary_home)
+            yield symlink_home
+            symlink_home.unlink()
+
+        yield _context_manager
+
+
 @pytest.fixture
 def ed2sourcepath(tmp_path: Path) -> Iterator[Path]:
     register_submodules: list[tuple[Path, str, Path]] = []
