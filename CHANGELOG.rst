@@ -2,6 +2,12 @@
  CHANGELOG
 ===========
 
+Version 0.22.0 - 20 Feb 2026
+----------------------------
+
+* Remove checks for old versions of pip (assume pip always supports `--format=freeze`).
+
+
 Version 0.20.1 - 19 Oct 2024
 ----------------------------
 
