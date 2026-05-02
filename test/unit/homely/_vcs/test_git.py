@@ -111,58 +111,64 @@ def with_submodules_root() -> Iterator[WithSubmodulesRoot]:
         yield _context_manager
 
 
-@pytest.fixture
-def ed2sourcepath(tmp_path: Path) -> Iterator[Path]:
+@pytest.fixture(scope='session')
+def ed2sessionsourcepath(session_tmpdir: Path, with_submodules_root: WithSubmodulesRoot) -> Iterator[Path]:
+    repos_root = session_tmpdir / 'SessionSources'
+    repos_root.mkdir()
+    del session_tmpdir
+
     register_submodules: list[tuple[Path, str, Path]] = []
 
-    def wantsubmodule(parentpath: Path, where: str, submodulepath: Path | None = None, *, register=False) -> Path:
-        if submodulepath is None:
-            tmpdir = parentpath.parent
-            whereparts = where.split('/')
-            submodulepath = tmpdir / whereparts[-1]
-            makegitrepo(tmpdir, whereparts[-1])
+    with with_submodules_root(repos_root) as submodules_root:
+        def wantsubmodule(parentpath: Path, where: str, submodulepath: Path | None = None, *, register=False) -> Path:
+            if submodulepath is None:
+                whereparts = where.split('/')
+                submodulepath = submodules_root / whereparts[-1]
+                makegitrepo(submodules_root, whereparts[-1])
 
-        if register:
+            if register:
+                _register_submodule(parentpath, where, submodulepath)
+            else:
+                register_submodules.append((parentpath, where, submodulepath))
+
+            return submodulepath
+
+        # create a parent repo for a cool text editor
+        ed2path = makegitrepo(repos_root, 'ed2')
+
+        # create a couple of submodules for the website and AI models
+        ed2websitepath = makegitrepo(submodules_root, 'ed2website')
+        wantsubmodule(ed2path, 'www', ed2websitepath)
+        wantsubmodule(ed2path, 'extra/ed2models')
+
+        # website will need a submodule also
+        wantsubmodule(ed2websitepath, 'assets')
+
+        # create a syntax highlighting submodule that will have submodules of its own
+        ed2syntaxpath = wantsubmodule(ed2path, 'extra/ed2syntax')
+
+        # create some syntax submodules for different languages
+        wantsubmodule(ed2syntaxpath, 'lang/python')
+        wantsubmodule(ed2syntaxpath, 'lang/typescript')
+        phpsyntaxpath = wantsubmodule(ed2syntaxpath, 'lang/php')
+        # we register the lang/html submodule immediately so that when we later add
+        # extensions/css to lang/html, it won't appear in ed2syntax/lang/html/extensions/css
+        htmlsyntaxpath = wantsubmodule(ed2syntaxpath, 'lang/html', register=True)
+
+        # also add html syntax as a submodule under the PHP syntax
+        wantsubmodule(phpsyntaxpath, 'extensions/html', htmlsyntaxpath)
+
+        # html syntax repo gets a submodule for CSS syntax, but we register it immediately
+        wantsubmodule(htmlsyntaxpath, 'extensions/css')
+
+        # register submodules in reverse order to ensure that they each get the
+        # latest version of each submodule (except the PHP submodule which we
+        # deliberately registered early as mentioned above)
+        for parentpath, where, submodulepath in reversed(register_submodules):
             _register_submodule(parentpath, where, submodulepath)
-        else:
-            register_submodules.append((parentpath, where, submodulepath))
 
-        return submodulepath
-
-    # create a parent repo for a cool text editor
-    ed2path = makegitrepo(tmp_path, 'ed2')
-
-    # create a couple of submodules for the website and AI models
-    ed2websitepath = makegitrepo(tmp_path, 'ed2website')
-    wantsubmodule(ed2path, 'www', ed2websitepath)
-    wantsubmodule(ed2path, 'extra/ed2models')
-
-    # website will need a submodule also
-    wantsubmodule(ed2websitepath, 'assets')
-
-    # create a syntax highlighting submodule that will have submodules of its own
-    ed2syntaxpath = wantsubmodule(ed2path, 'extra/ed2syntax')
-
-    # create some syntax submodules for different languages
-    wantsubmodule(ed2syntaxpath, 'lang/python')
-    wantsubmodule(ed2syntaxpath, 'lang/typescript')
-    phpsyntaxpath = wantsubmodule(ed2syntaxpath, 'lang/php')
-    # we register the lang/html submodule immediately so that when we later add
-    # extensions/css to lang/html, it won't appear in ed2syntax/lang/html/extensions/css
-    htmlsyntaxpath = wantsubmodule(ed2syntaxpath, 'lang/html', register=True)
-
-    # also add html syntax as a submodule under the PHP syntax
-    wantsubmodule(phpsyntaxpath, 'extensions/html', htmlsyntaxpath)
-
-    # html syntax repo gets a submodule for CSS syntax, but we register it immediately
-    wantsubmodule(htmlsyntaxpath, 'extensions/css')
-
-    # register submodules in reverse order to ensure that they each get the
-    # latest version of each submodule (except the PHP submodule which we
-    # deliberately registered early as mentioned above)
-    for parentpath, where, submodulepath in reversed(register_submodules):
-        _register_submodule(parentpath, where, submodulepath)
-
+    # chmod all the repos to be readonly
+    check_call(['chmod', '-R', 'a-w', str(repos_root)])
     yield ed2path
 
 
