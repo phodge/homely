@@ -172,6 +172,15 @@ def ed2sessionsourcepath(session_tmpdir: Path, with_submodules_root: WithSubmodu
     yield ed2path
 
 
+@pytest.fixture
+def ed2source_ro(ed2sessionsourcepath: Path, with_submodules_root: WithSubmodulesRoot) -> Iterator[Path]:
+    # for readonly use of the ed2 source repo, we can use the session source
+    # directly. We just need to link up the 'submodules' symlink so that the
+    # whole repo tree can be cloned successfully
+    with with_submodules_root(ed2sessionsourcepath.parent):
+        yield ed2sessionsourcepath
+
+
 def test_git(tmp_path: Path) -> None:
     """
     TODO: phase out this full-lifecycle test in favour of individual tests for clonetopath() and pullchanges()
