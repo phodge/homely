@@ -7,3 +7,13 @@ if [ "$pyproject_version" != "$importable_version" ]; then
 	echo "  homely/__init__.py: $importable_version" >&2
 	exit 2
 fi
+
+expected_version="$1"
+shift
+
+if [ -n "$expected_version" ]; then
+	if ! grep "^version = \"$expected_version\"\$" homely/__init__.py &>/dev/null; then
+		echo "ERROR: expected 'version = \"$expected_version\"' in homely/__init__.py" >&2
+		exit 3
+	fi
+fi
