@@ -181,6 +181,29 @@ def ed2source_ro(ed2sessionsourcepath: Path, with_submodules_root: WithSubmodule
         yield ed2sessionsourcepath
 
 
+@pytest.fixture
+def ed2source_wr(ed2sessionsourcepath: Path, with_submodules_root: WithSubmodulesRoot) -> Iterator[Path]:
+    needs_submodule_init = []
+    with tempfile.TemporaryDirectory() as tmpdir:
+        onetest_repos_root = Path(tmpdir)
+
+        # clone each repo in ed2sessionsourcepath into our single-test folder
+        for entry in ed2sessionsourcepath.parent.iterdir():
+            if (entry / '.git').exists():
+                needs_submodule_init.append(onetest_repos_root / entry.name)
+                check_call(GIT + ['clone', entry, entry.name], cwd=onetest_repos_root)
+
+        # set up the submodules symlink so that submodules of the ed2 repo all clone from onetest_repos_root
+        with with_submodules_root(onetest_repos_root):
+            # first initialise all submodules
+            for cloned_repo_root in needs_submodule_init:
+                if (cloned_repo_root / '.gitmodules').exists():
+                    check_call(GIT + ['submodule', 'update', '--init', '--recursive'], cwd=cloned_repo_root)
+
+            # then provide the path to the ed2 repo
+            yield onetest_repos_root / 'ed2'
+
+
 def test_git(tmp_path: Path) -> None:
     """
     TODO: phase out this full-lifecycle test in favour of individual tests for clonetopath() and pullchanges()
