@@ -3,7 +3,9 @@ import os.path
 import shutil
 import sys
 import tempfile
-from typing import Optional
+from pathlib import Path
+from textwrap import dedent
+from typing import Iterator, Optional
 
 import pytest
 
@@ -68,3 +70,33 @@ def testrepo2(HOME, tmpdir):
     # homely-add the repo
     from homely._test.system import TempRepo
     yield _get_test_repo(TempRepo(tmpdir, 'cool-testrepo-2'))
+
+
+@pytest.fixture(autouse=True, scope='session')
+def force_git_config() -> Iterator[None]:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # force git commands to use a gitconfig that will:
+        # A) provide a user.name/user.email for committing
+        # B) allow the "file" protocol so that submodules can be cloned from
+        #    filesystem paths instead of URLs
+        # C) prevent anything in the host's user git config (like
+        #    core.hooksPath) from slowing down or interfereing with tests.
+        gitconfigpath = Path(tmpdir) / 'gitconfig'
+        gitconfigpath.write_text(
+            dedent(
+                '''
+                [protocol.file]
+                    allow = always
+                [user]
+                    name = "John Smith"
+                    email = "john@example.com"
+                '''
+            )
+        )
+        m = pytest.MonkeyPatch()
+        try:
+            # prevent reading any local git config during the tests
+            m.setenv('GIT_CONFIG_GLOBAL', str(gitconfigpath))
+            yield
+        finally:
+            m.undo()
