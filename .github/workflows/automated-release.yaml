@@ -31,3 +31,8 @@ jobs:
       - run: find dist
       - name: Publish release distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+
+      # update 'doc' branch also
+      - run: git checkout doc
+      - run: git merge origin/master --ff-only
+      - run: git push origin doc
