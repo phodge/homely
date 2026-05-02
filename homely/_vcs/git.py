@@ -81,9 +81,12 @@ class Repo(homely._vcs.Repo):
 
         raise SystemError(f"Unexpected output from 'git pull': {err!r}")
 
-    def clonetopath(self, dest: str) -> None:
+    def clonetopath(self, dest: str, submodules: bool) -> None:
         origin = self.repo_path
-        execute(['git', 'clone', '--recurse-submodules', origin, dest])
+        cmd = ['git', 'clone']
+        if submodules:
+            cmd.append('--recurse-submodules')
+        execute(cmd + [origin, dest])
 
     def getrepoid(self) -> str:
         assert not self.isremote

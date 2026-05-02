@@ -110,7 +110,7 @@ def test_homely_add_repolist(tmpdir, HOME):
     localrepo3 = os.path.join(HOME, 'repo3')
     # use a Repo instance to clone it into our home dir manually
     from homely._vcs.testhandler import Repo
-    Repo.frompath(repo3.url).clonetopath(localrepo3)
+    Repo.frompath(repo3.url).clonetopath(localrepo3, submodules=False)
 
     # test adding a repo from the local dir
     assert not os.path.exists(HOME + '/r3.txt')
@@ -133,6 +133,6 @@ def test_homely_add_repolist(tmpdir, HOME):
     localrepo4 = os.path.join(HOME, 'repo4')
     # use a Repo instance to clone it into our home dir manually
     from homely._vcs.testhandler import Repo
-    Repo.frompath(repo4.url).clonetopath(localrepo4)
+    Repo.frompath(repo4.url).clonetopath(localrepo4, submodules=False)
     system(HOMELY('add') + ['.'], cwd=localrepo4)
     checkrepolist(HOME, system, [repo1, repo2, repo3, repo4])

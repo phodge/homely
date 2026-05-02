@@ -81,7 +81,7 @@ class Repo:
             "%s.%s needs to implement .getrepoid()" % (
                 self.__class__.__module__, self.__class__.__name__))
 
-    def clonetopath(self, dest: str) -> None:
+    def clonetopath(self, dest: str, submodules: bool) -> None:
         """
         Clone the repo at <self.pushablepath> into <dest>
         Note that if self.pushablepath is None, then self.path will be used

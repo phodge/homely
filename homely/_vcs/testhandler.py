@@ -37,7 +37,7 @@ class Repo(homely._vcs.Repo):
                       iscanonical=False,
                       suggestedlocal=None)
 
-    def clonetopath(self, dest_path: str) -> None:
+    def clonetopath(self, dest_path: str, submodules: bool) -> None:
         assert not os.path.exists(dest_path)
         os.mkdir(dest_path)
         with open(os.path.join(dest_path, ORIGINFILE), 'w') as f:
