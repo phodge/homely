@@ -2,6 +2,15 @@
  CHANGELOG
 ===========
 
+
+Version 0.23.0 - 3 May 2026
+---------------------------
+
+* New `HOMELY_PULL_WHEN_DIRTY` override to control whether `homely update` will pull when the git repo is dirty.
+* `homely add` will now clone git repos with `--recurse-submodules` so that submodule trees are
+  constructed as well.
+
+
 Version 0.22.0 - 20 Feb 2026
 ----------------------------
 
