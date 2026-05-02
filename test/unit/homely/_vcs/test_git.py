@@ -172,6 +172,10 @@ def ed2sessionsourcepath(session_tmpdir: Path, with_submodules_root: WithSubmodu
     yield ed2path
 
 
+def _clone_all(sourcedir: Path, destpath: Path, init_submodules: bool) -> None:
+    raise Exception("TODO: clone them")  # noqa
+
+
 @pytest.fixture
 def ed2source_ro(ed2sessionsourcepath: Path, with_submodules_root: WithSubmodulesRoot) -> Iterator[Path]:
     # for readonly use of the ed2 source repo, we can use the session source
