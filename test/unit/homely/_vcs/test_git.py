@@ -420,7 +420,7 @@ def test_pullchanges_updates_submodules(
     uncommitted changes in the submodule then the changes are preserved and a
     merge conflict is NOT produced in the child repo.
     """
-    tmp_path = ed2sourcepath.parent
+    tmp_path = ed2source_wr.parent
     wwwsourcepath = tmp_path / 'ed2website'
     phpsourcepath = tmp_path / 'php'
     ed2syntaxsourcepath = tmp_path / 'ed2syntax'
@@ -436,7 +436,7 @@ def test_pullchanges_updates_submodules(
         wwwcommits[i] = check_output(GIT + ['rev-parse', 'HEAD'], cwd=wwwsourcepath).decode().strip()
         if i == 3:
             # update ed2source to point at this version of www
-            _pull_commit_latest_submodule(ed2sourcepath, 'www', commitmsg=f'update www to v{3}')
+            _pull_commit_latest_submodule(ed2source_wr, 'www', commitmsg=f'update www to v{3}')
     del wwwsourcechangelog, wwwsourcepath
 
     # ARRANGE PART II: Add 5x new commits to a grandchild submodule This gives us
@@ -458,12 +458,12 @@ def test_pullchanges_updates_submodules(
     # the parent repos all the way up the ancestory tree to the top-level ed2
     # repo.
     _pull_commit_latest_submodule(ed2syntaxsourcepath, 'lang/php')
-    _pull_commit_latest_submodule(ed2sourcepath, 'extra/ed2syntax')
+    _pull_commit_latest_submodule(ed2source_wr, 'extra/ed2syntax')
 
     # ARRANGE PART III: Clone ed2 with all submodules initialised, start messing
     # around with submodules
     clonepath = tmp_path / 'ed2clone'
-    path2Repo(ed2sourcepath).clonetopath(str(clonepath), submodules=True)
+    path2Repo(ed2source_wr).clonetopath(str(clonepath), submodules=True)
 
     # Verify commit 3 of each submodule was checked out
     assert (clonepath / 'www/CHANGELOG.md').read_text() == "Website Version 3\n"
