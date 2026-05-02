@@ -402,7 +402,7 @@ def test_pullchanges_initialises_new_submodules(ed2source_wr: Path) -> None:
     'grandchild_submodule',
 ])
 def test_pullchanges_updates_submodules(
-    ed2sourcepath: Path,
+    ed2source_wr: Path,
     submodule_state: str,
     parent_update_direction: str,
     descendent_level: str,
