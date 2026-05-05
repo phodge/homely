@@ -3,6 +3,12 @@
 ===========
 
 
+Version 0.23.3 - 3 May 2026
+---------------------------
+
+* Internal refactorings; no user-facing changes.
+
+
 Version 0.23.2 - 3 May 2026
 ---------------------------
 
