@@ -600,8 +600,40 @@ def test_pullchanges_removes_removed_submodules(ed2source_wr, submodule_state):
     - has no uncommitted changes
     - is already checked out at the expected commit
     """
-    return
-    raise Exception("TODO: finish me")
+    # ARRANGE PART I: make a local clone of the ed2 repo
+    tmp_path = ed2source_wr.parent
+    clonepath = tmp_path / 'ed2clone'
+    path2Repo(ed2source_wr).clonetopath(str(clonepath), submodules=True)
+
+    # ARRANGE PART II: confirm submodules are checked out
+    assert (clonepath / 'www/README.md').read_text() == "I am repo ed2website\n"
+    assert (clonepath / 'extra/ed2syntax/lang/php/extensions/html/README.md').read_text() == "I am repo html\n"
+
+    # ACT PART I: remove some submodules from the source repo(s)
+    ed2syntaxsource = tmp_path / 'ed2syntax'
+    check_call(['git', 'rm', 'www'], cwd=ed2source_wr)
+    check_call(['git', 'commit', '-m', 'Remove ed2website subrepo'], cwd=ed2source_wr)
+    check_call(['git', 'rm', 'lang/php'], cwd=ed2syntaxsource)
+    check_call(['git', 'commit', '-m', 'Remove lang/php subrepo'], cwd=ed2syntaxsource)
+
+    # ACT PART II: possibly modify the submodules in the local clone
+    if submodule_state == "changed_files":
+        raise Exception("TODO: modify them")  # noqa
+    else:
+        assert submodule_state == "clean"
+
+    # ACT PART III: pull the latest versions of source modules - this should
+    # remove the submodules if they are in a "clean" state
+    path2Repo(clonepath).pullchanges(submodules=True)
+
+    # ASSERT: confirm that the submodules were removed locally (if permissible)
+    if submodule_state == "changed_files":
+        assert (clonepath / 'www/README.md').read_text() == "I am repo ed2website\n"
+        assert (clonepath / 'extra/ed2syntax/lang/php/extensions/html/README.md').read_text() == "I am repo html\n"
+    else:
+        assert submodule_state == "clean"
+        assert not (clonepath / 'www/README.md').exists()
+        assert not (clonepath / 'extra/ed2syntax/lang/php').exists()
 
 
 def test_pullchanges_updates_submodules_failure_aborts_nested_submodules(

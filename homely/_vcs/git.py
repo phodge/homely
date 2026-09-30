@@ -1,16 +1,19 @@
-from homely._ui import note
 import os
 import re
-from typing import NamedTuple, Optional
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Optional
 
 import homely._vcs
 from homely._errors import ConnectionError, RepoError, RepoHasNoCommitsError
-from homely._ui import warn
+from homely._ui import note, warn
 from homely._utils import _expandpath, run
 from homely.system import execute
 
 
-class SubmoduleInfo(NamedTuple):
+@dataclass
+class SubmoduleInfo:
+    # TODO: ditch all of this comments since we no longer have a 'status' column
     # One of ' ', '-', '+', 'U', or '' if the status character is unrecognized
     #   '-': submodule is not yet initialised
     #   '+': submodule is intialised but has been moved to a different commit than the one specified in the index.
@@ -34,8 +37,11 @@ class SubmoduleInfo(NamedTuple):
     has_moved_commit: bool
     current_sha: str
     path: str
-    # path of parent submodule, or None if top-level
-    parent: Optional[str]
+    full_path: str
+    removed_from_parent: bool
+
+    def is_dirty(self) -> bool:
+        raise Exception("TODO: get the old implmeentation plz")  # noqa
 
 
 class Repo(homely._vcs.Repo):
@@ -96,13 +102,13 @@ class Repo(homely._vcs.Repo):
     def pullchanges(self, submodules: bool = False) -> None:
         assert not self.isremote
 
+        submodule_states: dict[str, SubmoduleInfo] = {}
+
         if submodules:
             # collect info on submodules before we make any changes to the main
             # repository - we need to determine which ones are already checked
             # out at the expected commit *before* we do anything
-            submodule_states = self._get_submodule_info()
-        else:
-            submodule_states = []
+            _refresh_submodule_info(Path(self.repo_path), submodule_states, path_from_root=[])
 
         code, _, err = execute(['git', 'pull'],
                                cwd=self.repo_path,
@@ -119,207 +125,16 @@ class Repo(homely._vcs.Repo):
             )
 
         if submodules:
-            # NOTE: we need to do another run of _get_submodule_info() because
-            # the 'git pull' on the parent repo may have uncovered new
-            # submodules we need to fetch
-            submodule_states.extend(self._get_submodule_info(skip={i.path for i in submodule_states}))
+            # NOTE: we need to do another run of _refresh_submodule_info() because
+            # the 'git pull' on the parent repo may have uncovered that we now
+            # need to add new submodules or remove others
+            _refresh_submodule_info(Path(self.repo_path), submodule_states, path_from_root=[])
 
-            self._update_submodules(
-                submodule_states,
-                done=set(),
-                aborted=set(),
+            _update_submodules_recursively(
+                parent_path=Path(self.repo_path),
+                submodule_states=submodule_states,
+                path_from_root=[],
             )
-
-    def _update_submodules(
-        self,
-        submodule_states: list[SubmoduleInfo],
-        *,
-        done: set[str],
-        aborted: set[str],
-    ) -> None:
-        postponed: list[SubmoduleInfo] = []
-        for info in submodule_states:
-            # check if the parent submodule is done/aborted first
-            if info.parent:
-                if info.parent in aborted:
-                    note("Submodule '{}' also could not be updated because its parent submodule did not update")
-                    aborted.add(info.path)
-                    continue
-
-                if info.parent not in done:
-                    postponed.append(info)
-                    continue
-
-            if not info.is_initialised:
-                # not initialized yet
-                if info.parent:
-                    cwd = os.path.join(self.repo_path, info.parent)
-                    relpath = info.path[len(info.parent) + 1:]
-                else:
-                    cwd = self.repo_path
-                    relpath = info.path
-                execute(
-                    ['git', 'submodule', 'update', '--init', '--recursive', relpath],
-                    cwd=cwd,
-                )
-                done.add(info.path)
-                continue
-
-            if info.has_merge_conflicts:
-                warn(
-                    f"Submodule '{info.path}' indicates merge conflicts"
-                    f" (see 'git submodule status'), skipping submodule update"
-                )
-                aborted.add(info.path)
-                continue
-
-            # find out what the expected commit is for this submodule
-            expected_sha = self._get_expected_submodule_sha(info.path, info.parent)
-
-            # TODO: what would expected_sha be if the submodule was *removed* by its parent?
-
-            if info.current_sha == expected_sha:
-                note(f"Submodule '{info.path}' is already at expected commit {expected_sha[:8]}")
-                done.add(info.path)
-                continue
-
-            if info.has_moved_commit:
-                warn(
-                    f"Submodule '{info.path}' has had commit {info.current_sha[:8]} checked out manually"
-                    f"; can't move to commit {expected_sha[:8]}"
-                )
-                aborted.add(info.path)
-                continue
-
-            # update submodule to expected commit
-            note(f"Updating submodule '{info.path}': {info.current_sha[:8]}...{expected_sha[:8]}")
-            # For nested submodules, `git submodule update` must run inside
-            # the parent submodule's working tree with a relative path.
-            #if info.parent is not None:
-                #cwd = os.path.join(self.repo_path, info.parent)
-                #relative_path = info.path[len(info.parent) + 1:]
-            #else:
-                #cwd = self.repo_path
-                #relative_path = info.path
-            # TODO: explain why we're using 'git checkout $SHA' instead of 'git submodule update':
-            # Use 'git checkout $SHA' instead of the simpler 'git submodule update' for the following reasons:
-            # - Won't attempt to recurse into sub-submodules
-            # - Will more?????
-            # the parent submodule is at the wrong commit, because it tries to
-            # check out the nested submodule at the expected commit before
-            # moving the parent submodule to the expected commit, and this
-            # causes it to fail with "fatal: reference is not a tree" (because
-            # the expected commit for the nested submodule doesn't exist in the
-            # current commit of the parent submodule).
-            returncode = execute(
-                #['git', 'submodule', 'update', relative_path],
-                #cwd=cwd,
-                ['git', 'checkout', expected_sha],
-                cwd=os.path.join(self.repo_path, info.path),
-                expectexit=(0, 1),
-            )[0]
-            if returncode == 0:
-                # we need to look for NEW submodules with info.path as parent
-                postponed.extend(self._get_submodule_info(
-                    only_children_of=info.path,
-                    skip={i.path for i in submodule_states},
-                ))
-                done.add(info.path)
-            else:
-                warn(
-                    f"Failed to update submodule '{info.path}' to commit {expected_sha[:8]} (exit code {returncode})"
-                )
-                aborted.add(info.path)
-
-        assert len(postponed) < len(submodule_states)
-        if postponed:
-            self._update_submodules(
-                postponed,
-                done=done,
-                aborted=aborted,
-            )
-
-    def _get_submodule_info(
-        self,
-        skip: set[str] | None = None,
-        only_children_of: str = "",
-    ) -> list[SubmoduleInfo]:
-        if not skip:
-            skip = set()
-
-        cmd = ['git', 'submodule', 'status', '--recursive']
-        out = execute(
-            cmd,
-            cwd=self.repo_path,
-            stdout=True,
-            expectexit=0,
-        )[1]
-        result = []
-        seen: set[str] = set()
-        for line in out.decode('utf-8').splitlines():
-            if not line.strip():
-                continue
-
-            # format: [-+U ]<sha> <path> [(<describe>)]
-            status_char = line[0]
-            rest = line[1:]
-            parts = rest.strip().split(' ', 2)
-            sha = parts[0]
-            path = parts[1]
-            is_initialised = True
-            has_merge_conflicts = False
-            has_moved_commit = False
-            if status_char == '-':
-                is_initialised = False
-            elif status_char == 'U':
-                has_merge_conflicts = True
-            elif status_char == '+':
-                has_moved_commit = True
-            elif status_char not in ' +':
-                warn(f"Unexpected status character '{status_char}' in git submodule status output")
-                continue
-
-            seen.add(path)
-
-            if path in skip:
-                continue
-
-            # Find the immediate parent submodule (longest matching prefix).
-            # We can't just take the first match from the set because
-            # iteration order is non-deterministic.
-            parent = ""
-            for possible_parent in seen:
-                if path.startswith(possible_parent + '/'):
-                    if len(possible_parent) > len(parent):
-                        # prefer a longer parent
-                        parent = possible_parent
-
-            if only_children_of and parent != only_children_of:
-                continue
-
-            result.append(SubmoduleInfo(
-                is_initialised=is_initialised,
-                has_merge_conflicts=has_merge_conflicts,
-                has_moved_commit=has_moved_commit,
-                current_sha=sha,
-                path=path,
-                parent=parent or None,
-            ))
-        return result
-
-    def _get_expected_submodule_sha(self, submodule_path: str, parent: str | None) -> str:
-        if parent:
-            # For nested submodules, rev-parse must run inside the parent
-            # submodule's working tree because git can't dereference through
-            # a gitlink boundary from the top-level repo.
-            cwd = os.path.join(self.repo_path, parent)
-            relative_path = submodule_path[len(parent) + 1:]
-        else:
-            cwd = self.repo_path
-            relative_path = submodule_path
-        cmd = ['git', 'rev-parse', 'HEAD:' + relative_path]
-        out = execute(cmd, cwd=cwd, stdout=True, expectexit=0)[1]
-        return out.decode('utf-8').strip()
 
     def clonetopath(self, dest: str, submodules: bool) -> None:
         origin = self.repo_path
@@ -387,3 +202,185 @@ class Repo(homely._vcs.Repo):
             if len(line) and not line.startswith(b'?? '):
                 return True
         return False
+
+
+def _refresh_submodule_info(
+    parent_path: Path,
+    store: dict[str, SubmoduleInfo],
+    *,
+    path_from_root: list[str],
+) -> None:
+    out = execute(
+        ['git', 'submodule', 'status'],
+        cwd=parent_path,
+        stdout=True,
+        expectexit=0,
+    )[1]
+    seen: set[str] = set()
+    for line in out.decode('utf-8').splitlines():
+        if not line.strip():
+            continue
+
+        # format: [-+U ]<sha> <path> [(<describe>)]
+        status_char = line[0]
+        rest = line[1:]
+        parts = rest.strip().split(' ', 2)
+        sha = parts[0]
+        path = parts[1]
+        is_initialised = True
+        has_merge_conflicts = False
+        has_moved_commit = False
+        if status_char == '-':
+            is_initialised = False
+        elif status_char == 'U':
+            has_merge_conflicts = True
+        elif status_char == '+':
+            has_moved_commit = True
+        elif status_char not in ' +':
+            warn(f"Unexpected status character '{status_char}' in git submodule status output")
+            continue
+
+        seen.add(path)
+
+        if path not in store:
+            store[path] = SubmoduleInfo(
+                is_initialised=is_initialised,
+                has_merge_conflicts=has_merge_conflicts,
+                has_moved_commit=has_moved_commit,
+                current_sha=sha,
+                path=path,
+                full_path="/".join(path_from_root + [path]),
+                removed_from_parent=False,
+            )
+
+    # mark removed submodules
+    for path in store:
+        if path not in seen:
+            store[path].removed_from_parent = True
+
+
+def _update_submodules_recursively(
+    parent_path: Path,
+    submodule_states: dict[str, SubmoduleInfo],
+    path_from_root: list[str],
+) -> None:
+    for info in submodule_states.values():
+        # find out if the submodule itself has any of its own submodules
+        sub_submodules: dict[str, SubmoduleInfo] = {}
+        if info.is_initialised:
+            _refresh_submodule_info(parent_path / info.path, sub_submodules, path_from_root=path_from_root + [info.path])
+
+        if info.has_merge_conflicts:
+            warn(
+                f"Submodule '{info.path}' indicates merge conflicts"
+                f" (see 'git submodule status'), skipping submodule update"
+            )
+            continue
+
+        if not info.is_initialised:
+            # just need to initialise the submodule (and all its descendants)
+            execute(
+                ['git', 'submodule', 'update', '--init', '--recursive', info.path],
+                cwd=parent_path,
+            )
+            continue
+
+        if info.removed_from_parent:
+            if _issue_submodule_removal_warning(info, sub_submodules):
+                # if a warning was issued, we can't clean up this submodule at this stage
+                continue
+
+            raise Exception("TODO: deal with submodule that needs to be gooone")  # noqa
+
+        # find out what the expected commit is for this submodule
+        expected_sha = _get_expected_submodule_sha(parent_path, info.path)
+
+        if info.current_sha == expected_sha:
+            note(f"Submodule '{info.path}' is already at expected commit {expected_sha[:8]}")
+            continue
+
+        if info.has_moved_commit:
+            warn(
+                f"Submodule '{info.path}' has had commit {info.current_sha[:8]} checked out manually"
+                f"; can't move to commit {expected_sha[:8]}"
+            )
+            continue
+
+        # update submodule to expected commit
+        note(f"Updating submodule '{info.path}': {info.current_sha[:8]}...{expected_sha[:8]}")
+        # For nested submodules, `git submodule update` must run inside
+        # the parent submodule's working tree with a relative path.
+        #if info.parent is not None:
+            #cwd = os.path.join(self.repo_path, info.parent)
+            #relative_path = info.path[len(info.parent) + 1:]
+        #else:
+            #cwd = self.repo_path
+            #relative_path = info.path
+        # TODO: explain why we're using 'git checkout $SHA' instead of 'git submodule update':
+        # Use 'git checkout $SHA' instead of the simpler 'git submodule update' for the following reasons:
+        # - Won't attempt to recurse into sub-submodules
+        # - Will more?????
+        # the parent submodule is at the wrong commit, because it tries to
+        # check out the nested submodule at the expected commit before
+        # moving the parent submodule to the expected commit, and this
+        # causes it to fail with "fatal: reference is not a tree" (because
+        # the expected commit for the nested submodule doesn't exist in the
+        # current commit of the parent submodule).
+        returncode = execute(
+            #['git', 'submodule', 'update', relative_path],
+            #cwd=cwd,
+            ['git', 'checkout', expected_sha],
+            cwd=parent_path / info.path,
+            expectexit=(0, 1),
+        )[0]
+        if returncode != 0:
+            warn(
+                f"Failed to update submodule '{info.path}' to commit {expected_sha[:8]} (exit code {returncode})"
+            )
+            continue
+
+        # look for any changes relating to sub-submodules of this submodule
+        _refresh_submodule_info(
+            parent_path / info.path,
+            sub_submodules,
+            path_from_root=path_from_root + [info.path],
+        )
+
+        # now we can recursively update sub-submodules of this submodule
+        _update_submodules_recursively(
+            parent_path=parent_path / info.path,
+            submodule_states=sub_submodules,
+            path_from_root=path_from_root + [info.path],
+        )
+
+
+def _get_expected_submodule_sha(parent_path: Path, submodule_path: str) -> str:
+    out = execute(
+        ['git', 'rev-parse', 'HEAD:' + submodule_path],
+        cwd=parent_path,
+        stdout=True,
+        expectexit=0,
+    )[1]
+    return out.decode('utf-8').strip()
+
+
+def _issue_submodule_removal_warning(info: SubmoduleInfo, sub_submodules: dict[str, SubmoduleInfo]) -> bool:
+    def _warn(reason: str) -> None:
+        warn(
+            f"Submodule '{info.full_path}' is no longer tracked as a submodule but can't be removed because {reason}"
+        )
+
+    if info.has_moved_commit:
+        _warn(f"commit {info.current_sha[:8]} was either checked out manually or created locally")
+        return True
+
+    if info.is_dirty():
+        _warn("it has local changes that haven't been committed")
+        return True
+
+    # do any of the submodules sub-submodules prevent its removal?
+    for sub_info in sub_submodules.values():
+        raise Exception("TODO: check each sub-subvmodule as well")  # noqa
+
+    # no reason it can't be removed
+    return False
